@@ -115,6 +115,15 @@ The logic assumes a specific physical setup based on my hardware:
 > Since I don't use a backplane, the HBA cannot report the physical "slot" location. The dashboard assumes the drives are physically arranged in the order the cables are plugged in. To change the display order, simply swap the SATA connectors on the physical drives.
 
 ---
+## Configuration System
+
+The dashboard is controlled by a central `config.json` file. This file dictates everything from the HBA hardware address to the specific hex codes for drive status LEDs.
+
+### How it Works
+- **On First Run**: If the script does not find `config.json` in its directory, it will automatically generate one with standard settings (16-bay single chassis, 8010 port, standard colors).
+- **Live Updates**: You do not need to restart the service to change settings. When you save changes to `config.json`, the dashboard detects the file-change timestamp and updates the UI for all connected users within 5 seconds.
+- **Resilience**: The service is designed to be "always-up." If the config file is accidentally deleted or becomes corrupted (e.g., a typo in the JSON syntax), the service will immediately switch to internal "Hardened Defaults" to ensure you don't lose sight of your storage health.
+---
 
 ## Future Plans
 * **Dynamic Logic:** Detect the specific device TrueNAS reports to better design the chassis layout automatically.
