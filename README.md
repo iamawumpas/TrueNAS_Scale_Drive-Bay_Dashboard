@@ -1,7 +1,8 @@
 # TrueNAS Scale Drive Bay Assignment
 A dashboard to show my disk array arrangement, status, and activity.
 
-![Dashboard Preview](https://github.com/user-attachments/assets/2700a1bc-75f2-4fb2-825d-8c9a03b3310c)
+<img width="1919" height="546" alt="image" src="https://github.com/user-attachments/assets/e72efdba-2e79-49ae-b1ef-247839e4e32b" />
+
 
 ---
 
@@ -43,7 +44,8 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
     cd /mnt/[Pool_Name]/scripts/disk_lights
     ```
 4.  **Upload Files:** Use WinSCP or your preferred file transfer tool to copy `service.py` and `index.html` into this folder.
-5.  **Set Permissions:** ```bash
+5.  **Set Permissions:**
+    ```bash
     chmod +x /mnt/[Pool_Name]/scripts/disk_lights/service.py
     ```
 6.  **Run the Service Manually (for testing):**
@@ -85,7 +87,9 @@ This is the daemon that interrogates TrueNAS and your HBA to identify:
 * Formatted disk capacity (not vdev capacity).
 * TrueNAS drive status and read/write activity.
 
-It also acts as a basic web server to host the dashboard. It uses **port 8010** by default (this can be changed within the script).
+Limited customisation can now be made from within the service.py script in the --- CONFIGURATION SECTION ----.
+
+This script also acts as a basic web server to host the dashboard. It uses **port 8010** by default (this can be changed within the script).
 
 ### `index.html`
 Contains the HTML and embedded CSS needed to render the dashboard. Currently, this is a "read-only" view and is not interactive.
@@ -111,4 +115,3 @@ The logic assumes a specific physical setup based on my hardware:
 
 ## Future Plans
 * **Dynamic Logic:** Detect the specific device TrueNAS reports to better design the chassis layout automatically.
-* **Pool Labeling:** Add Pool names to the drive icons to identify which disks belong to which VDEV/Pool.
