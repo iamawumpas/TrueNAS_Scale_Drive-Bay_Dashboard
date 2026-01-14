@@ -25,3 +25,42 @@ If you see the hostname in the dashboard **pulsing slowly** with the message `co
 - **If you made a typo**: Check your JSON syntax. You can use an online "JSON Validator" to find the missing comma or bracket. Once fixed and saved, the error message will disappear instantly.
 - **If you want to reset**: Simply delete `config.json` and restart `service.py`. The service will generate a fresh, perfectly formatted default file for you to start over with.
 - **Check the Terminal**: The `service.py` console will print a specific error message (e.g., `Expecting ',' delimiter`) to help you find the exact line causing the issue.
+
+### Default settings in config.json
+```json
+{
+    "network": {
+        "port": 8010
+    },
+    "layout": {
+        "chassis_count": 1,
+        "bays_per_chassis": 16,
+        "rows_per_chassis": 1,
+        "chassis_width_pct": 100,
+        "bay_height_vh": 48,
+        "bay_width_min_px": 40
+    },
+    "hardware": {
+        "hba_pci_address": "0000:00:10.0",
+        "hba_name": "Main HBA Storage"
+    },
+    "colors": {
+        "page_background": "#050505",
+        "chassis_background": "#1a1a1a",
+        "bay_background": "#121212",
+        "text_serial": "#ffff00",
+        "text_capacity": "#ff00ff",
+        "text_pool": "#ffffff",
+        "led_online": "#00ff00",
+        "led_resilver": "#ffffff",
+        "led_error": "#ffaa00",
+        "led_offline": "#ff0000",
+        "led_unused": "#8000ff",
+        "led_activity": "#008cff"
+    },
+    "zfs_settings": {
+        "show_index": true,
+        "pool_separator": " - ",
+        "unallocated_label": " "
+    }
+}
