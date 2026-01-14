@@ -35,7 +35,7 @@ As the above mage shows, this wee script generates a virtual Drive Storage Chass
 
           cd /mnt/[ Pool Name ]/scripts/disk_lights
 
-5) Using WINScp or some other file copying software, copy the sensor.py and index.html files to the 'disk_lights' folder.
+5) Using WinSCP or some other file copying software, copy the sensor.py and index.html files to the 'disk_lights' folder.
 
 6) give service.py permission to execute (not strictly necessary, but good practice).
 
