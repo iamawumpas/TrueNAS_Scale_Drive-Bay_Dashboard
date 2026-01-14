@@ -4,26 +4,25 @@ import http.server, socketserver, json, time, subprocess, socket, os, re, thread
 PORT = 8010
 EXPECTED_LAYOUT = {"0000:00:10.0": {"name": "Main HBA Storage", "bays": 16}}
 
-# New ZFS Parsing Configuration
+# ZFS Parsing Configuration
 ZFS_CONFIG = {
-    "show_index": True,             # Set to False to hide the "- 1" numbering
-    "pool_separator": " - ",        # The string between PoolName and Index
-    "unallocated_label": "FREE",    # Label for drives not in a pool
-    "use_nbsp": True                # Uses non-breaking spaces for alignment
+    "show_index": True,
+    "pool_separator": " - ",
+    "unallocated_label": "&nbsp;",        # Empty string removes "FREE"
+    "use_nbsp": True
 }
 
 # UI Formatting Variables
 UI_CONFIG = {
-    "font_size_info": "1.5vw",      
-    "font_size_pool": "1.1vw",      
+    "font_size_info": "1.5vw",
+    "font_size_pool": "1.1vw",
     "color_sn": "#ffff00",          # Yellow
     "color_size": "#ff00ff",        # Pink
     "color_pool": "#ffffff",        # White
-    "show_separator": False         
+    "show_separator": False
 }
 
 # --- END OF CONFIGURATION SECTION ---
-
 
 DISK_CACHE = {"topology": {}, "io_activity": {}, "last_update": 0, "hostname": socket.gethostname()}
 
@@ -83,7 +82,6 @@ def update_heavy_stats():
                 disk_idx += 1
                 dev_base = uuid_to_dev.get(uid, uid).rstrip('0123456789')
                 
-                # Build the configurable pool label
                 sep = ZFS_CONFIG["pool_separator"]
                 if ZFS_CONFIG["use_nbsp"]:
                     sep = sep.replace(" ", "&nbsp;")
@@ -93,7 +91,6 @@ def update_heavy_stats():
                     label = f"{current_pool}{sep}{disk_idx}"
                 
                 zfs_pool_map[dev_base] = label
-                
                 parts = line.split()
                 if len(parts) >= 2:
                     zfs_state_map[dev_base] = parts[1]
@@ -121,7 +118,8 @@ def update_heavy_stats():
                     lsblk = subprocess.check_output(['lsblk', '-dbno', 'SERIAL,SIZE', entry.path], text=True).strip().split()
                     sn = lsblk[0][-3:] if lsblk else "???"
                     raw_bytes = int(lsblk[1]) if len(lsblk) > 1 else 0
-                    size_tb = f"{raw_bytes / (1024**4):.1f}TB"
+                    # Standardized calculation to prevent float variations
+                    size_tb = "{:.1f}TB".format(raw_bytes / (1024**4))
                 except: 
                     sn, size_tb = "???", "???"
                 

@@ -11,7 +11,6 @@
         }
         
         .header { flex: 0 0 auto; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        
         #canvas { flex: 1 1 auto; display: flex; align-items: flex-start; justify-content: center; padding-top: 2vh; }
 
         .storage-unit { 
@@ -24,13 +23,8 @@
             box-shadow: inset 0 0 20px #000, 0 10px 30px rgba(0,0,0,0.8);
         }
 
-        .unit-header-container {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;
-        }
-
+        .unit-header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
         .unit-header { color: #008cff; font-weight: bold; font-size: 1.2vw; text-transform: uppercase; border-left: 4px solid #008cff; padding-left: 10px; }
-
         .unit-legend { display: flex; gap: 1.2vw; font-size: 0.7vw; color: #aaa; text-transform: uppercase; font-weight: bold; background: rgba(0,0,0,0.4); padding: 6px 12px; border-radius: 4px; border: 1px solid #333; }
         .legend-item { display: flex; align-items: center; gap: 0.4vw; }
         .led-small { width: 0.7vw; height: 0.7vw; border-radius: 50%; }
@@ -44,6 +38,8 @@
             display: flex; flex-direction: column; align-items: center; 
             position: relative; flex: 1 1 0; min-width: 40px; height: 48vh; padding: 1.5vh 0 0 0; 
             border-top: 4px solid #444; box-sizing: border-box; overflow: hidden;
+            /* Prevent repaint flicker */
+            will-change: transform; backface-visibility: hidden;
         }
 
         .caddy::before {
@@ -53,7 +49,6 @@
         }
 
         .led-group, .bay-id, .info-container, .latch { position: relative; z-index: 5; }
-
         .led-group { display: flex; justify-content: space-around; width: 100%; padding: 0 10%; margin-bottom: 1.5vh; height: 1.2vw; }
         .led { width: 1vw; height: 1vw; min-width: 10px; min-height: 10px; border-radius: 50%; background: #0a0a0a; box-shadow: inset 0 0 3px #000; }
 
@@ -66,11 +61,15 @@
 
         .bay-id { font-size: 1.3vw; font-weight: bold; color: #ffaa00; text-align: center; margin-bottom: 2vh; text-shadow: 0 0 5px #000; }
         .info-container { flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
-        .info { font-size: 1.1vw; font-weight: bold; font-family: 'Courier New', monospace; transform: rotate(-90deg); white-space: nowrap; text-align: center; }
+        .info { 
+            font-size: 1.1vw; font-weight: bold; font-family: 'Courier New', monospace; 
+            transform: rotate(-90deg); white-space: nowrap; text-align: center;
+            /* Lock the text block to prevent sub-pixel shifting */
+            display: inline-block; width: 40vh; transform-origin: center;
+        }
 
         .latch { width: 100%; height: 6vh; background: #1a1a1a; border-top: 2px solid #333; display: flex; align-items: center; justify-content: center; }
         .latch-button { width: 60%; height: 60%; background: #0c0c0c; border: 1px solid #333; box-shadow: inset 0 2px 5px #000; }
-
         .status-empty .info { visibility: hidden; } 
     </style>
 </head>
@@ -107,30 +106,61 @@
                     if (!el) {
                         el = document.createElement('div');
                         el.id = `disk-${idx}`;
+                        el.className = 'caddy';
+                        el.innerHTML = `
+                            <div class="led-group">
+                                <div class="led status-led"></div>
+                                <div class="led activity-led"></div>
+                            </div>
+                            <div class="bay-id"></div>
+                            <div class="info-container"><div class="info"></div></div>
+                            <div class="latch"><div class="latch-button"></div></div>
+                        `;
                         slotContainer.appendChild(el);
                     }
+
                     const isPresent = disk.status === 'PRESENT';
-                    el.className = `caddy ${!isPresent ? 'status-empty' : ''}`;
+                    const infoDiv = el.querySelector('.info');
+                    const activityLed = el.querySelector('.activity-led');
+                    const statusLed = el.querySelector('.status-led');
                     
-                    el.innerHTML = `
-                        <div class="led-group">
-                            <div class="led ${isPresent ? disk.led : ''}"></div>
-                            <div class="led ${isPresent && disk.active ? 'blue' : ''}"></div>
-                        </div>
-                        <div class="bay-id">${disk.bay.split(' ')[0]}<br>${disk.bay.split(' ')[1]||''}</div>
-                        <div class="info-container">
-                            <div class="info">
-                                ${isPresent ? `
-                                    <span style="color: #ffff00;">${disk.sn}</span>
-                                    <span style="color: #666;">&nbsp;|&nbsp;</span>
-                                    <span style="color: #ff00ff;">${disk.size}</span>
-                                    <br>
-                                    <span style="color: #ffffff; font-size: 0.85em; opacity: 0.9;">${disk.pool}</span>
-                                ` : ''}
-                            </div>
-                        </div>
-                        <div class="latch"><div class="latch-button"></div></div>
-                    `;
+                    // Toggle empty state
+                    el.classList.toggle('status-empty', !isPresent);
+
+                    // LOCKING MECHANISM: We create a unique signature of the disk contents
+                    const diskSignature = `${disk.sn}-${disk.size}-${disk.pool}-${isPresent}`;
+                    
+                    // ONLY touch the innerHTML if the physical disk data has changed.
+                    // This prevents flickering during 100ms activity pulses.
+                    if (el.dataset.signature !== diskSignature) {
+                        el.querySelector('.bay-id').innerHTML = `${disk.bay.split(' ')[0]}<br>${disk.bay.split(' ')[1]||''}`;
+                        
+                        if (isPresent) {
+                            infoDiv.innerHTML = `
+                                <span style="color: ${data.ui_config.color_sn};">${disk.sn}</span>
+                                <span style="color: #666; margin: 0 3px;">|</span>
+                                <span style="color: ${data.ui_config.color_size};">${disk.size}</span>
+                                <br>
+                                <span style="color: ${data.ui_config.color_pool}; font-size: 0.85em; opacity: 0.9;">${disk.pool}</span>
+                            `;
+                        } else {
+                            infoDiv.innerHTML = '';
+                        }
+                        el.dataset.signature = diskSignature;
+                    }
+
+                    // Update Status LED independently
+                    const statusClass = `led status-led ${isPresent ? disk.led : ''}`;
+                    if (statusLed.className !== statusClass) {
+                        statusLed.className = statusClass;
+                    }
+                    
+                    // Toggle Activity LED without forcing a re-render of the text sibling
+                    if (isPresent && disk.active) {
+                        if (!activityLed.classList.contains('blue')) activityLed.classList.add('blue');
+                    } else {
+                        if (activityLed.classList.contains('blue')) activityLed.classList.remove('blue');
+                    }
                 });
             } catch (e) { console.error(e); }
         }
