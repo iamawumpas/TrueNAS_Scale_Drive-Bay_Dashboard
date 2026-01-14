@@ -9,13 +9,13 @@ DEFAULT_CONFIG = {
     "__REMARK_NETWORK": "Port the web dashboard will be accessible on.",
     "network": {"port": 8010},
     
-    "__REMARK_LAYOUT": "Visual sizing. VH = % of screen height. PX = Minimum fixed width.",
+    "__REMARK_LAYOUT": "Visual sizing.",
     "layout": {
         "chassis_count": 1, 
         "bays_per_chassis": 16, 
         "rows_per_chassis": 1, 
         "chassis_width_pct": 100, 
-        "bay_height_vh": 48, 
+        "bay_height_px": 340, 
         "bay_width_min_px": 40
     },
     

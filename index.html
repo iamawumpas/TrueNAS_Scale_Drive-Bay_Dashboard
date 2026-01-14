@@ -17,49 +17,32 @@
             --led-activity: #008cff;
             --led-resilver: #ffffff;
             --led-offline: #ff0000;
-            --bay-height: 48vh;
+            --bay-height: 380px; /* Now defaults to pixels */
             --bay-min-width: 40px;
         }
 
         body { 
             background: var(--bg-page); color: #eee; font-family: 'Segoe UI', sans-serif; 
-            margin: 0; padding: 15px; overflow: hidden; height: 100vh;
+            margin: 0; padding: 15px; overflow-x: hidden; /* Allow vertical scroll if height is large */
             display: flex; flex-direction: column; box-sizing: border-box;
             transition: background 0.5s ease;
         }
         
         .header { flex: 0 0 auto; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
 
-        /* Header logic with inline error message */
         #host-title { 
             transition: opacity 0.5s ease;
-            margin: 0;
-            display: flex;
-            align-items: baseline; /* Aligns text by their bottoms */
-            gap: 15px; /* Space between Hostname and Error message */
+            margin: 0; display: flex; align-items: baseline; gap: 15px;
         }
 
-        @keyframes slowPulse {
-            0%   { opacity: 1.0; }
-            50%  { opacity: 0.3; }
-            100% { opacity: 1.0; }
-        }
-
-        #host-title.corrupt { 
-            animation: slowPulse 3s ease-in-out infinite;
-        }
-
-        /* Inline Sub-text styling */
+        @keyframes slowPulse { 0% { opacity: 1.0; } 50% { opacity: 0.3; } 100% { opacity: 1.0; } }
+        #host-title.corrupt { animation: slowPulse 3s ease-in-out infinite; }
         #host-title.corrupt::after {
             content: "config file error :: reverting to default settings";
-            display: inline; /* Keep on same line */
-            font-size: 0.5em; 
-            font-weight: normal;
-            text-transform: lowercase;
-            opacity: 0.7;
+            display: inline; font-size: 0.5em; font-weight: normal; text-transform: lowercase; opacity: 0.7;
         }
 
-        #canvas { flex: 1 1 auto; display: flex; align-items: flex-start; justify-content: center; padding-top: 2vh; }
+        #canvas { flex: 1 1 auto; display: flex; align-items: flex-start; justify-content: center; padding-top: 20px; }
 
         .storage-unit { 
             background-color: var(--bg-chassis);
@@ -86,7 +69,7 @@
             border: 1px solid #333; border-radius: 3px;
             display: flex; flex-direction: column; align-items: center;
             position: relative; flex: 1 1 0; min-width: var(--bay-min-width); height: var(--bay-height);
-            padding: 1.5vh 0 0 0; border-top: 4px solid #444; box-sizing: border-box; overflow: hidden;
+            padding: 15px 0 0 0; border-top: 4px solid #444; box-sizing: border-box; overflow: hidden;
         }
 
         .caddy::before {
@@ -96,8 +79,7 @@
         }
 
         .led-group, .bay-id, .info-container, .latch { position: relative; z-index: 5; }
-
-        .led-group { display: flex; justify-content: space-around; width: 100%; padding: 0 10%; margin-bottom: 1.5vh; height: 1.2vw; }
+        .led-group { display: flex; justify-content: space-around; width: 100%; padding: 0 10%; margin-bottom: 15px; height: 1.2vw; }
         .caddy .led { 
             width: 1vw; height: 1vw; min-width: 10px; min-height: 10px; border-radius: 50%; 
             background: radial-gradient(circle at 35% 35%, #444 0%, #111 100%);
@@ -113,24 +95,21 @@
         
         @keyframes pulse { from { opacity: 1; } to { opacity: 0.6; } }
 
-        .bay-id { font-size: 1.3vw; font-weight: bold; color: #ffaa00; text-align: center; margin-bottom: 2vh; text-shadow: 0 0 5px #000; }
+        .bay-id { font-size: 18px; font-weight: bold; color: #ffaa00; text-align: center; margin-bottom: 20px; text-shadow: 0 0 5px #000; }
         .info-container { flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
         .info { 
-            font-size: 1.1vw; font-weight: bold; font-family: 'Courier New', monospace; 
+            font-size: 16px; font-weight: bold; font-family: 'Courier New', monospace; 
             transform: rotate(-90deg); white-space: nowrap; text-align: center; 
-            display: inline-block; width: 40vh; transform-origin: center;
+            display: inline-block; width: 300px; transform-origin: center;
         }
 
-        .latch { width: 100%; height: 6vh; background: #1a1a1a; border-top: 2px solid #333; display: flex; align-items: center; justify-content: center; }
+        .latch { width: 100%; height: 50px; background: #1a1a1a; border-top: 2px solid #333; display: flex; align-items: center; justify-content: center; }
         .latch-button { width: 60%; height: 60%; background: #0c0c0c; border: 1px solid #333; box-shadow: inset 0 2px 5px #000; }
         .status-empty .info { visibility: hidden; } 
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2 id="host-title">[ INITIALIZING... ]</h2>
-    </div>
-
+    <div class="header"><h2 id="host-title">[ INITIALIZING... ]</h2></div>
     <div id="canvas">
         <div class="storage-unit">
             <div class="unit-header-container">
@@ -152,17 +131,10 @@
                 const cfg = data.config;
                 const titleEl = document.getElementById('host-title');
 
-                // Update Hostname and Corruption class
                 const hostName = data.hostname ? data.hostname.toUpperCase() : "SERVER";
                 titleEl.innerText = `[ ${hostName} ]`;
-                
-                if (data.corrupt) {
-                    titleEl.classList.add('corrupt');
-                } else {
-                    titleEl.classList.remove('corrupt');
-                }
+                titleEl.classList.toggle('corrupt', data.corrupt);
 
-                // Global UI updates
                 if (data.version > currentVersion || data.corrupt !== wasCorrupt) {
                     const root = document.documentElement.style;
                     root.setProperty('--bg-page', cfg.colors.page_background);
@@ -177,11 +149,12 @@
                     root.setProperty('--led-activity', cfg.colors.led_activity);
                     root.setProperty('--led-resilver', cfg.colors.led_resilver);
                     root.setProperty('--led-offline', cfg.colors.led_offline);
-                    root.setProperty('--bay-height', cfg.layout.bay_height_vh + 'vh');
-                    root.setProperty('--bay-min-width', cfg.layout.bay_width_min_px + 'px');
+                    
+                    // Fixed Pixel Logic: Append 'px' to the integer from config
+                    root.setProperty('--bay-height', (cfg.layout.bay_height_px || 380) + 'px');
+                    root.setProperty('--bay-min-width', (cfg.layout.bay_width_min_px || 40) + 'px');
 
                     document.getElementById('chassis-name').innerText = cfg.hardware.hba_name;
-
                     document.getElementById('legend-box').innerHTML = `
                         <div class="legend-item"><div class="led-small" style="background:${cfg.colors.led_online}"></div> ONLINE</div>
                         <div class="legend-item"><div class="led-small" style="background:${cfg.colors.led_resilver}"></div> RESILVER</div>
@@ -196,7 +169,6 @@
                     wasCorrupt = data.corrupt;
                 }
 
-                // Disk topology updates
                 const slotContainer = document.getElementById('slot-container');
                 const pciKey = Object.keys(data.topology)[0];
                 const disks = data.topology[pciKey];
@@ -204,55 +176,28 @@
                 disks.forEach((disk, idx) => {
                     let el = document.getElementById(`disk-${idx}`);
                     if (!el) {
-                        el = document.createElement('div');
-                        el.id = `disk-${idx}`;
-                        el.className = 'caddy';
-                        el.innerHTML = `
-                            <div class="led-group"><div class="led status-led"></div><div class="led activity-led"></div></div>
-                            <div class="bay-id"></div>
-                            <div class="info-container"><div class="info"></div></div>
-                            <div class="latch"><div class="latch-button"></div></div>
-                        `;
+                        el = document.createElement('div'); el.id = `disk-${idx}`; el.className = 'caddy';
+                        el.innerHTML = `<div class="led-group"><div class="led status-led"></div><div class="led activity-led"></div></div><div class="bay-id"></div><div class="info-container"><div class="info"></div></div><div class="latch"><div class="latch-button"></div></div>`;
                         slotContainer.appendChild(el);
                     }
-
                     const isPresent = disk.status === 'PRESENT';
                     const infoDiv = el.querySelector('.info');
                     const activityLed = el.querySelector('.activity-led');
                     const statusLed = el.querySelector('.status-led');
-                    
                     el.classList.toggle('status-empty', !isPresent);
-
                     const diskSignature = `${disk.sn}-${disk.size}-${disk.pool}-${isPresent}`;
                     if (el.dataset.signature !== diskSignature) {
                         el.querySelector('.bay-id').innerHTML = `${disk.bay.split(' ')[0]}<br>${disk.bay.split(' ')[1]||''}`;
-                        if (isPresent) {
-                            infoDiv.innerHTML = `
-                                <span style="color: var(--color-sn);">${disk.sn}</span>
-                                <span style="color: #666; margin: 0 3px;">|</span>
-                                <span style="color: var(--color-size);">${disk.size}</span>
-                                <br>
-                                <span style="color: var(--color-pool); font-size: 0.85em; opacity: 0.9;">${disk.pool}</span>
-                            `;
-                        } else {
-                            infoDiv.innerHTML = '';
-                        }
+                        if (isPresent) { infoDiv.innerHTML = `<span style="color: var(--color-sn);">${disk.sn}</span><span style="color: #666; margin: 0 3px;">|</span><span style="color: var(--color-size);">${disk.size}</span><br><span style="color: var(--color-pool); font-size: 0.85em; opacity: 0.9;">${disk.pool}</span>`; }
+                        else { infoDiv.innerHTML = ''; }
                         el.dataset.signature = diskSignature;
                     }
-
                     statusLed.className = `led status-led ${isPresent ? disk.led : ''}`;
-                    if (isPresent && disk.active) activityLed.classList.add('blue'); 
-                    else activityLed.classList.remove('blue');
+                    if (isPresent && disk.active) activityLed.classList.add('blue'); else activityLed.classList.remove('blue');
                 });
-
-            } catch (e) { 
-                console.error(e);
-                document.getElementById('host-title').classList.add('corrupt');
-            }
+            } catch (e) { console.error(e); document.getElementById('host-title').classList.add('corrupt'); }
         }
-
-        update();
-        setInterval(update, 100);
+        update(); setInterval(update, 100);
     </script>
 </body>
 </html>
