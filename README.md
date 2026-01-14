@@ -7,17 +7,20 @@ A dashboard to show my disk array arangement, status and activity
 1) SSH into the TrueNAS Scale console
 
 2) You are going to want to install these files on one of your Pools
-mkdir -p /mnt/[ Pool Name ]/scripts/disk_lights
 
-3) For testing purposes the script must be run from within the folder
-cd /mnt/[ Pool Name ]/scripts/disk_lights
+             mkdir -p /mnt/[ Pool Name ]/scripts/disk_lights
 
-4) Using WINScp or some other file copying software, copy the sensor.py and index.html files to the 'disk_lights' folder.
+4) For testing purposes the script must be run from within the folder
 
-5) give service.py the following permissions
-          chmod +x /mnt/[ Pool Name ]/scripts/disk_lights/service.py 
+          cd /mnt/[ Pool Name ]/scripts/disk_lights
 
-7) enable the service / manual
+5) Using WINScp or some other file copying software, copy the sensor.py and index.html files to the 'disk_lights' folder.
+
+6) give service.py the following permissions
+
+             chmod +x /mnt/[ Pool Name ]/scripts/disk_lights/service.py 
+
+8) enable the service / manual
    a)  run the service
 
          nohup python3 /mnt/Data1/apps/disk_lights/service.py > /dev/null 2>&1 &
