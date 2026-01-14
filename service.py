@@ -8,7 +8,7 @@ EXPECTED_LAYOUT = {"0000:00:10.0": {"name": "Main HBA Storage", "bays": 16}}
 ZFS_CONFIG = {
     "show_index": True,             # Set to False to hide the "- 1" numbering
     "pool_separator": " - ",        # The string between PoolName and Index
-    "unallocated_label": "FREE",     # Label for drives not in a pool
+    "unallocated_label": "FREE",    # Label for drives not in a pool
     "use_nbsp": True                # Uses non-breaking spaces for alignment
 }
 
