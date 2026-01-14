@@ -107,6 +107,9 @@ The logic assumes a specific physical setup based on my hardware:
 > [!NOTE]
 > Since I don't use a backplane, the HBA cannot report the physical "slot" location. The dashboard assumes the drives are physically arranged in the order the cables are plugged in. To change the display order, simply swap the SATA connectors on the physical drives.
 
+## Developer Notes
+If you want to delve deeper into how the code works, read [Developer_Notes.md](https://github.com/iamawumpas/TrueNAS-Scale-Drive-Bay-Assignment/blob/main/Developer_Notes.md).
+
 ---
 
 ## Future Plans
