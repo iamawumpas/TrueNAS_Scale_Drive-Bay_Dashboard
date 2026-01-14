@@ -118,14 +118,24 @@ def update_heavy_stats():
                     lsblk = subprocess.check_output(['lsblk', '-dbno', 'SERIAL,SIZE', entry.path], text=True).strip().split()
                     sn = lsblk[0][-3:] if lsblk else "???"
                     raw_bytes = int(lsblk[1]) if len(lsblk) > 1 else 0
-                    # Standardized calculation to prevent float variations
                     size_tb = "{:.1f}TB".format(raw_bytes / (1024**4))
                 except: 
                     sn, size_tb = "???", "???"
                 
                 pool_label = zfs_pool_map.get(dev_name, ZFS_CONFIG["unallocated_label"])
                 state = zfs_state_map.get(dev_name, "UNUSED")
-                led = "green" if state == "ONLINE" else "purple" if state == "UNUSED" else "orange"
+                
+                # Updated Mapping for 3D LED States
+                if state == "ONLINE":
+                    led = "green"
+                elif state == "RESILVER" or state == "REPLACING":
+                    led = "white"
+                elif state == "OFFLINE" or state == "FAULTED":
+                    led = "red"
+                elif state == "UNUSED":
+                    led = "purple"
+                else:
+                    led = "orange" # ATTN / DEGRADED
                 
                 if bay_num < 16:
                     new_topology[pci_addr][bay_num] = {
