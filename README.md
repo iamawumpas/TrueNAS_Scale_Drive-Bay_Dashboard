@@ -9,7 +9,9 @@ A dashboard to show my disk array arangement, status and activity.
 - TrueNAS Scale (Community Edition) does not have a dashboard widget that shows drive status
 - Tracing which drive is having a problem in TrueNAS is a long and involved process (OK I am lazy)
 - I like blinky lights.
-- My home lab is just that.....a lab. There are wires everywhere and the whole system is cobbled together from old PCs. servers, and so-forth. I like to play, rather than have everything perfect.....and then there's the whole $$$ thing. If I could afford a 45 Drives Storinator or even a secondhand disk store chasis I would be using it, but then again I would still want the blinky light.... I am Gen X afterall.
+- My home lab is just that.....a lab. There are wires everywhere and the whole system is cobbled together from old PCs. servers, and so-forth. I like to play, rather than have everything perfect
+&emsp;
+And then there's the whole $$$ thing. If I could afford a 45 Drives Storinator or even a secondhand disk store chasis I would be using it, but then again I would still want the blinky lights.... I am Gen X afterall.
 &emsp;
 &emsp;
 ## What Does It Do?
