@@ -1,7 +1,8 @@
 # TrueNAS Scale Drive Bay Assignment
 A dashboard to show my disk array arrangement, status, and activity.
 
-<img width="1919" height="546" alt="image" src="https://github.com/user-attachments/assets/e72efdba-2e79-49ae-b1ef-247839e4e32b" />
+<img width="1917" height="572" alt="image" src="https://github.com/user-attachments/assets/5a9643ff-624d-4526-b142-a1174e65039a" />
+
 
 
 ---
