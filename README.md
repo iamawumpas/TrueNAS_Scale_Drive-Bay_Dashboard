@@ -8,14 +8,15 @@ A dashboard to show my disk array arangement, status and activity.
 - I don't have a disk storage chassis.
 - TrueNAS Scale (Community Edition) does not have a dashboard widget that shows drive status
 - Tracing which drive is having a problem in TrueNAS is a long and involved process (OK I am lazy)
-- I like blinky lights
+- I like blinky lights.
+- My home lab is just that.....a lab. There are wires everywhere and the whole system is cobbled together from old PCs. servers, and so-forth. I like to play, rather than have everything perfect.....and then there's the whole $$$ thing. If I could afford a 45 Drives Storinator or even a secondhand disk store chasis I would be using it, but then again I would still want the blinky light.... I am Gen X afterall.
 &emsp;
 &emsp;
 ## What Does It Do?
-As the above mage shows, this wee script generates a virtual Drive Storage Chassis. It shows:
+As the above image shows, this wee script generates a virtual Drive Storage Chassis. It shows:
 - the arrangement of the physical drives (as detected by the HBA and which cables are attached to the drives - I do not have a backplane)
 - the formatted Drive Capacity | the last 3 digits of the drive serial number (I label my disks with the last 3 digits of their serial number to make it easy to trace faulty drives)
-- Drive read/write activity - blue blinky LED
+- Drive read/write activity - Blue blinky LED
 - Drive status
   - Green LED = Drive is connected and functioning normally
   - Orange LED = Drive is connected, but some errors are reported by TrueNAS Scale
@@ -93,8 +94,8 @@ this is the daemon that will interrogate TrueNAS and your HBA to identify
 - the number of used ports,
 - the serial number of each disk (for identification purposes),
 - the slot number on each breakout cable (see **Logic**),
-- the disk capacity,
-- the drive status,
+- the [formatted] disk capacity, not the vdev capacity
+- the drive status as reported by TrueNAS,
 - and read/write activity.
 &emsp;
 It is also a very basic web server which will serve the data to what ever browser you are using to see the dashboard. It uses port 8010 be default, but you can change this in the script.
@@ -113,3 +114,9 @@ The logic assumes the following:
 &emsp;
 - the drives are physically in the order displayed since the HBA-to-SATA cables are arranged this way. As there is currently no backplane implemented in my set-up, the HBA cannot report the actual physicl connections. To change the order of the drives displyed, change the SATA connector plugged into the drive.
 
+&emsp;
+&emsp;
+## Future Plans
+- Once I have other devices to play with, I may change the logic to better design the chassis around the device that TrueNAS is reporting it is connected to.
+- Add Pool Label to the drives to better identify which drives are connected to which pool.
+- 
