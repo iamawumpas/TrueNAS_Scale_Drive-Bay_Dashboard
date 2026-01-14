@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HBA Storage Topology</title>
+    <style>
+        body { 
+            background: #050505; color: #eee; font-family: 'Segoe UI', sans-serif; 
+            margin: 0; padding: 15px; overflow: hidden; height: 100vh;
+            display: flex; flex-direction: column; box-sizing: border-box;
+        }
+        
+        .header { flex: 0 0 auto; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        
+        #canvas {
+            flex: 1 1 auto; display: flex; align-items: flex-start; justify-content: center; padding-top: 2vh;
+        }
+
+        /* --- Dark Grey Brushed Chassis --- */
+        .storage-unit { 
+            background-color: #1a1a1a;
+            background-image: 
+                repeating-linear-gradient(rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 2px),
+                linear-gradient(115deg, #111 0%, #222 30%, #333 45%, #222 60%, #111 100%);
+            background-size: 100% 2px, 100% 100%;
+            border: 1px solid #333; padding: 20px; border-radius: 8px; width: 100%; height: fit-content;
+            box-shadow: inset 0 0 20px #000, 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        .unit-header-container {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;
+        }
+
+        .unit-header { 
+            color: #008cff; font-weight: bold; font-size: 1.2vw; 
+            text-transform: uppercase; border-left: 4px solid #008cff; padding-left: 10px;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        /* --- Legend Key --- */
+        .unit-legend {
+            display: flex; gap: 1.2vw; font-size: 0.7vw; color: #aaa;
+            text-transform: uppercase; font-weight: bold;
+            background: rgba(0,0,0,0.4); padding: 6px 12px;
+            border-radius: 4px; border: 1px solid #333;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 0.4vw; }
+        .led-small { width: 0.7vw; height: 0.7vw; border-radius: 50%; background: #111; }
+
+        /* --- Caddy & Layout --- */
+        .slots { display: flex; gap: 0.5vw; width: 100%; justify-content: space-between; }
+
+        .caddy { 
+            background: #121212; 
+            background-image: 
+                linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, #181818 0%, #2a2a2a 50%, #181818 100%);
+            background-size: 3px 100%, 100% 100%; 
+            border: 1px solid #333; border-radius: 3px; 
+            display: flex; flex-direction: column; align-items: center; 
+            position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+            flex: 1 1 0; min-width: 40px; height: 48vh; padding: 1.5vh 0 0 0; 
+            border-top: 4px solid #444; box-sizing: border-box; overflow: hidden;
+        }
+
+        /* Layer 1: The Grill Background */
+        .caddy::before {
+            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.85; 
+            background-image: radial-gradient(circle, #000 42%, transparent 45%), radial-gradient(circle, #000 42%, transparent 45%);
+            background-size: 18px 18px; background-position: 0 0, 9px 9px; pointer-events: none; z-index: 1;
+        }
+
+        /* Layer 2: The Metallic Shine Overlay */
+        .caddy::after {
+            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 10%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            z-index: 2; pointer-events: none;
+        }
+
+        /* --- Layer 5: Front-facing Content (LEDs, IDs, Latches) --- */
+        .led-group, .bay-id, .info-container, .latch {
+            position: relative;
+            z-index: 5; /* Forces content to be visible on top of the grill/shine */
+        }
+
+        .led-group { 
+            display: flex; justify-content: space-around; width: 100%; padding: 0 10%; 
+            margin-bottom: 1.5vh; height: 1.2vw;
+        }
+
+        .led { 
+            width: 1vw; height: 1vw; min-width: 10px; min-height: 10px; 
+            border-radius: 50%; background: #0a0a0a; 
+            box-shadow: inset 0 0 3px #000, 0 0 2px rgba(255,255,255,0.05); 
+        }
+
+        /* --- LED Color States --- */
+        .green  { background: #00ff00; box-shadow: 0 0 12px #00ff00, inset 0 0 4px #fff; }
+        .purple { background: #8000ff; box-shadow: 0 0 12px #8000ff, inset 0 0 4px #fff; }
+        .orange { background: #ffaa00; box-shadow: 0 0 12px #ffaa00, inset 0 0 4px #fff; }
+        .white  { background: #ffffff; box-shadow: 0 0 15px #ffffff, inset 0 0 4px #fff; animation: resilver-glow 1s infinite alternate; }
+        .red    { background: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 4px #fff; animation: fault-pulse 0.8s infinite; }
+        .blue   { background: #008cff; box-shadow: 0 0 14px #008cff, inset 0 0 4px #fff; animation: pulse 0.1s infinite alternate; }
+
+        @keyframes pulse { from { opacity: 1; } to { opacity: 0.6; } }
+        @keyframes fault-pulse { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
+        @keyframes resilver-glow { from { filter: brightness(1); box-shadow: 0 0 10px #fff; } to { filter: brightness(1.8); box-shadow: 0 0 20px #fff; } }
+
+        /* --- Weathered Industrial Text --- */
+        .bay-id, .info {
+            filter: url(#heavy-scratch);
+            -webkit-mask-image: repeating-linear-gradient(45deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 96%, rgba(0,0,0,0.2) 100%);
+            -webkit-mask-size: 12px 12px;
+        }
+
+        .bay-id { 
+            font-size: 1.3vw; font-weight: bold; color: #ffaa00; text-align: center; 
+            line-height: 1.1; text-transform: uppercase; margin-bottom: 2vh;
+            text-shadow: 0px 0px 5px #000, 0px 0px 10px #000;
+        }
+
+        .info-container { flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; overflow: hidden; }
+        .info { 
+            font-size: 1.3vw; font-weight: bold; color: #fff; font-family: 'Courier New', monospace;
+            transform: rotate(-90deg); white-space: nowrap; 
+            text-shadow: 0px 0px 5px #000, 0px 0px 10px #000;
+        }
+
+        /* --- Caddy Latch Handle --- */
+        .latch {
+            width: 100%; height: 6vh; background: #1a1a1a;
+            border-top: 2px solid #333; display: flex; align-items: center; justify-content: center;
+        }
+
+        .latch-button {
+            width: 60%; height: 60%; background: #0c0c0c;
+            border-radius: 2px; border: 1px solid #333;
+            box-shadow: inset 0 2px 5px #000; display: flex; align-items: center; justify-content: center;
+        }
+
+        .latch-button::after {
+            content: ""; width: 70%; height: 40%;
+            background: repeating-linear-gradient(0deg, #222, #222 2px, transparent 2px, transparent 4px);
+            opacity: 0.5;
+        }
+
+        .status-empty .info { color: transparent; mask-image: none; } 
+    </style>
+</head>
+<body>
+    <svg style="position: absolute; width: 0; height: 0;">
+        <filter id="heavy-scratch">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3.0" />
+        </filter>
+    </svg>
+
+    <div class="header"><h2 id="host-title">[ INITIALIZING... ]</h2></div>
+    
+    <div id="canvas">
+        <div class="storage-unit">
+            <div class="unit-header-container">
+                <div class="unit-header">Main Storage Array</div>
+                
+                <div class="unit-legend">
+                    <div class="legend-item"><div class="led-small green"></div> ONLINE</div>
+                    <div class="legend-item"><div class="led-small white"></div> RESILVER</div>
+                    <div class="legend-item"><div class="led-small orange"></div> ATTN</div>
+                    <div class="legend-item"><div class="led-small red"></div> FAULT</div>
+                    <div class="legend-item"><div class="led-small purple"></div> SPARE</div>
+                    <div class="legend-item"><div class="led-small blue"></div> ACTIVITY</div>
+                </div>
+            </div>
+            <div class="slots" id="slot-container"></div>
+        </div>
+    </div>
+
+    <script>
+        async function update() {
+            try {
+                const res = await fetch(`http://${window.location.host}/data`);
+                const data = await res.json();
+                document.getElementById('host-title').innerText = `[ ${data.hostname.toUpperCase()} ]`;
+                
+                const slotContainer = document.getElementById('slot-container');
+                const pciKey = Object.keys(data.topology)[0]; 
+                const disks = data.topology[pciKey];
+
+                disks.forEach((disk, idx) => {
+                    let el = document.getElementById(`disk-${idx}`);
+                    if (!el) {
+                        el = document.createElement('div');
+                        el.id = `disk-${idx}`;
+                        slotContainer.appendChild(el);
+                    }
+                    const isPresent = disk.status === 'PRESENT';
+                    el.className = `caddy ${!isPresent ? 'status-empty' : ''}`;
+                    
+                    el.innerHTML = `
+                        <div class="led-group">
+                            <div class="led ${isPresent ? disk.led : ''}"></div>
+                            <div class="led ${isPresent && disk.active ? 'blue' : ''}"></div>
+                        </div>
+                        <div class="bay-id">${disk.bay.split(' ')[0]}<br>${disk.bay.split(' ')[1]||''}</div>
+                        <div class="info-container">
+                            <span class="info">${isPresent ? disk.size + ' | ' + disk.sn : ''}</span>
+                        </div>
+                        <div class="latch"><div class="latch-button"></div></div>
+                    `;
+                });
+            } catch (e) { console.error(e); }
+        }
+        update(); setInterval(update, 100);
+    </script>
+</body>
+</html>
