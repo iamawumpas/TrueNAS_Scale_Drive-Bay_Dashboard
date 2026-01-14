@@ -1,117 +1,72 @@
-# TrueNAS Scale Drive Bay Assignment
-A dashboard to show my disk array arrangement, status, and activity.
+# TrueNAS Scale Drive Bay Assignment Dashboard
 
-![Dashboard Preview](https://github.com/user-attachments/assets/2700a1bc-75f2-4fb2-825d-8c9a03b3310c)
+A real-time, web-based visual dashboard for monitoring physical drive health, activity, and ZFS pool assignments on TrueNAS Scale.
 
----
+<img width="1917" height="570" alt="image" src="https://github.com/user-attachments/assets/f7a620ba-10ba-40ca-9a7e-c5ea055c8b4c" />
 
-## Why?
-* **No Chassis:** I don't have a dedicated disk storage chassis.
-* **UI Gaps:** TrueNAS Scale (Community Edition) lacks a dashboard widget that visually shows drive status.
-* **Laziness is a Virtue:** Tracing a specific drive in TrueNAS is a long and involved process. I wanted a shortcut.
-* **Blinky Lights:** I like them. Simple as that.
-* **Home Lab Life:** My lab is just that—a lab. There are wires everywhere and the system is cobbled together from old PCs and servers. I prefer playing with the tech over making it "perfect."
 
-And then there's the whole $$$ thing. If I could afford a 45Drives Storinator or a secondhand disk storage chassis, I’d be using it—but I would still want the blinky lights. I am Gen X, after all.
+## Features
 
----
+-   **Physical Mapping**: Correlates ZFS Part-UUIDs and block devices to their physical HBA slots.
+-   **ZFS Awareness**: Automatically parses `zpool status` to display Pool Names and disk indices (e.g., `Data-1`, `Data-2`).
+-   **Real-time I/O Monitoring**: High-frequency polling of `/proc/diskstats` drives a "Blue" activity LED for every disk.
+-   **Health Status**: Visual LED indicators for ZFS health (ONLINE, UNUSED, or ATTENTION).
+-   **Configurable UI**: Easily adjust colors, font sizes, and labels via a simple dictionary in the Python script.
+-   **Smart Formatting**: Automatically converts disk capacity to TB and displays the last 3 digits of serial numbers for quick physical identification.
 
-## What Does It Do?
-This script generates a virtual Drive Storage Chassis dashboard. It displays:
+## New in this Version
 
-* **Physical Arrangement:** Shows drives as detected by the HBA and the specific breakout cables attached (since I don't have a backplane).
-* **Identification:** Displays formatted Drive Capacity and the **last 3 digits of the drive serial number** (I label my physical disks this way for easy tracing).
-* **Activity:** Real-time read/write activity via a blue "blinky" LED.
-* **Status Indicators:**
-    * **Green:** Drive is connected and functioning normally.
-    * **Orange:** Drive is connected, but TrueNAS is reporting errors.
-    * **White:** Drive is connected and currently resilvering.
-    * **Red:** Drive is connected but marked Offline by TrueNAS.
-    * **Purple:** Drive is connected but is a spare or unallocated.
+-   **ZFS UUID Parser**: No longer relies on simple device names; correctly maps drives using ZFS internal unique identifiers.
+-   **TB Conversion**: Displays human-readable Terabyte sizes.
+-   **User-Configurable Styles**: Dedicated `UI_CONFIG` and `ZFS_CONFIG` variables for easy layout adjustments.
+-   **Enhanced Readability**: Larger font sizes and color-coded information (Yellow Serials, Pink Sizes, White Pool Names).
 
----
+## Prerequisites
 
-## Installation
+-   **TrueNAS Scale** (Linux-based)
+-   **Python 3.x**
+-   Root/Sudo access (required to read `lsblk` serials and `zpool status`)
 
-1.  **SSH into the TrueNAS Scale console.**
-2.  **Create a directory on one of your Pools:**
+## Installation & Setup
+
+1.  **Download the files**:
+    -   `service.py` (The Backend)
+    -   `index.html` (The Frontend)
+
+2.  **Identify your HBA PCI Address**:
+    Run `ls -l /dev/disk/by-path` to find the PCI address of your storage controller (e.g., `0000:00:10.0`).
+
+3.  **Configure `service.py`**:
+    Update the `EXPECTED_LAYOUT` dictionary with your PCI address and the number of drive bays.
+    ```python
+    EXPECTED_LAYOUT = {"0000:00:10.0": {"name": "Main Storage", "bays": 16}}
+    ```
+
+4.  **Run the service**:
     ```bash
-    mkdir -p /mnt/[Pool_Name]/scripts/disk_lights
-    ```
-3.  **Navigate to the folder:**
-    ```bash
-    cd /mnt/[Pool_Name]/scripts/disk_lights
-    ```
-4.  **Upload Files:** Use WinSCP or your preferred file transfer tool to copy `service.py` and `index.html` into this folder.
-5.  **Set Permissions:** ```bash
-    chmod +x /mnt/[Pool_Name]/scripts/disk_lights/service.py
-    ```
-6.  **Run the Service Manually (for testing):**
-    ```bash
-    nohup python3 service.py > /dev/null 2>&1 &
-    ```
-    If successful, you should see a PID response like: `[1] 3321474`
-
-7.  **Verify the Service:**
-    ```bash
-    ps aux | grep service.py
-    ```
-    You should see two entries. The first is the running script; the second is your search command (`grep`). If you only see the `grep` entry, the service failed to start.
-
-8.  **Stop the Service (if needed):**
-    ```bash
-    pkill -9 -f service.py
+    sudo python3 service.py
     ```
 
-9.  **Set up Automation:**
-    To ensure the dashboard starts automatically, go to the TrueNAS Web UI:
-    * Navigate to **System Settings > Advanced > Init/Shutdown Scripts**.
-    * Click **Add**.
-    * **Description:** `Disk Light Service`
-    * **Type:** `Script`
-    * **Script:** `python3 /mnt/[Pool_Name]/scripts/disk_lights/service.py`
-    * **When:** `Post Init`
-    * **Save.**
+5.  **Access the Dashboard**:
+    Open your browser and navigate to `http://your-truenas-ip:8010`.
 
----
+## Configuration Options
 
-## What do the files do?
+You can customize the dashboard by editing the variables at the top of `service.py`:
 
-### `service.py`
-This is the daemon that interrogates TrueNAS and your HBA to identify:
-* The number of used ports.
-* Disk serial numbers.
-* Slot numbers on breakout cables (see **Logic**).
-* Formatted disk capacity (not vdev capacity).
-* TrueNAS drive status and read/write activity.
-
-It also acts as a basic web server to host the dashboard. It uses **port 8010** by default (this can be changed within the script).
-
-### `index.html`
-Contains the HTML and embedded CSS needed to render the dashboard. Currently, this is a "read-only" view and is not interactive.
-
----
-
-## Logic
-The logic assumes a specific physical setup based on my hardware:
-* The HBA has **4 ports**.
-* Each port uses a breakout cable supporting **4 SATA drives**.
-
-| Port | SATA Slots |
+| Variable | Description |
 | :--- | :--- |
-| **Port 1** | SATA 1-4 |
-| **Port 2** | SATA 5-8 |
-| **Port 3** | SATA 9-12 |
-| **Port 4** | SATA 13-16 |
+| `UI_CONFIG['font_size_info']` | Adjusts the size of Serial Numbers and Capacities. |
+| `UI_CONFIG['color_sn']` | Sets the color of the Serial Number (default: Yellow). |
+| `ZFS_CONFIG['show_index']` | Toggles the numbering suffix on pool names (e.g., the "- 1" in "Data-1"). |
+| `ZFS_CONFIG['pool_separator']` | Change the character between the pool name and index. |
 
-> [!NOTE]
-> Since I don't use a backplane, the HBA cannot report the physical "slot" location. The dashboard assumes the drives are physically arranged in the order the cables are plugged in. To change the display order, simply swap the SATA connectors on the physical drives.
+## How it Works
 
-## Developer Notes
-If you want to delve deeper into how the code works, read [Developer_Notes.md](https://github.com/iamawumpas/TrueNAS-Scale-Drive-Bay-Assignment/blob/main/Developer_Notes.md).
+1.  The **Python Backend** runs a high-frequency thread to monitor disk activity and a 5-second interval thread to poll hardware stats.
+2.  It serves a JSON object containing the hostname, UI configurations, and the disk topology map.
+3.  The **HTML Frontend** uses Vanilla JavaScript to fetch this data and update the DOM 10 times per second, ensuring the activity LEDs feel responsive.
 
----
+## License
 
-## Future Plans
-* **Dynamic Logic:** Detect the specific device TrueNAS reports to better design the chassis layout automatically.
-* **Pool Labeling:** Add Pool names to the drive icons to identify which disks belong to which VDEV/Pool.
+MIT License - Feel free to use and modify for your own home lab!
