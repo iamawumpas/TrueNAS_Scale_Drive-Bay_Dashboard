@@ -29,9 +29,11 @@ If you see the hostname in the dashboard **pulsing slowly** with the message `co
 ### Default settings in config.json
 ```json
 {
+    "__REMARK_NETWORK": "Port the web dashboard will be accessible on.",
     "network": {
         "port": 8010
     },
+    "__REMARK_LAYOUT": "Visual sizing. VH = % of screen height. PX = Minimum fixed width.",
     "layout": {
         "chassis_count": 1,
         "bays_per_chassis": 16,
@@ -40,10 +42,12 @@ If you see the hostname in the dashboard **pulsing slowly** with the message `co
         "bay_height_vh": 48,
         "bay_width_min_px": 40
     },
+    "__REMARK_HARDWARE": "The PCI address of your HBA (find via lspci).",
     "hardware": {
         "hba_pci_address": "0000:00:10.0",
         "hba_name": "Main HBA Storage"
     },
+    "__REMARK_COLORS": "Hex codes for the UI theme and LED status colors.",
     "colors": {
         "page_background": "#050505",
         "chassis_background": "#1a1a1a",
@@ -58,6 +62,7 @@ If you see the hostname in the dashboard **pulsing slowly** with the message `co
         "led_unused": "#8000ff",
         "led_activity": "#008cff"
     },
+    "__REMARK_ZFS": "Formatting for pool names and unallocated drive labels.",
     "zfs_settings": {
         "show_index": true,
         "pool_separator": " - ",
