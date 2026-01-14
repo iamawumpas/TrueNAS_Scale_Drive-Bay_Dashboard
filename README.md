@@ -87,6 +87,7 @@ This is the daemon that interrogates TrueNAS and your HBA to identify:
 * Slot numbers on breakout cables (see **Logic**).
 * Formatted disk capacity (not vdev capacity).
 * TrueNAS drive status and read/write activity.
+* Pool names, and which drives are allocated to each pool and their order.
 
 Limited customisation can now be made from within the service.py script in the --- CONFIGURATION SECTION ----.
 
