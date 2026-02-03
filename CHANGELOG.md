@@ -1,5 +1,12 @@
 # Storage Dashboard - Change Log
 
+## Version 19:
+* **New Logic to identify the number of bays to draw per chassis**
+    * the logic will pole each PCI device to see if:
+        * there is a backplane(s) and how many physical disks can be attached, or
+        * scan the vendor CLI to see how many physical lanes there are, or (fallback)
+        * use manually entered values in config.json
+
 ## Version 18.5:
 * **Excuded Virtual PCI Devices**
     * the logic now scans for virtual devices and excludes them from the display.

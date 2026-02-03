@@ -119,11 +119,24 @@ def get_config_controller_override(pci_address, config):
 
         ports = entry.get("ports")
         lanes = entry.get("lanes_per_port") or entry.get("lanes")
-        if isinstance(ports, (int, float)) and isinstance(lanes, (int, float)):
+        max_bays = entry.get("max_bays") or entry.get("bays") or entry.get("bay_count")
+
+        override = {}
+        if isinstance(ports, (int, float)):
             ports = int(ports)
+            if ports > 0:
+                override["ports"] = ports
+        if isinstance(lanes, (int, float)):
             lanes = int(lanes)
-            if ports > 0 and lanes > 0:
-                return ports, lanes
+            if lanes > 0:
+                override["lanes"] = lanes
+        if isinstance(max_bays, (int, float)):
+            max_bays = int(max_bays)
+            if max_bays > 0:
+                override["max_bays"] = max_bays
+
+        if override:
+            return override
 
     return None
 
@@ -238,8 +251,12 @@ def get_controller_capacity(pci_address, config=None):
     - Each port can directly connect to 4 physical disks
     """
     override = get_config_controller_override(pci_address, config)
-    override_ports = override[0] if override else 0
-    override_lanes = override[1] if override else 0
+    override_ports = override.get("ports", 0) if override else 0
+    override_lanes = override.get("lanes", 0) if override else 0
+    override_bays = override.get("max_bays", 0) if override else 0
+
+    if override_bays > 0:
+        return override_bays, False, override_ports, False
 
     slot_count = find_enclosure_slot_count(pci_address)
     if slot_count > 0:

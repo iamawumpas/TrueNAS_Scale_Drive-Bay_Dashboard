@@ -23,7 +23,11 @@ async function update() {
                 }
 
                 const slotContainer = document.getElementById(`slots-${pci}`);
-                slotContainer.style.gridTemplateColumns = `repeat(${chassisData.disks.length}, 4.5vw)`;
+                const maxBays = chassisData.settings.max_bays;
+                const diskCount = chassisData.disks.length;
+                slotContainer.style.gridTemplateColumns = `repeat(${maxBays}, 4.5vw)`;
+                
+                console.log(`[${pci}] Max Bays: ${maxBays}, Disk Array Length: ${diskCount}`);
 
                 const warning = document.getElementById(`capacity-warning-${pci}`);
                 if (warning) {
@@ -38,6 +42,7 @@ async function update() {
                         el.id = `disk-${pci}-${idx}`;
                         el.innerHTML = createBayHTML(idx); 
                         slotContainer.appendChild(el);
+                        console.log(`  Created bay ${idx} (${disk.status})`);
                     }
                     
                     const info = getDiskData(disk);
