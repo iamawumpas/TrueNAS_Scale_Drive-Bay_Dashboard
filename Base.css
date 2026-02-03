@@ -12,8 +12,7 @@
 /* Dashboard Layout */
 #canvas {
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 40px; 
+    flex-direction: column;
+    gap: 20px; 
     padding: 20px;
 }
