@@ -69,13 +69,33 @@ def count_controller_ports(pci_address):
     return ports
 
 def get_controller_capacity(pci_address):
+    """
+    Determine the total number of drive bays based on PCI device configuration.
+    
+    Condition 1: Backplane Exists
+    - If backplane is detected, calculate: 4 ports × 40 slots per backplane = 160 bays
+    - Each port connects to one backplane with 40 slots
+    
+    Condition 2: No Backplane (Direct Attached Disks)
+    - If no backplane: 4 ports × 4 disks per port = 16 bays
+    - Each port can directly connect to 4 physical disks
+    """
     slot_count = find_enclosure_slot_count(pci_address)
     if slot_count > 0:
+        # Backplane exists - calculate total capacity
+        # 4 ports × 40 slots per backplane = 160 total bays
+        ports = count_controller_ports(pci_address)
+        if ports > 0:
+            total_bays = ports * slot_count
+            return total_bays, True, ports
         return slot_count, True, 0
 
     ports = count_controller_ports(pci_address)
     if ports > 0:
-        return ports * DEFAULT_TARGETS_PER_PORT, False, ports
+        # No backplane - direct attached disks
+        # Each port can connect to DEFAULT_TARGETS_PER_PORT disks
+        total_bays = ports * DEFAULT_TARGETS_PER_PORT
+        return total_bays, False, ports
 
     return 0, False, 0
 
