@@ -5,6 +5,76 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(BASE_DIR, 'config.json')
 PORT = 8010
 
+def is_virtual_storage_controller(pci_address):
+    """
+    Detect if a PCI device is a virtual storage controller vs physical hardware.
+    Returns True if virtual (hypervisor), False if physical (bare metal or passthrough).
+    """
+    # Normalize PCI address format (handle both formats: 0000:00:07.1 or 0000-00-07-1)
+    normalized = pci_address.replace('-', ':').replace('.', ':')
+    parts = normalized.split(':')
+    if len(parts) == 4:
+        # Convert back to kernel format with dots
+        pci_path = f"{parts[0]}:{parts[1]}:{parts[2]}.{parts[3]}"
+    else:
+        pci_path = pci_address
+    
+    sysfs_path = f"/sys/bus/pci/devices/{pci_path}"
+    
+    if not os.path.exists(sysfs_path):
+        return True  # If can't verify, assume virtual to be safe
+    
+    try:
+        # Read vendor ID
+        vendor_file = os.path.join(sysfs_path, 'vendor')
+        device_file = os.path.join(sysfs_path, 'device')
+        class_file = os.path.join(sysfs_path, 'class')
+        
+        if not os.path.exists(vendor_file):
+            return True
+        
+        with open(vendor_file, 'r') as f:
+            vendor_id = f.read().strip()
+        
+        # Known virtual/emulated storage controller vendors
+        virtual_vendors = {
+            '0x1af4': 'Red Hat (Virtio)',
+            '0x15ad': 'VMware',
+            '0x80ee': 'VirtualBox',
+            '0x1414': 'Microsoft Hyper-V',
+            '0x1b36': 'QEMU',
+        }
+        
+        if vendor_id in virtual_vendors:
+            return True
+        
+        # Check for QEMU/emulated Intel PIIX devices (common in VMs)
+        if vendor_id == '0x8086':  # Intel
+            with open(device_file, 'r') as f:
+                device_id = f.read().strip()
+            
+            # PIIX3/PIIX4 IDE controllers (used in QEMU/KVM/Proxmox)
+            piix_devices = ['0x7010', '0x7111', '0x7112', '0x7113']
+            if device_id in piix_devices:
+                return True
+        
+        # Check device class - storage controllers should be 0x01xxxx
+        if os.path.exists(class_file):
+            with open(class_file, 'r') as f:
+                device_class = f.read().strip()
+            
+            # If not a storage controller at all, exclude it
+            if not device_class.startswith('0x01'):
+                return True
+        
+        # If we get here, it's likely a real physical controller
+        # (LSI/Broadcom, Adaptec, Marvell, etc.)
+        return False
+        
+    except Exception as e:
+        # On error, assume virtual to avoid showing unknown devices
+        return True
+
 GLOBAL_DATA = {
     "topology": {},
     "io_activity": {},
@@ -63,6 +133,10 @@ def topology_scanner_thread():
                         if not pci_match: continue
                         pci_raw = pci_match.group(1)
                         pci_key = pci_raw.replace(':', '-').replace('.', '-')
+                        
+                        # Skip virtual storage controllers (only show physical HBAs/RAID controllers)
+                        if is_virtual_storage_controller(pci_raw):
+                            continue
                         
                         if pci_key not in new_topology:
                             new_topology[pci_key] = {"settings": {"pci_raw": pci_raw}, "disks": []}

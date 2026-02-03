@@ -1,12 +1,32 @@
 # Storage Dashboard - Change Log
 
+## Version 18.5:
+* **Excuded Virtual PCI Devices**
+    * the logic now scans for virtual devices and excludes them from the display.
+    * **Virtual Controllers filtered out:**
+      * Hyper-V/Azure controllers (vendor 0x1414 - Microsoft)
+      * Virtio controllers (vendor 0x1af4 - Red Hat/KVM)
+      * VMware controllers (vendor 0x15ad)
+      * VirtualBox controllers (vendor 0x80ee)
+      * QEMU controllers (vendor 0x1b36)
+      * Emulated Intel PIIX IDE controllers (devices 0x7111, 0x7113 - used by Proxmox/QEMU)
+      * Any non-storage class devices (not class 0x01xxxx)
+    * **HBAs/RAID/Physical Controllers Scanned for:**
+      * LSI/Broadcom HBAs (SAS/SATA controllers)
+      * Adaptec RAID controllers
+      * Marvell controllers
+      * Intel real PCIe storage controllers
+    
+    Any PCI-passthrough devices (appear as their real vendor/device IDs)
+
+
 ## Version 18: 
-* ** Removed hardcoded logic
+* ** Removed hardcoded logic**
      * hostname: Now taken from netbios name
      * device PCI address: now enumerates all devices
      * number of drive bays in a chassis: where possible, the script will poll the HBA/RAID device for the maximum number of possible connections, and then draw the approprite number of bays in the chassis. This will extend to SATA expanders and backplanes if present.
-* ** Visual Tweaks
-* ** Multiple Threads
+* ** Visual Tweaks**
+* ** Multiple Threads**
     * shifted the Activity and Status logic, PCI Device scanning to one thread updating in real time ( < 100ms)
     * shifted Drive Size, ID, Serial Number, and Pool Name to a different thread ( 5 - 10 s). Chassis and Bay redraws are also in this thread
 
