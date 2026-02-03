@@ -1,9 +1,9 @@
 # TrueNAS Scale Drive Bay Assignment
+**version 18**
+
+
 A dashboard to show my disk array arrangement, status, and activity.
-
-<img width="1919" height="566" alt="image" src="https://github.com/user-attachments/assets/a1a61e78-c26e-49db-8e7f-a661e7e7233d" />
-
-
+![Disk Chassis](image.png)
 
 
 ---
@@ -26,11 +26,14 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
 * **Identification:** Displays formatted Drive Capacity and the **last 3 digits of the drive serial number** (I label my physical disks this way for easy tracing).
 * **Activity:** Real-time read/write activity via a blue "blinky" LED.
 * **Status Indicators:**
-    * **Green:** Drive is connected and functioning normally.
-    * **Orange:** Drive is connected, but TrueNAS is reporting errors.
-    * **White:** Drive is connected and currently resilvering.
-    * **Red:** Drive is connected but marked Offline by TrueNAS.
+    * **Green:** Drive is connected, and TrueNAS reports it is functioning normally.
+    * **Green [Blinking]** Drive is connected but TrueNAS is reporting *OFFLINE*
+    * **Orange:** Drive is connected, but TrueNAS is reporting error(s).
+    * **Silver:** Drive is connected and currently resilvering.
+    * **Red:** Drive is connected, but marked Offline by TrueNAS.
     * **Purple:** Drive is connected but is a spare or unallocated.
+    * **Purple/Orange [Blinking]** Drive is connected and unallocated, but TrueNAS reports an error.
+    * **Purple/Red [Blinking]** Drive is conenced and unallocated, but TrueNAS reports faulted.
 
 ---
 
@@ -45,10 +48,11 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
     ```bash
     cd /mnt/[Pool_Name]/scripts/disk_lights
     ```
-4.  **Upload Files:** Use WinSCP or your preferred file transfer tool to copy `service.py` and `index.html` into this folder.
+4.  **Upload Files:** Use WinSCP or your preferred file transfer tool to copy all of the files in the disk_lights folder from this repository, into this folder.
 5.  **Set Permissions:**
     ```bash
     chmod +x /mnt/[Pool_Name]/scripts/disk_lights/service.py
+    chmod +X /mnt[Pool_Name]/scripts/disk_lights/start_up.sh
     ```
 6.  **Run the Service Manually (for testing):**
     ```bash
@@ -73,13 +77,16 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
     * Click **Add**.
     * **Description:** `Disk Light Service`
     * **Type:** `Script`
-    * **Script:** `python3 /mnt/[Pool_Name]/scripts/disk_lights/service.py`
+    * **Script:** `python3 /mnt/[Pool_Name]/scripts/disk_lights/start_up.sh`
     * **When:** `Post Init`
     * **Save.**
 
 ---
 
 ## What do the files do?
+### `start_up.sh`
+The startup script for TrueNAS to use at initialisation. Ensures the script directory is parsed to the various python and javascript files. 
+
 
 ### `service.py`
 This is the daemon that interrogates TrueNAS and your HBA to identify:
@@ -93,9 +100,6 @@ This is the daemon that interrogates TrueNAS and your HBA to identify:
 Limited customisation can now be made from within the service.py script in the --- CONFIGURATION SECTION ----.
 
 This script also acts as a basic web server to host the dashboard. It uses **port 8010** by default (this can be changed within the script).
-
-### `index.html`
-Contains the HTML and embedded CSS needed to render the dashboard. Currently, this is a "read-only" view and is not interactive.
 
 ---
 
@@ -111,8 +115,8 @@ The logic assumes a specific physical setup based on my hardware:
 | **Port 3** | SATA 9-12 |
 | **Port 4** | SATA 13-16 |
 
-> [!NOTE]
-> Since I don't use a backplane, the HBA cannot report the physical "slot" location. The dashboard assumes the drives are physically arranged in the order the cables are plugged in. To change the display order, simply swap the SATA connectors on the physical drives.
+> **[NOTE]**
+> Since I don't currently have a backplane, the HBA cannot report the physical "slot" location, but it can identify which cable a drive is connected to (mine are numbered 1, 2, 3, 4,). The dashboard assumes the drives are physically arranged in the order the cables are plugged in. To change the display order, simply swap the SATA connectors on the physical drives.
 
 ---
 ## Configuration System
@@ -129,3 +133,18 @@ The dashboard is controlled by a central `config.json` file. This file dictates 
 
 ## Future Plans
 * **Dynamic Logic:** Detect the specific device TrueNAS reports to better design the chassis layout automatically.
+* **Become Fully customisable.**
+  * adjust chassis colour scheme .
+  * adjust status LED colours, activity LED colours.
+  * adjust the dimensions of the bays.
+  * adjust the number of rows of bays per chassis.
+  * adjust chassis width.
+  * adjust drive bay colour scheme.
+  * adjust drive bay information colours.
+  * which PCI devices are displayed.
+  * drag and drop drive bays to match your physical layout.
+* **Pool IO Graphs**
+  * display the last 60s.
+  * server side cache of data.
+  * read and write data.
+  * 1 graph per pool.

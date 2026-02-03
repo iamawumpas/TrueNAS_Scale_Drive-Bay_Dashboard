@@ -1,0 +1,19 @@
+/* Base.css */
+
+/* Global Typography - Forces Calibri on all hardware labels */
+.hostname, 
+.legend-box, 
+.legend-title, 
+.legend-item, 
+.bay-id {
+    font-family: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif !important;
+}
+
+/* Dashboard Layout */
+#canvas {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 40px; 
+    padding: 20px;
+}

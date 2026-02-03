@@ -1,0 +1,101 @@
+/* Bay.css */
+
+.slots { 
+    display: grid; 
+    gap: 0.4vw; 
+    width: fit-content;
+    justify-content: start;
+}
+
+.caddy { 
+    background: #121212; 
+    background-image: linear-gradient(90deg, #181818 0%, #2a2a2a 50%, #181818 100%);
+    border: 1px solid #333; 
+    border-radius: 3px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    position: relative; 
+    width: 4.5vw; 
+    min-width: 4.5vw;
+    height: 35vh; 
+    padding-top: 1.5vh; 
+    border-top: 4px solid #444; 
+    box-sizing: border-box; 
+    overflow: hidden;
+}
+
+/* The "Grill" texture */
+.caddy::before {
+    content: ""; 
+    position: absolute; 
+    inset: 0; 
+    opacity: 0.85; 
+    z-index: 1; 
+    pointer-events: none;
+    background-image: radial-gradient(circle, #000 42%, transparent 45%), radial-gradient(circle, #000 42%, transparent 45%);
+    background-size: 18px 18px; 
+    background-position: 0 0, 9px 9px;
+}
+
+.bay-id { 
+    font-size: 0.8vw; 
+    font-weight: bold; 
+    color: #ffaa00; 
+    text-transform: uppercase; 
+    margin-bottom: 1vh; 
+    position: relative; 
+    z-index: 5; 
+}
+
+.info-container { 
+    flex-grow: 1; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    width: 100%; 
+    position: relative; 
+    z-index: 5;
+    
+    /* New constraints to prevent overlap */
+    margin-top: 1vh;     /* Creates space below the Bay Number */
+    margin-bottom: 6vh;  /* Matches the height of the .latch to stop exactly at its top edge */
+    height: auto;        /* Allows flex-grow to manage the remaining height within these margins */
+}
+
+.info-grid { 
+    transform: rotate(-90deg); 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    grid-gap: 1em; 
+    width: 45vh; 
+    font-size: 1.1vw; 
+    font-weight: bold; 
+    white-space: nowrap; 
+    line-height: 1.4;
+}
+
+.sn-cell { color: #ffff00; text-align: left; }
+.size-cell { color: #ff00ff; text-align: right; }
+.pool-cell { color: #ffffff; text-align: left; }
+.idx-cell { color: #00ffff; text-align: right; }
+
+.latch {
+    position: absolute; 
+    bottom: 0; 
+    width: 100%; 
+    height: 6vh;
+    background: linear-gradient(to bottom, #333 0%, #222 50%, #111 100%);
+    border-top: 2px solid #444; 
+    z-index: 10; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+}
+.latch::after { 
+    content: ""; 
+    width: 60%; 
+    height: 40%; 
+    background: rgba(0, 0, 0, 0.6); 
+    border-radius: 4px; 
+}
