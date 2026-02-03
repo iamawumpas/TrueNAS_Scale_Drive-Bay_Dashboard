@@ -503,6 +503,16 @@ def load_config():
         with open(CONFIG_FILE, 'r') as f:
             data = json.load(f)
         merged = _deep_merge_dict(DEFAULT_CONFIG, data)
+
+        # If new defaults were added (e.g., UI config), rewrite config.json
+        # so users can see and edit the new options directly.
+        if merged != data:
+            try:
+                with open(CONFIG_FILE, 'w') as f:
+                    json.dump(merged, f, indent=4)
+            except Exception:
+                pass
+
         CONFIG_CACHE = merged
         CONFIG_MTIME = mtime
         return merged
@@ -627,6 +637,23 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps(resp).encode())
+            return
+        elif self.path == '/livereload-status':
+            # Return modification times for watched files
+            files_to_watch = [
+                'app.js', 'Bay.js', 'Chassis.js', 'DiskInfo.js', 'LEDManager.js',
+                'style.css', 'Base.css', 'Bay.css', 'Chassis.css', 'LEDs.css', 'index.html'
+            ]
+            file_times = {}
+            for filename in files_to_watch:
+                filepath = os.path.join(BASE_DIR, filename)
+                if os.path.exists(filepath):
+                    file_times[filename] = os.path.getmtime(filepath)
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Cache-Control', 'no-cache')
+            self.end_headers()
+            self.wfile.write(json.dumps(file_times).encode())
             return
         return super().do_GET()
 

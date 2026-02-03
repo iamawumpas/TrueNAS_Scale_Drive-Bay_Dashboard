@@ -55,8 +55,10 @@
 .legend-box {
     display: flex;
     flex-direction: column;
-    flex: 1;
+    width: fit-content;
     min-width: fit-content;
+    margin-left: auto;
+    align-items: flex-end;
 }
 
 .legend-title {
