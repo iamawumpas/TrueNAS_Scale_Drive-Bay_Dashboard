@@ -25,6 +25,11 @@ async function update() {
                 const slotContainer = document.getElementById(`slots-${pci}`);
                 slotContainer.style.gridTemplateColumns = `repeat(${chassisData.disks.length}, 4.5vw)`;
 
+                const warning = document.getElementById(`capacity-warning-${pci}`);
+                if (warning) {
+                    warning.style.display = chassisData.settings.capacity_unknown ? 'block' : 'none';
+                }
+
                 chassisData.disks.forEach((disk, idx) => {
                     let el = document.getElementById(`disk-${pci}-${idx}`);
                     if (!el) {

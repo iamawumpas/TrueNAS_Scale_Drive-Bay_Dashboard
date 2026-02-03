@@ -1,4 +1,4 @@
-import http.server, socketserver, json, time, subprocess, socket, os, re, threading
+import http.server, socketserver, json, time, subprocess, socket, os, re, threading, shutil
 from zfs_logic import get_zfs_topology
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -68,7 +68,164 @@ def count_controller_ports(pci_address):
 
     return ports
 
-def get_controller_capacity(pci_address):
+def count_controller_phys(pci_address):
+    """
+    Count SAS phys (lanes) for a controller by scanning /sys/class/sas_phy
+    entries that resolve to the given PCI address.
+    """
+    pci_path = normalize_pci_address(pci_address)
+    sas_phy_root = '/sys/class/sas_phy'
+    phys = 0
+
+    if not os.path.exists(sas_phy_root):
+        return 0
+
+    for phy in os.scandir(sas_phy_root):
+        device_link = os.path.join(phy.path, 'device')
+        if os.path.exists(device_link):
+            if pci_path in os.path.realpath(device_link):
+                phys += 1
+
+    return phys
+
+def get_config_controller_override(pci_address, config):
+    if not isinstance(config, dict):
+        return None
+
+    hardware = config.get("hardware", {})
+    overrides = hardware.get("controller_overrides", [])
+
+    if isinstance(overrides, dict):
+        override_list = []
+        for key, value in overrides.items():
+            if isinstance(value, dict):
+                entry = {"pci_address": key}
+                entry.update(value)
+                override_list.append(entry)
+    elif isinstance(overrides, list):
+        override_list = overrides
+    else:
+        return None
+
+    target = normalize_pci_address(pci_address)
+    for entry in override_list:
+        if not isinstance(entry, dict):
+            continue
+        pci = entry.get("pci_address") or entry.get("pci")
+        if not pci:
+            continue
+        if normalize_pci_address(pci) != target:
+            continue
+
+        ports = entry.get("ports")
+        lanes = entry.get("lanes_per_port") or entry.get("lanes")
+        if isinstance(ports, (int, float)) and isinstance(lanes, (int, float)):
+            ports = int(ports)
+            lanes = int(lanes)
+            if ports > 0 and lanes > 0:
+                return ports, lanes
+
+    return None
+
+def _find_ircu_adapter(ircu_tool, pci_address):
+    try:
+        output = subprocess.check_output([ircu_tool, "LIST"], text=True, timeout=2)
+    except Exception:
+        return None
+
+    target = normalize_pci_address(pci_address)
+    current_adapter = None
+
+    for line in output.splitlines():
+        adapter_match = re.search(r"Adapter\s*#?\s*(\d+)", line, re.IGNORECASE)
+        if adapter_match:
+            current_adapter = adapter_match.group(1)
+
+        pci_match = re.search(r"PCI\s+Address\s*[:=]\s*([0-9a-fA-F:.]+)", line, re.IGNORECASE)
+        if pci_match and current_adapter is not None:
+            if normalize_pci_address(pci_match.group(1)) == target:
+                return current_adapter
+
+        alt_match = re.search(r"^\s*(\d+)\s+\S+\s+([0-9a-fA-F:.]+)", line)
+        if alt_match:
+            if normalize_pci_address(alt_match.group(2)) == target:
+                return alt_match.group(1)
+
+    return None
+
+def _count_ircu_phys(ircu_tool, adapter_id):
+    try:
+        output = subprocess.check_output([ircu_tool, str(adapter_id), "DISPLAY"], text=True, timeout=2)
+    except Exception:
+        return 0
+
+    count = 0
+    for line in output.splitlines():
+        if re.search(r"^\s*Phy\s*#?\s*\d+", line, re.IGNORECASE):
+            count += 1
+    return count
+
+def _find_max_phy_in_json(data):
+    max_phy = 0
+    if isinstance(data, dict):
+        for key, value in data.items():
+            if isinstance(value, (dict, list)):
+                max_phy = max(max_phy, _find_max_phy_in_json(value))
+            elif isinstance(value, (int, float)) and "phy" in str(key).lower():
+                max_phy = max(max_phy, int(value))
+    elif isinstance(data, list):
+        for item in data:
+            max_phy = max(max_phy, _find_max_phy_in_json(item))
+    return max_phy
+
+def _storcli_phy_count(pci_address):
+    try:
+        output = subprocess.check_output(["storcli", "/cALL", "show", "J"], text=True, timeout=3)
+    except Exception:
+        return 0
+
+    try:
+        payload = json.loads(output)
+    except Exception:
+        return 0
+
+    target = normalize_pci_address(pci_address)
+    controllers = payload.get("Controllers", []) if isinstance(payload, dict) else []
+    for controller in controllers:
+        response_data = controller.get("Response Data", {}) if isinstance(controller, dict) else {}
+        sys_overview = response_data.get("System Overview", []) if isinstance(response_data, dict) else []
+        if isinstance(sys_overview, list):
+            for item in sys_overview:
+                if not isinstance(item, dict):
+                    continue
+                pci = item.get("PCI Address") or item.get("PCI Address ")
+                if pci and normalize_pci_address(str(pci)) == target:
+                    return _find_max_phy_in_json(response_data)
+
+    return _find_max_phy_in_json(payload)
+
+def get_vendor_cli_phys(pci_address):
+    """
+    Optional vendor CLI detection for max phys/lanes.
+    Supports sas3ircu/sas2ircu (LSI/Broadcom) and storcli if present.
+    Returns 0 if no data is available.
+    """
+    for tool in ("sas3ircu", "sas2ircu"):
+        if shutil.which(tool):
+            adapter_id = _find_ircu_adapter(tool, pci_address)
+            if adapter_id is not None:
+                phys = _count_ircu_phys(tool, adapter_id)
+                if phys > 0:
+                    return phys
+
+    if shutil.which("storcli"):
+        phys = _storcli_phy_count(pci_address)
+        if phys > 0:
+            return phys
+
+    return 0
+
+def get_controller_capacity(pci_address, config=None):
     """
     Determine the total number of drive bays based on PCI device configuration.
     
@@ -80,24 +237,40 @@ def get_controller_capacity(pci_address):
     - If no backplane: 4 ports × 4 disks per port = 16 bays
     - Each port can directly connect to 4 physical disks
     """
+    override = get_config_controller_override(pci_address, config)
+    override_ports = override[0] if override else 0
+    override_lanes = override[1] if override else 0
+
     slot_count = find_enclosure_slot_count(pci_address)
     if slot_count > 0:
         # Backplane exists - calculate total capacity
         # 4 ports × 40 slots per backplane = 160 total bays
         ports = count_controller_ports(pci_address)
+        if ports <= 0 and override_ports > 0:
+            ports = override_ports
         if ports > 0:
             total_bays = ports * slot_count
-            return total_bays, True, ports
-        return slot_count, True, 0
+            return total_bays, True, ports, False
+        return slot_count, True, 0, False
 
     ports = count_controller_ports(pci_address)
-    if ports > 0:
-        # No backplane - direct attached disks
-        # Each port can connect to DEFAULT_TARGETS_PER_PORT disks
-        total_bays = ports * DEFAULT_TARGETS_PER_PORT
-        return total_bays, False, ports
 
-    return 0, False, 0
+    phys = count_controller_phys(pci_address)
+    if phys > 0:
+        # No backplane - direct attached disks
+        # Use SAS phy count as the maximum number of direct connections
+        return phys, False, ports, False
+
+    vendor_phys = get_vendor_cli_phys(pci_address)
+    if vendor_phys > 0:
+        return vendor_phys, False, ports, False
+
+    if override_ports > 0 and override_lanes > 0:
+        # User override: ports × lanes per port
+        total_bays = override_ports * override_lanes
+        return total_bays, False, override_ports, False
+
+    return 0, False, ports, True
 
 def is_virtual_storage_controller(pci_address):
     """
@@ -179,8 +352,55 @@ GLOBAL_DATA = {
 # config.json remarks as requested
 DEFAULT_CONFIG = {
     "__REMARK_NETWORK": "Port settings for the web dashboard.",
-    "network": {"port": 8010}
+    "network": {"port": 8010},
+    "__REMARK_HARDWARE": "Optional overrides for controller ports and lanes per port.",
+    "hardware": {
+        "controller_overrides": [
+            {
+                "pci_address": "0000:00:10.0",
+                "ports": 4,
+                "lanes_per_port": 4
+            }
+        ]
+    }
 }
+
+CONFIG_MTIME = 0
+CONFIG_CACHE = DEFAULT_CONFIG.copy()
+
+def _deep_merge_dict(base, override):
+    result = dict(base) if isinstance(base, dict) else {}
+    if not isinstance(override, dict):
+        return result
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = _deep_merge_dict(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+def load_config():
+    global CONFIG_MTIME, CONFIG_CACHE
+
+    try:
+        if not os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'w') as f:
+                json.dump(DEFAULT_CONFIG, f, indent=4)
+
+        mtime = os.path.getmtime(CONFIG_FILE)
+        if mtime == CONFIG_MTIME and CONFIG_CACHE:
+            return CONFIG_CACHE
+
+        with open(CONFIG_FILE, 'r') as f:
+            data = json.load(f)
+        merged = _deep_merge_dict(DEFAULT_CONFIG, data)
+        CONFIG_CACHE = merged
+        CONFIG_MTIME = mtime
+        return merged
+    except Exception as e:
+        print(f"config file error :: reverting to default settings ({e})")
+        CONFIG_CACHE = DEFAULT_CONFIG
+        return DEFAULT_CONFIG
 
 def get_io_snapshot():
     activity = {}
@@ -211,6 +431,7 @@ def topology_scanner_thread():
     while True:
         try:
             GLOBAL_DATA["hostname"] = socket.gethostname()
+            GLOBAL_DATA["config"] = load_config()
             uuid_map = {}
             if os.path.exists('/dev/disk/by-partuuid'):
                 for uid in os.listdir('/dev/disk/by-partuuid'):
@@ -234,11 +455,14 @@ def topology_scanner_thread():
                             continue
 
                         if pci_key not in controller_capacity:
-                            max_bays, has_backplane, ports = get_controller_capacity(pci_raw)
+                            max_bays, has_backplane, ports, capacity_unknown = get_controller_capacity(
+                                pci_raw, GLOBAL_DATA["config"]
+                            )
                             controller_capacity[pci_key] = {
                                 "max_bays": max_bays,
                                 "has_backplane": has_backplane,
-                                "ports": ports
+                                "ports": ports,
+                                "capacity_unknown": capacity_unknown
                             }
                         
                         if pci_key not in new_topology:
@@ -247,7 +471,8 @@ def topology_scanner_thread():
                                     "pci_raw": pci_raw,
                                     "max_bays": controller_capacity[pci_key]["max_bays"],
                                     "has_backplane": controller_capacity[pci_key]["has_backplane"],
-                                    "ports": controller_capacity[pci_key]["ports"]
+                                    "ports": controller_capacity[pci_key]["ports"],
+                                    "capacity_unknown": controller_capacity[pci_key]["capacity_unknown"]
                                 },
                                 "disks": []
                             }

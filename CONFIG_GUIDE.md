@@ -45,7 +45,14 @@ If you see the hostname in the dashboard **pulsing slowly** with the message `co
     "__REMARK_HARDWARE": "The PCI address of your HBA (find via lspci).",
     "hardware": {
         "hba_pci_address": "0000:00:10.0",
-        "hba_name": "Main HBA Storage"
+        "hba_name": "Main HBA Storage",
+        "controller_overrides": [
+            {
+                "pci_address": "0000:00:10.0",
+                "ports": 4,
+                "lanes_per_port": 4
+            }
+        ]
     },
     "__REMARK_COLORS": "Hex codes for the UI theme and LED status colors.",
     "colors": {

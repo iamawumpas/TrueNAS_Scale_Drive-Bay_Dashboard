@@ -25,6 +25,9 @@ export function createChassisHTML(pci, data) {
                     </div>
                 </div>
             </div>
+            <div class="capacity-warning" id="capacity-warning-${pci}">
+                Capacity unknown. Please configure ports and lanes in config.json.
+            </div>
             <div class="slots" id="slots-${pci}"></div>
         </div>
     `;

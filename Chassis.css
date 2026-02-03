@@ -107,3 +107,14 @@
     gap: 10px;
     padding-top: 20px;
 }
+
+.capacity-warning {
+    display: none;
+    margin-top: 16px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 170, 0, 0.6);
+    background: rgba(255, 170, 0, 0.08);
+    color: #ffaa00;
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
+}
