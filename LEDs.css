@@ -20,8 +20,8 @@
 .legend-box::before {
     content: "";
     position: absolute;
-    top: -50%;
-    left: -50%;
+    top: var(--legend-flare-offset-y);
+    left: var(--legend-flare-offset-x);
     width: 200%;
     height: 200%;
     background: linear-gradient(
@@ -31,7 +31,7 @@
         transparent 55%
     );
     pointer-events: none;
-    transform: rotate(30deg);
+    transform: rotate(var(--legend-flare-angle));
 }
 
 /* Sticker Artifact: Air Bubbles */
@@ -50,12 +50,12 @@
 }
 
 .legend-title {
-    font-size: 1.25rem;
-    font-weight: 800;
-    font-family: "Calibri", Tahoma, sans-serif;
-    color: rgba(255, 255, 255, 0.9);
+    font-size: var(--legend-title-size);
+    font-weight: var(--legend-title-weight);
+    font-family: var(--legend-font);
+    color: var(--legend-title-color);
     margin-bottom: 10px;
-    text-transform: uppercase;
+    text-transform: var(--legend-transform);
     letter-spacing: 0.5px;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
@@ -70,9 +70,9 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.65rem;
+    font-size: var(--legend-size);
     font-weight: 700;
-    color: rgba(200, 200, 200, 0.85);
+    color: var(--legend-color);
     white-space: nowrap;
     line-height: 1.8;
 }
@@ -114,15 +114,15 @@
 }
 
 /* LED Status Colors */
-.status-led.green  { background: radial-gradient(circle at 35% 35%, #fff 0%, #00ff00 45%, #000 100%) !important; box-shadow: 0 0 10px #00ff00; }
-.status-led.orange { background: radial-gradient(circle at 35% 35%, #fff 0%, #ffaa00 45%, #000 100%) !important; box-shadow: 0 0 10px #ffaa00; }
-.status-led.purple { background: radial-gradient(circle at 35% 35%, #fff 0%, #a000ff 45%, #000 100%) !important; box-shadow: 0 0 10px #a000ff; }
-.status-led.red    { background: radial-gradient(circle at 35% 35%, #fff 0%, #ff0000 45%, #000 100%) !important; box-shadow: 0 0 10px #ff0000; }
-.status-led.white  { background: radial-gradient(circle at 35% 35%, #fff 0%, #ffffff 45%, #000 100%) !important; box-shadow: 0 0 10px #ffffff; }
+.status-led.green  { background: radial-gradient(circle at 35% 35%, #fff 0%, var(--led-allocated-healthy) 45%, #000 100%) !important; box-shadow: 0 0 10px var(--led-allocated-healthy); }
+.status-led.orange { background: radial-gradient(circle at 35% 35%, #fff 0%, var(--led-error) 45%, #000 100%) !important; box-shadow: 0 0 10px var(--led-error); }
+.status-led.purple { background: radial-gradient(circle at 35% 35%, #fff 0%, var(--led-unallocated) 45%, #000 100%) !important; box-shadow: 0 0 10px var(--led-unallocated); }
+.status-led.red    { background: radial-gradient(circle at 35% 35%, #fff 0%, var(--led-faulted) 45%, #000 100%) !important; box-shadow: 0 0 10px var(--led-faulted); }
+.status-led.white  { background: radial-gradient(circle at 35% 35%, #fff 0%, var(--led-resilvering) 45%, #000 100%) !important; box-shadow: 0 0 10px var(--led-resilvering); }
 
 .activity-led.active {
-    background: radial-gradient(circle at 35% 35%, #fff 0%, #008cff 45%, #000 100%) !important;
-    box-shadow: 0 0 12px #008cff;
+    background: radial-gradient(circle at 35% 35%, #fff 0%, var(--led-activity) 45%, #000 100%) !important;
+    box-shadow: 0 0 12px var(--led-activity);
     animation: led-pulse 0.1s infinite alternate;
 }
 
@@ -132,11 +132,11 @@
 }
 
 /* Solid Legend Dots */
-.dot.green  { background: #00ff00 !important; }
-.dot.orange { background: #ffaa00 !important; }
-.dot.purple { background: #a000ff !important; }
-.dot.red    { background: #ff0000 !important; }
-.dot.white  { background: #c0c0c0 !important; }
+.dot.green  { background: var(--led-allocated-healthy) !important; }
+.dot.orange { background: var(--led-error) !important; }
+.dot.purple { background: var(--led-unallocated) !important; }
+.dot.red    { background: var(--led-faulted) !important; }
+.dot.white  { background: var(--led-resilvering) !important; }
 
 /* Multi-Tone Legend Dots (Definitive Clipping Fix) */
 .dot.allocated-offline, 
@@ -159,6 +159,6 @@
     border-radius: 50%;
 }
 
-.dot.allocated-offline::before { background: linear-gradient(135deg, #00ff00 50%, #111 50%); }
-.dot.unalloc-error::before     { background: linear-gradient(135deg, #a000ff 50%, #ffaa00 50%); }
-.dot.unalloc-fault::before     { background: linear-gradient(135deg, #a000ff 50%, #ff0000 50%); }
+.dot.allocated-offline::before { background: linear-gradient(135deg, var(--led-allocated-healthy) 50%, var(--led-allocated-offline) 50%); }
+.dot.unalloc-error::before     { background: linear-gradient(135deg, var(--led-unallocated) 50%, var(--led-unalloc-error) 50%); }
+.dot.unalloc-fault::before     { background: linear-gradient(135deg, var(--led-unallocated) 50%, var(--led-unalloc-fault) 50%); }

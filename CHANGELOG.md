@@ -1,5 +1,8 @@
 # Storage Dashboard - Change Log
 
+## Version 19.1:
+* **Moved configurable items to 'config.json' 
+
 ## Version 19:
 * **New Logic to identify the number of bays to draw per chassis**
     * the logic will pole each PCI device to see if:

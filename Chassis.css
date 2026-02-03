@@ -1,13 +1,13 @@
 /* Chassis.css */
 
 .storage-unit { 
-    background-color: #1a1a1a;
+    background-color: var(--chassis-bg-base);
     background-image: repeating-linear-gradient(rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 2px),
                       linear-gradient(115deg, #111 0%, #222 30%, #333 45%, #222 60%, #111 100%);
-    border: 1px solid #333; 
+    border: 1px solid var(--chassis-border); 
     padding: 20px; 
     border-radius: 8px; 
-    box-shadow: inset 0 0 20px #000, 0 10px 30px rgba(0,0,0,0.8);
+    box-shadow: inset 0 0 20px #000, 0 10px 30px var(--chassis-shadow);
     display: inline-block;
     width: auto;
     min-width: fit-content;
@@ -20,7 +20,7 @@
     flex-wrap: wrap;     /* Allows legend to drop below hostname on very narrow chassis */
     align-items: flex-end; 
     padding: 10px 10px 20px 10px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid var(--chassis-header-divider);
     gap: 30px;           /* 30px gap between hostname and legend */
 }
 
@@ -31,20 +31,24 @@
 }
 
 .hostname { 
-    color: #ffffff; 
-    font-size: 2.8rem; 
-    font-weight: 900; 
-    text-transform: uppercase; 
+    color: var(--server-name-color); 
+    font-family: var(--server-name-font); 
+    font-size: var(--server-name-size); 
+    font-weight: var(--server-name-weight); 
+    font-style: var(--server-name-style);
+    text-transform: var(--server-name-transform); 
     margin: 0;
     line-height: 0.9;
 }
 
 .pci-address-grey { 
-    color: #666; 
-    font-family: 'Courier New', monospace; 
-    font-size: 1.1rem; 
+    color: var(--pci-address-color); 
+    font-family: var(--pci-address-font); 
+    font-size: var(--pci-address-size); 
+    font-weight: var(--pci-address-weight);
+    font-style: var(--pci-address-style);
+    text-transform: var(--pci-address-transform);
     margin-top: 5px;
-    font-weight: bold;
 }
 
 /* Legend Box styling */
@@ -56,9 +60,12 @@
 }
 
 .legend-title {
-    color: #888;
+    color: var(--legend-title-color);
     font-size: 0.8rem;
-    text-transform: uppercase;
+    font-family: var(--legend-font);
+    font-weight: var(--legend-weight);
+    font-style: var(--legend-style);
+    text-transform: var(--legend-transform);
     letter-spacing: 1px;
     margin-bottom: 8px;
 }
@@ -77,8 +84,12 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #ccc;
-    font-size: 0.75rem;
+    color: var(--legend-color);
+    font-size: var(--legend-size);
+    font-family: var(--legend-font);
+    font-weight: var(--legend-weight);
+    font-style: var(--legend-style);
+    text-transform: var(--legend-transform);
     white-space: nowrap;
 }
 

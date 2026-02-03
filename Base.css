@@ -1,12 +1,93 @@
 /* Base.css */
 
-/* Global Typography - Forces Calibri on all hardware labels */
-.hostname, 
+:root {
+    --server-name-color: #ffffff;
+    --server-name-font: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    --server-name-size: 2.8rem;
+    --server-name-weight: 700;
+    --server-name-style: normal;
+    --server-name-transform: uppercase;
+
+    --pci-address-color: #666666;
+    --pci-address-font: "Courier New", monospace;
+    --pci-address-size: 1.1rem;
+    --pci-address-weight: 700;
+    --pci-address-style: normal;
+    --pci-address-transform: none;
+
+    --legend-color: #cccccc;
+    --legend-font: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    --legend-size: 0.75rem;
+    --legend-weight: 700;
+    --legend-style: normal;
+    --legend-transform: uppercase;
+    --legend-title-color: rgba(255, 255, 255, 0.9);
+    --legend-title-size: 1.25rem;
+    --legend-title-weight: 800;
+    --legend-flare-angle: 30deg;
+    --legend-flare-offset-x: -50%;
+    --legend-flare-offset-y: -50%;
+
+    --bay-id-color: #ffaa00;
+    --bay-id-font: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    --bay-id-size: 0.8vw;
+    --bay-id-weight: 700;
+    --bay-id-style: normal;
+    --bay-id-transform: uppercase;
+
+    --disk-serial-color: #ffff00;
+    --disk-serial-font: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    --disk-serial-size: 1.1vw;
+    --disk-serial-weight: 700;
+    --disk-serial-style: normal;
+    --disk-serial-transform: none;
+
+    --disk-size-color: #ff00ff;
+    --disk-size-font: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    --disk-size-size: 1.1vw;
+    --disk-size-weight: 700;
+    --disk-size-style: normal;
+    --disk-size-transform: none;
+
+    --disk-pool-color: #ffffff;
+    --disk-pool-font: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    --disk-pool-size: 1.1vw;
+    --disk-pool-weight: 700;
+    --disk-pool-style: normal;
+    --disk-pool-transform: none;
+
+    --disk-index-color: #00ffff;
+    --disk-index-font: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    --disk-index-size: 1.1vw;
+    --disk-index-weight: 700;
+    --disk-index-style: normal;
+    --disk-index-transform: none;
+
+    --chassis-bg-base: #1a1a1a;
+    --chassis-border: #333333;
+    --chassis-shadow: rgba(0,0,0,0.8);
+    --chassis-header-divider: rgba(255,255,255,0.1);
+
+    --bay-bg-base: #121212;
+    --bay-border: #333333;
+    --bay-top-border: #444444;
+
+    --led-allocated-healthy: #00ff00;
+    --led-allocated-offline: #555555;
+    --led-error: #ffaa00;
+    --led-faulted: #ff0000;
+    --led-resilvering: #ffffff;
+    --led-unallocated: #a000ff;
+    --led-unalloc-error: #ffaa00;
+    --led-unalloc-fault: #ff0000;
+    --led-activity: #008cff;
+}
+
+/* Global Typography - Default to legend font unless overridden */
 .legend-box, 
 .legend-title, 
-.legend-item, 
-.bay-id {
-    font-family: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif !important;
+.legend-item {
+    font-family: var(--legend-font) !important;
 }
 
 /* Dashboard Layout */

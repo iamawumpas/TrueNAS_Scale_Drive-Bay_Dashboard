@@ -379,6 +379,98 @@ DEFAULT_CONFIG = {
                 "lanes_per_port": 4
             }
         ]
+    },
+    "__REMARK_UI": "Dashboard UI configuration. All values are applied live without restart.\nUse style arrays to combine: [\"bold\", \"italic\", \"allcaps\"]",
+    "ui": {
+        "__REMARK_SERVER_NAME": "Server Name display (top-left).",
+        "server_name": {
+            "color": "#ffffff",
+            "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+            "size": "2.8rem",
+            "style": ["bold", "allcaps"]
+        },
+        "__REMARK_PCI_ADDRESS": "PCI address line under server name.",
+        "pci_address": {
+            "color": "#666666",
+            "font": "Courier New, monospace",
+            "size": "1.1rem",
+            "style": ["bold"]
+        },
+        "__REMARK_LEGEND": "Legend label box in the header.",
+        "legend": {
+            "title_color": "rgba(255, 255, 255, 0.9)",
+            "title_size": "1.25rem",
+            "title_weight": "800",
+            "item_color": "#cccccc",
+            "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+            "size": "0.75rem",
+            "style": ["bold", "allcaps"],
+            "flare": {
+                "angle": "30deg",
+                "offset_x": "-50%",
+                "offset_y": "-50%"
+            }
+        },
+        "__REMARK_BAY_ID": "Bay label (e.g., BAY 1).",
+        "bay_id": {
+            "color": "#ffaa00",
+            "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+            "size": "0.8vw",
+            "style": ["bold", "allcaps"]
+        },
+        "__REMARK_DISK_SERIAL": "Disk serial suffix text.",
+        "disk_serial": {
+            "color": "#ffff00",
+            "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+            "size": "1.1vw",
+            "style": ["bold"]
+        },
+        "__REMARK_DISK_SIZE": "Disk capacity text.",
+        "disk_size": {
+            "color": "#ff00ff",
+            "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+            "size": "1.1vw",
+            "style": ["bold"]
+        },
+        "__REMARK_DISK_POOL": "Pool name text.",
+        "disk_pool": {
+            "color": "#ffffff",
+            "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+            "size": "1.1vw",
+            "style": ["bold"]
+        },
+        "__REMARK_DISK_INDEX": "Pool index text (e.g., #2).",
+        "disk_index": {
+            "color": "#00ffff",
+            "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+            "size": "1.1vw",
+            "style": ["bold"]
+        },
+        "__REMARK_CHASSIS": "Chassis enclosure body styling.",
+        "chassis": {
+            "background_base": "#1a1a1a",
+            "border": "#333333",
+            "shadow": "rgba(0,0,0,0.8)",
+            "header_divider": "rgba(255,255,255,0.1)"
+        },
+        "__REMARK_BAY": "Drive bay card styling.",
+        "bay": {
+            "background_base": "#121212",
+            "border": "#333333",
+            "top_border": "#444444"
+        },
+        "__REMARK_LEDS": "LED and legend dot colors.",
+        "led_colors": {
+            "allocated_healthy": "#00ff00",
+            "allocated_offline": "#555555",
+            "error": "#ffaa00",
+            "faulted": "#ff0000",
+            "resilvering": "#ffffff",
+            "unallocated": "#a000ff",
+            "unalloc_error": "#ffaa00",
+            "unalloc_fault": "#ff0000",
+            "activity": "#008cff"
+        }
     }
 }
 
@@ -525,7 +617,7 @@ def topology_scanner_thread():
 class FastHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/data':
-            resp = {"hostname": GLOBAL_DATA["hostname"], "topology": {}}
+            resp = {"hostname": GLOBAL_DATA["hostname"], "topology": {}, "config": GLOBAL_DATA.get("config", {})}
             for pci, data in GLOBAL_DATA["topology"].items():
                 resp["topology"][pci] = {
                     "settings": data["settings"],
