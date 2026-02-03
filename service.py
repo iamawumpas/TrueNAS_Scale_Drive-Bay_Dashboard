@@ -4,6 +4,80 @@ from zfs_logic import get_zfs_topology
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(BASE_DIR, 'config.json')
 PORT = 8010
+DEFAULT_TARGETS_PER_PORT = 4
+
+def normalize_pci_address(pci_address):
+    normalized = pci_address.replace('-', ':').replace('.', ':')
+    parts = normalized.split(':')
+    if len(parts) == 4:
+        return f"{parts[0]}:{parts[1]}:{parts[2]}.{parts[3]}"
+    return pci_address
+
+def find_enclosure_slot_count(pci_address):
+    enclosure_root = '/sys/class/enclosure'
+    if not os.path.exists(enclosure_root):
+        return 0
+
+    pci_path = normalize_pci_address(pci_address)
+
+    for enclosure in os.scandir(enclosure_root):
+        if not enclosure.is_dir():
+            continue
+        device_link = os.path.join(enclosure.path, 'device')
+        if not os.path.exists(device_link):
+            continue
+        try:
+            real_path = os.path.realpath(device_link)
+            if pci_path not in real_path:
+                continue
+
+            slot_count = 0
+            for entry in os.scandir(enclosure.path):
+                if entry.is_dir():
+                    if (os.path.exists(os.path.join(entry.path, 'device')) or
+                        os.path.exists(os.path.join(entry.path, 'status'))):
+                        slot_count += 1
+            if slot_count > 0:
+                return slot_count
+        except Exception:
+            continue
+
+    return 0
+
+def count_controller_ports(pci_address):
+    pci_path = normalize_pci_address(pci_address)
+    ports = 0
+
+    sas_host_root = '/sys/class/sas_host'
+    if os.path.exists(sas_host_root):
+        for host in os.scandir(sas_host_root):
+            device_link = os.path.join(host.path, 'device')
+            if os.path.exists(device_link):
+                if pci_path in os.path.realpath(device_link):
+                    ports += 1
+        if ports > 0:
+            return ports
+
+    scsi_host_root = '/sys/class/scsi_host'
+    if os.path.exists(scsi_host_root):
+        for host in os.scandir(scsi_host_root):
+            device_link = os.path.join(host.path, 'device')
+            if os.path.exists(device_link):
+                if pci_path in os.path.realpath(device_link):
+                    ports += 1
+
+    return ports
+
+def get_controller_capacity(pci_address):
+    slot_count = find_enclosure_slot_count(pci_address)
+    if slot_count > 0:
+        return slot_count, True, 0
+
+    ports = count_controller_ports(pci_address)
+    if ports > 0:
+        return ports * DEFAULT_TARGETS_PER_PORT, False, ports
+
+    return 0, False, 0
 
 def is_virtual_storage_controller(pci_address):
     """
@@ -125,6 +199,7 @@ def topology_scanner_thread():
             
             zfs_map = get_zfs_topology(uuid_map)
             new_topology = {}
+            controller_capacity = {}
             path_dir = '/dev/disk/by-path'
             if os.path.exists(path_dir):
                 for entry in os.scandir(path_dir):
@@ -137,9 +212,25 @@ def topology_scanner_thread():
                         # Skip virtual storage controllers (only show physical HBAs/RAID controllers)
                         if is_virtual_storage_controller(pci_raw):
                             continue
+
+                        if pci_key not in controller_capacity:
+                            max_bays, has_backplane, ports = get_controller_capacity(pci_raw)
+                            controller_capacity[pci_key] = {
+                                "max_bays": max_bays,
+                                "has_backplane": has_backplane,
+                                "ports": ports
+                            }
                         
                         if pci_key not in new_topology:
-                            new_topology[pci_key] = {"settings": {"pci_raw": pci_raw}, "disks": []}
+                            new_topology[pci_key] = {
+                                "settings": {
+                                    "pci_raw": pci_raw,
+                                    "max_bays": controller_capacity[pci_key]["max_bays"],
+                                    "has_backplane": controller_capacity[pci_key]["has_backplane"],
+                                    "ports": controller_capacity[pci_key]["ports"]
+                                },
+                                "disks": []
+                            }
                         
                         match = re.search(r'(phy|ata|sas|port|slot|exp)(\d+)', entry.name)
                         bay_num = int(match.group(2)) if match else 0
@@ -158,6 +249,13 @@ def topology_scanner_thread():
                             "status": "PRESENT", "sn": sn, "size_bytes": size, "dev_name": dev_name,
                             "pool_name": z["pool"], "pool_idx": z["idx"], "state": z["state"]
                         }
+
+            for pci_key, data in new_topology.items():
+                max_bays = data["settings"].get("max_bays", 0)
+                if max_bays and len(data["disks"]) < max_bays:
+                    while len(data["disks"]) < max_bays:
+                        data["disks"].append({"status": "EMPTY"})
+
             GLOBAL_DATA["topology"] = new_topology
         except Exception as e: print(f"Scanner Error: {e}")
         time.sleep(5)
