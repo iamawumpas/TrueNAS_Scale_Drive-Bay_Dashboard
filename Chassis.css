@@ -12,6 +12,27 @@
     width: auto;
     min-width: fit-content;
     margin-bottom: 25px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Chassis flare effect - glossy light reflection */
+.storage-unit::before {
+    content: "";
+    position: absolute;
+    top: var(--legend-flare-offset-y);
+    left: var(--legend-flare-offset-x);
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg, 
+        transparent 45%, 
+        rgba(255, 255, 255, 0.04) 50%, 
+        transparent 55%
+    );
+    pointer-events: none;
+    transform: rotate(var(--legend-flare-angle));
+    z-index: 1;
 }
 
 .chassis-header {
@@ -22,6 +43,8 @@
     padding: 10px 10px 20px 10px;
     border-bottom: 1px solid var(--chassis-header-divider);
     gap: 30px;           /* 30px gap between hostname and legend */
+    position: relative;
+    z-index: 2;
 }
 
 .header-left {

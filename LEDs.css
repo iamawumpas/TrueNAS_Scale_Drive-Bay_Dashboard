@@ -10,28 +10,10 @@
     font-family: "Calibri", Tahoma, sans-serif;
     width: fit-content;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     box-shadow: 
         2px 2px 10px rgba(0, 0, 0, 0.4),
         inset 0 0 15px rgba(255, 255, 255, 0.02);
-}
-
-/* Sticker Artifact: Glossy Reflection */
-.legend-box::before {
-    content: "";
-    position: absolute;
-    top: var(--legend-flare-offset-y);
-    left: var(--legend-flare-offset-x);
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(
-        45deg, 
-        transparent 45%, 
-        rgba(255, 255, 255, 0.04) 50%, 
-        transparent 55%
-    );
-    pointer-events: none;
-    transform: rotate(var(--legend-flare-angle));
 }
 
 /* Sticker Artifact: Air Bubbles */
