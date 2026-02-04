@@ -3,6 +3,7 @@ from zfs_logic import get_zfs_topology
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(BASE_DIR, 'config.json')
+STYLE_CONFIG_FILE = os.path.join(BASE_DIR, 'config.json')
 PORT = 8010
 DEFAULT_TARGETS_PER_PORT = 4
 
@@ -366,6 +367,58 @@ GLOBAL_DATA = {
     "config": {}
 }
 
+# Hardcoded defaults for config.json - used to rebuild config.json if needed
+DEFAULT_CONFIG_JSON = {
+    "fonts": {
+        "default": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+        "monospace": "Courier New, monospace"
+    },
+    "fontSizes": {
+        "legendTitle": "1.25rem",
+        "legend": "0.75rem",
+        "serverName": "2.8rem",
+        "pciAddress": "1.1rem",
+        "bayId": "0.8vw",
+        "diskSerial": "1.1vw",
+        "diskSize": "1.1vw",
+        "diskPool": "1.1vw",
+        "diskIndex": "1.1vw"
+    },
+    "fontStyles": {
+        "bold": "bold",
+        "italic": "italic",
+        "underline": "underline",
+        "smallCaps": "small-caps",
+        "allCaps": "uppercase"
+    },
+    "colors": {
+        "serverName": "#ffffff",
+        "pciAddress": "#666666",
+        "legend": "#cccccc",
+        "legendTitle": "rgba(255, 255, 255, 0.9)",
+        "bayId": "#ffaa00",
+        "diskSerial": "#ffff00",
+        "diskSize": "#ff00ff",
+        "diskPool": "#ffffff",
+        "diskIndex": "#00ffff",
+        "chassisBgBase": "#1a1a1a",
+        "chassisBorder": "#333333",
+        "chassisShadow": "rgba(0,0,0,0.8)",
+        "bayBgBase": "#121212",
+        "bayBorder": "#333333",
+        "bayTopBorder": "#444444",
+        "ledAllocatedHealthy": "#00ff00",
+        "ledAllocatedOffline": "#555555",
+        "ledError": "#ffaa00",
+        "ledFaulted": "#ff0000",
+        "ledResilvering": "#ffffff",
+        "ledUnallocated": "#a000ff",
+        "ledUnallocError": "#ffaa00",
+        "ledUnallocFault": "#ff0000",
+        "ledActivity": "#008cff"
+    }
+}
+
 # config.json remarks as requested
 DEFAULT_CONFIG = {
     "__REMARK_NETWORK": "Port settings for the web dashboard.",
@@ -521,6 +574,122 @@ def load_config():
         CONFIG_CACHE = DEFAULT_CONFIG
         return DEFAULT_CONFIG
 
+def load_style_config():
+    """Load style configuration from config.json for fonts, colors, etc."""
+    try:
+        # First, try to load the main config file
+        if not os.path.exists(CONFIG_FILE):
+            # If no config exists, return default style config
+            return DEFAULT_CONFIG_JSON
+
+        with open(CONFIG_FILE, 'r') as f:
+            data = json.load(f)
+        
+        # Check if this is the new style config format (fonts, fontSizes, colors)
+        if 'fonts' in data and 'fontSizes' in data and 'colors' in data:
+            # New format - use it directly
+            merged = _deep_merge_dict(DEFAULT_CONFIG_JSON, data)
+            return merged
+        
+        # Check if this is the old UI config format (ui.server_name, etc.)
+        if 'ui' in data and isinstance(data['ui'], dict):
+            # Convert old format to new format
+            ui = data['ui']
+            converted = {
+                "fonts": {},
+                "fontSizes": {},
+                "colors": {}
+            }
+            
+            # Extract fonts
+            fonts_set = set()
+            for key in ['server_name', 'pci_address', 'legend', 'bay_id', 'disk_serial', 'disk_size', 'disk_pool', 'disk_index']:
+                if key in ui and isinstance(ui[key], dict) and 'font' in ui[key]:
+                    fonts_set.add(ui[key]['font'])
+            
+            if fonts_set:
+                # Identify default and monospace fonts
+                for font in fonts_set:
+                    if 'mono' in font.lower() or 'courier' in font.lower():
+                        converted['fonts']['monospace'] = font
+                    else:
+                        converted['fonts']['default'] = font
+            
+            # Extract colors and sizes
+            mapping = {
+                'server_name': 'serverName',
+                'pci_address': 'pciAddress',
+                'bay_id': 'bayId',
+                'disk_serial': 'diskSerial',
+                'disk_size': 'diskSize',
+                'disk_pool': 'diskPool',
+                'disk_index': 'diskIndex'
+            }
+            
+            for old_key, new_key in mapping.items():
+                if old_key in ui and isinstance(ui[old_key], dict):
+                    if 'color' in ui[old_key]:
+                        converted['colors'][new_key] = ui[old_key]['color']
+                    if 'size' in ui[old_key]:
+                        converted['fontSizes'][new_key] = ui[old_key]['size']
+            
+            # Extract legend colors and sizes
+            if 'legend' in ui and isinstance(ui['legend'], dict):
+                if 'item_color' in ui['legend']:
+                    converted['colors']['legend'] = ui['legend']['item_color']
+                if 'title_color' in ui['legend']:
+                    converted['colors']['legendTitle'] = ui['legend']['title_color']
+                if 'size' in ui['legend']:
+                    converted['fontSizes']['legend'] = ui['legend']['size']
+                if 'title_size' in ui['legend']:
+                    converted['fontSizes']['legendTitle'] = ui['legend']['title_size']
+            
+            # Extract chassis and bay colors
+            if 'chassis' in ui and isinstance(ui['chassis'], dict):
+                if 'background_base' in ui['chassis']:
+                    converted['colors']['chassisBgBase'] = ui['chassis']['background_base']
+                if 'border' in ui['chassis']:
+                    converted['colors']['chassisBorder'] = ui['chassis']['border']
+                if 'shadow' in ui['chassis']:
+                    converted['colors']['chassisShadow'] = ui['chassis']['shadow']
+            
+            if 'bay' in ui and isinstance(ui['bay'], dict):
+                if 'background_base' in ui['bay']:
+                    converted['colors']['bayBgBase'] = ui['bay']['background_base']
+                if 'border' in ui['bay']:
+                    converted['colors']['bayBorder'] = ui['bay']['border']
+                if 'top_border' in ui['bay']:
+                    converted['colors']['bayTopBorder'] = ui['bay']['top_border']
+            
+            # Extract LED colors
+            if 'led_colors' in ui and isinstance(ui['led_colors'], dict):
+                led_mapping = {
+                    'allocated_healthy': 'ledAllocatedHealthy',
+                    'allocated_offline': 'ledAllocatedOffline',
+                    'error': 'ledError',
+                    'faulted': 'ledFaulted',
+                    'resilvering': 'ledResilvering',
+                    'unallocated': 'ledUnallocated',
+                    'unalloc_error': 'ledUnallocError',
+                    'unalloc_fault': 'ledUnallocFault',
+                    'activity': 'ledActivity'
+                }
+                for old_key, new_key in led_mapping.items():
+                    if old_key in ui['led_colors']:
+                        converted['colors'][new_key] = ui['led_colors'][old_key]
+            
+            # Merge with defaults
+            merged = _deep_merge_dict(DEFAULT_CONFIG_JSON, converted)
+            return merged
+        
+        # If neither format, return defaults
+        return DEFAULT_CONFIG_JSON
+        
+    except Exception as e:
+        print(f"style config file error :: reverting to default settings ({e})")
+        return DEFAULT_CONFIG_JSON
+
+
 def get_io_snapshot():
     activity = {}
     try:
@@ -626,7 +795,10 @@ def topology_scanner_thread():
 
 class FastHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-        if self.path == '/data':
+        # Extract path without query string
+        path = self.path.split('?')[0]
+        
+        if path == '/data':
             resp = {"hostname": GLOBAL_DATA["hostname"], "topology": {}, "config": GLOBAL_DATA.get("config", {})}
             for pci, data in GLOBAL_DATA["topology"].items():
                 resp["topology"][pci] = {
@@ -638,11 +810,22 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(resp).encode())
             return
-        elif self.path == '/livereload-status':
+        elif path == '/style-config':
+            # Serve the style configuration (fonts, colors, etc.)
+            style_config = load_style_config()
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
+            self.end_headers()
+            self.wfile.write(json.dumps(style_config).encode())
+            return
+        elif path == '/livereload-status':
             # Return modification times for watched files
             files_to_watch = [
                 'app.js', 'Bay.js', 'Chassis.js', 'DiskInfo.js', 'LEDManager.js',
-                'style.css', 'Base.css', 'Bay.css', 'Chassis.css', 'LEDs.css', 'index.html'
+                'style.css', 'Base.css', 'Bay.css', 'Chassis.css', 'LEDs.css', 'index.html', 'config.json'
             ]
             file_times = {}
             for filename in files_to_watch:

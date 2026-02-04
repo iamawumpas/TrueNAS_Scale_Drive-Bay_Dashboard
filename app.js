@@ -4,6 +4,96 @@ import { createChassisHTML } from './Chassis.js';
 import { createBayHTML } from './Bay.js';
 
 let lastUIConfigSignature = '';
+let lastStyleConfigSignature = '';
+
+function applyStyleConfigFromJSON(styleConfig) {
+    if (!styleConfig) return;
+    
+    const signature = JSON.stringify(styleConfig);
+    if (signature === lastStyleConfigSignature) return;
+    lastStyleConfigSignature = signature;
+
+    const root = document.documentElement;
+    
+    // Apply fonts
+    if (styleConfig.fonts) {
+        if (styleConfig.fonts.default) {
+            root.style.setProperty('--font-default', styleConfig.fonts.default);
+            // Update all font variables that use default font
+            root.style.setProperty('--server-name-font', styleConfig.fonts.default);
+            root.style.setProperty('--legend-font', styleConfig.fonts.default);
+            root.style.setProperty('--bay-id-font', styleConfig.fonts.default);
+            root.style.setProperty('--disk-serial-font', styleConfig.fonts.default);
+            root.style.setProperty('--disk-size-font', styleConfig.fonts.default);
+            root.style.setProperty('--disk-pool-font', styleConfig.fonts.default);
+            root.style.setProperty('--disk-index-font', styleConfig.fonts.default);
+        }
+        if (styleConfig.fonts.monospace) {
+            root.style.setProperty('--font-monospace', styleConfig.fonts.monospace);
+            root.style.setProperty('--pci-address-font', styleConfig.fonts.monospace);
+        }
+    }
+    
+    // Apply colors
+    if (styleConfig.colors) {
+        const colorMap = {
+            'serverName': '--server-name-color',
+            'pciAddress': '--pci-address-color',
+            'legend': '--legend-color',
+            'legendTitle': '--legend-title-color',
+            'bayId': '--bay-id-color',
+            'diskSerial': '--disk-serial-color',
+            'diskSize': '--disk-size-color',
+            'diskPool': '--disk-pool-color',
+            'diskIndex': '--disk-index-color',
+            'chassisBgBase': '--chassis-bg-base',
+            'chassisBorder': '--chassis-border',
+            'chassisShadow': '--chassis-shadow',
+            'bayBgBase': '--bay-bg-base',
+            'bayBorder': '--bay-border',
+            'bayTopBorder': '--bay-top-border',
+            'ledAllocatedHealthy': '--led-allocated-healthy',
+            'ledAllocatedOffline': '--led-allocated-offline',
+            'ledError': '--led-error',
+            'ledFaulted': '--led-faulted',
+            'ledResilvering': '--led-resilvering',
+            'ledUnallocated': '--led-unallocated',
+            'ledUnallocError': '--led-unalloc-error',
+            'ledUnallocFault': '--led-unalloc-fault',
+            'ledActivity': '--led-activity'
+        };
+        
+        Object.entries(colorMap).forEach(([key, cssVar]) => {
+            if (styleConfig.colors[key]) {
+                root.style.setProperty(cssVar, styleConfig.colors[key]);
+            }
+        });
+    }
+    
+    // Apply font sizes
+    if (styleConfig.fontSizes) {
+        const sizeMap = {
+            'legendTitle': '--legend-title-size',
+            'legend': '--legend-size',
+            'serverName': '--server-name-size',
+            'pciAddress': '--pci-address-size',
+            'bayId': '--bay-id-size',
+            'diskSerial': '--disk-serial-size',
+            'diskSize': '--disk-size-size',
+            'diskPool': '--disk-pool-size',
+            'diskIndex': '--disk-index-size'
+        };
+        
+        Object.entries(sizeMap).forEach(([key, cssVar]) => {
+            if (styleConfig.fontSizes[key]) {
+                root.style.setProperty(cssVar, styleConfig.fontSizes[key]);
+            }
+        });
+    }
+    
+    console.log('Style config applied from config.json');
+}
+
 
 function applyStyleConfig(prefix, cfg) {
     if (!cfg || typeof cfg !== 'object') return;
@@ -77,6 +167,19 @@ function applyUIConfig(config) {
 
 async function update() {
     try {
+        // Load style configuration from config.json with cache busting
+        try {
+            const styleRes = await fetch('/style-config?' + Date.now());
+            if (styleRes.ok) {
+                const styleConfig = await styleRes.json();
+                applyStyleConfigFromJSON(styleConfig);
+            } else {
+                console.warn('Failed to fetch style-config:', styleRes.status);
+            }
+        } catch (styleErr) {
+            console.warn('Style config fetch error:', styleErr);
+        }
+        
         const res = await fetch('/data');
         const data = await res.json();
         const canvas = document.getElementById('canvas');

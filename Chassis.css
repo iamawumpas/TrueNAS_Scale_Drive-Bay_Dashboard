@@ -103,16 +103,16 @@
     display: inline-block;
 }
 
-.green { background-color: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
-.allocated-offline { background-color: #555; }
-.orange { background-color: #e67e22; box-shadow: 0 0 8px #e67e22; }
-.red { background-color: #e74c3c; box-shadow: 0 0 8px #e74c3c; }
-.white { background-color: #ecf0f1; box-shadow: 0 0 8px #ecf0f1; }
-.purple { background-color: #9b59b6; box-shadow: 0 0 8px #9b59b6; }
+.green { background-color: var(--led-allocated-healthy); box-shadow: 0 0 8px var(--led-allocated-healthy); }
+.allocated-offline { background-color: var(--led-allocated-offline); }
+.orange { background-color: var(--led-error); box-shadow: 0 0 8px var(--led-error); }
+.red { background-color: var(--led-faulted); box-shadow: 0 0 8px var(--led-faulted); }
+.white { background-color: var(--led-resilvering); box-shadow: 0 0 8px var(--led-resilvering); }
+.purple { background-color: var(--led-unallocated); box-shadow: 0 0 8px var(--led-unallocated); }
 
 /* Border-only dots for Unallocated Errors/Faults */
-.unalloc-error { border: 2px solid #e67e22; background: transparent; }
-.unalloc-fault { border: 2px solid #e74c3c; background: transparent; }
+.unalloc-error { border: 2px solid var(--led-unalloc-error); background: transparent; }
+.unalloc-fault { border: 2px solid var(--led-unalloc-fault); background: transparent; }
 
 .slots {
     display: flex;
@@ -127,7 +127,7 @@
     padding: 10px 12px;
     border: 1px solid rgba(255, 170, 0, 0.6);
     background: rgba(255, 170, 0, 0.08);
-    color: #ffaa00;
+    color: var(--bay-id-color);
     font-size: 0.85rem;
     letter-spacing: 0.3px;
 }

@@ -1,22 +1,29 @@
 /* Base.css */
 
 :root {
+    /* Font families - set from config.json */
+    --font-default: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    --font-monospace: "Courier New", monospace;
+    
+    /* Server Name - dynamically set from config.json */
     --server-name-color: #ffffff;
-    --server-name-font: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    --server-name-font: var(--font-default);
     --server-name-size: 2.8rem;
     --server-name-weight: 700;
     --server-name-style: normal;
     --server-name-transform: uppercase;
 
+    /* PCI Address - dynamically set from config.json */
     --pci-address-color: #666666;
-    --pci-address-font: "Courier New", monospace;
+    --pci-address-font: var(--font-monospace);
     --pci-address-size: 1.1rem;
     --pci-address-weight: 700;
     --pci-address-style: normal;
     --pci-address-transform: none;
 
+    /* Legend - dynamically set from config.json */
     --legend-color: #cccccc;
-    --legend-font: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    --legend-font: var(--font-default);
     --legend-size: 0.75rem;
     --legend-weight: 700;
     --legend-style: normal;
@@ -28,50 +35,58 @@
     --legend-flare-offset-x: -50%;
     --legend-flare-offset-y: -50%;
 
+    /* Bay ID - dynamically set from config.json */
     --bay-id-color: #ffaa00;
-    --bay-id-font: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    --bay-id-font: var(--font-default);
     --bay-id-size: 0.8vw;
     --bay-id-weight: 700;
     --bay-id-style: normal;
     --bay-id-transform: uppercase;
 
+    /* Disk Serial - dynamically set from config.json */
     --disk-serial-color: #ffff00;
-    --disk-serial-font: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    --disk-serial-font: var(--font-default);
     --disk-serial-size: 1.1vw;
     --disk-serial-weight: 700;
     --disk-serial-style: normal;
     --disk-serial-transform: none;
 
+    /* Disk Size - dynamically set from config.json */
     --disk-size-color: #ff00ff;
-    --disk-size-font: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    --disk-size-font: var(--font-default);
     --disk-size-size: 1.1vw;
     --disk-size-weight: 700;
     --disk-size-style: normal;
     --disk-size-transform: none;
 
+    /* Disk Pool - dynamically set from config.json */
     --disk-pool-color: #ffffff;
-    --disk-pool-font: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    --disk-pool-font: var(--font-default);
     --disk-pool-size: 1.1vw;
     --disk-pool-weight: 700;
     --disk-pool-style: normal;
     --disk-pool-transform: none;
 
+    /* Disk Index - dynamically set from config.json */
     --disk-index-color: #00ffff;
-    --disk-index-font: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    --disk-index-font: var(--font-default);
     --disk-index-size: 1.1vw;
     --disk-index-weight: 700;
     --disk-index-style: normal;
     --disk-index-transform: none;
 
+    /* Chassis colors - dynamically set from config.json */
     --chassis-bg-base: #1a1a1a;
     --chassis-border: #333333;
     --chassis-shadow: rgba(0,0,0,0.8);
     --chassis-header-divider: rgba(255,255,255,0.1);
 
+    /* Bay colors - dynamically set from config.json */
     --bay-bg-base: #121212;
     --bay-border: #333333;
     --bay-top-border: #444444;
 
+    /* LED colors - dynamically set from config.json */
     --led-allocated-healthy: #00ff00;
     --led-allocated-offline: #555555;
     --led-error: #ffaa00;

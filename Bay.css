@@ -9,7 +9,7 @@
 
 .caddy { 
     background: var(--bay-bg-base); 
-    background-image: linear-gradient(90deg, #181818 0%, #2a2a2a 50%, #181818 100%);
+    background-image: linear-gradient(90deg, var(--bay-bg-base) 0%, #2a2a2a 50%, var(--bay-bg-base) 100%);
     border: 1px solid var(--bay-border); 
     border-radius: 3px; 
     display: flex; 
@@ -120,8 +120,8 @@
     bottom: 0; 
     width: 100%; 
     height: 6vh;
-    background: linear-gradient(to bottom, #333 0%, #222 50%, #111 100%);
-    border-top: 2px solid #444; 
+    background: linear-gradient(to bottom, var(--bay-border) 0%, #222 50%, #111 100%);
+    border-top: 2px solid var(--bay-top-border); 
     z-index: 10; 
     display: flex; 
     justify-content: center; 

@@ -2,14 +2,13 @@
 # Navigate to the directory where the script is located
 cd "$(dirname "$0")"
 
-# clears the pycahce
-echo "Clearing __pycache__ directories..."
-rm -rf __pycache__
-
-
 # Kill any existing instance to prevent port conflicts
 echo "Stopping any existing service..."
 pkill -9 -f "python3 service.py"
+
+# clears the pycache
+echo "Clearing __pycache__ directories..."
+rm -rf __pycache__
 
 # wait 1s before restarting
 sleep 1
