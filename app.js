@@ -2,9 +2,27 @@ import { getLEDClass } from './LEDManager.js';
 import { getDiskData } from './DiskInfo.js';
 import { createChassisHTML } from './Chassis.js';
 import { createBayHTML } from './Bay.js';
+import { MenuSystem } from './MenuSystem.js';
 
 let lastUIConfigSignature = '';
 let lastStyleConfigSignature = '';
+let menuSystem = null;
+let forceRedraw = false;
+
+// Listen for menu save/revert events
+window.addEventListener('configSaved', (e) => {
+    console.log('configSaved event received:', e);
+    forceRedraw = true;
+    console.log('Set forceRedraw to true, calling update');
+    update();
+}, true);
+
+window.addEventListener('configReverted', (e) => {
+    console.log('configReverted event received:', e);
+    forceRedraw = true;
+    console.log('Set forceRedraw to true, calling update');
+    update();
+}, true);
 
 function applyStyleConfigFromJSON(styleConfig) {
     if (!styleConfig) return;
@@ -142,9 +160,9 @@ function applyUIConfig(config) {
     }
     if (ui.legend?.flare) {
         const flare = ui.legend.flare;
-        if (flare.angle) root.style.setProperty('--legend-flare-angle', flare.angle);
-        if (flare.offset_x) root.style.setProperty('--legend-flare-offset-x', flare.offset_x);
-        if (flare.offset_y) root.style.setProperty('--legend-flare-offset-y', flare.offset_y);
+        if (flare.angle) root.style.setProperty('--flare-angle', flare.angle);
+        if (flare.offset_x) root.style.setProperty('--flare-offset-x', flare.offset_x);
+        if (flare.offset_y) root.style.setProperty('--flare-offset-y', flare.offset_y);
     }
     if (ui.legend) {
         if (ui.legend.title_color) root.style.setProperty('--legend-title-color', ui.legend.title_color);
@@ -167,6 +185,17 @@ function applyUIConfig(config) {
 
 async function update() {
     try {
+        // Ensure flare variables are set with defaults immediately
+        const root = document.documentElement;
+        if (!root.style.getPropertyValue('--flare-opacity')) {
+            root.style.setProperty('--flare-opacity', '0.225');
+            root.style.setProperty('--flare-spread', '20%');
+            root.style.setProperty('--flare-offset-x', '50%');
+            root.style.setProperty('--flare-offset-y', '50%');
+            root.style.setProperty('--flare-angle', '45deg');
+            root.style.setProperty('--flare-size', '1');
+        }
+        
         // Load style configuration from config.json with cache busting
         try {
             const styleRes = await fetch('/style-config?' + Date.now());
@@ -191,17 +220,28 @@ async function update() {
                 const chassisData = data.topology[pci];
                 let unit = document.getElementById(`unit-${pci}`);
                 
-                if (!unit) {
+                if (!unit || forceRedraw) {
+                    console.log(`${forceRedraw ? 'Force redraw' : 'First draw'} for unit-${pci}`);
+                    if (unit) {
+                        console.log(`Removing existing unit-${pci}`);
+                        unit.remove();
+                    }
                     unit = document.createElement('div');
                     unit.id = `unit-${pci}`;
                     unit.className = 'storage-unit';
                     unit.innerHTML = createChassisHTML(pci, data);
                     canvas.appendChild(unit);
+                    console.log(`Created new unit-${pci}`);
                 }
 
                 const slotContainer = document.getElementById(`slots-${pci}`);
                 const maxBays = chassisData.settings.max_bays;
-                slotContainer.style.gridTemplateColumns = `repeat(${maxBays}, 4.5vw)`;
+                const rows = chassisData.settings.rows || 1;
+                const baysPerRow = chassisData.settings.bays_per_row || maxBays;
+                
+                // Set grid layout with proper row and column configuration
+                slotContainer.style.gridTemplateColumns = `repeat(${baysPerRow}, 4.5vw)`;
+                slotContainer.style.gridAutoRows = '35vh';
 
                 const warning = document.getElementById(`capacity-warning-${pci}`);
                 if (warning) {
@@ -240,6 +280,21 @@ async function update() {
                 });
             });
         });
+
+        // Initialize menu system on first update
+        if (!menuSystem) {
+            menuSystem = new MenuSystem(data.topology, data.config);
+        } else if (forceRedraw) {
+            // After redraw, reapply CSS variables from menu system
+            console.log('Reapplying CSS variables after redraw');
+            menuSystem.applyChangesToUI();
+        }
+        
+        // Reset force redraw flag
+        if (forceRedraw) {
+            console.log('Resetting forceRedraw flag to false');
+        }
+        forceRedraw = false;
     } catch (e) { console.error("Update failed", e); }
 }
 

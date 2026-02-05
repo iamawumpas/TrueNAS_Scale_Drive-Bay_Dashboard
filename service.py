@@ -794,6 +794,64 @@ def topology_scanner_thread():
         time.sleep(5)
 
 class FastHandler(http.server.SimpleHTTPRequestHandler):
+    def do_POST(self):
+        # Handle POST requests for saving configuration
+        path = self.path.split('?')[0]
+        
+        if path == '/save-config':
+            content_length = int(self.headers.get('Content-Length', 0))
+            try:
+                body = self.rfile.read(content_length).decode('utf-8')
+                updated_config = json.loads(body)
+                
+                # Ensure the config file directory exists
+                os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+                
+                # Write the config back to config.json with proper formatting
+                with open(CONFIG_FILE, 'w') as f:
+                    json.dump(updated_config, f, indent=4)
+                
+                # Invalidate the cache so it reloads on next request
+                global CONFIG_MTIME, CONFIG_CACHE
+                CONFIG_MTIME = 0
+                CONFIG_CACHE = None
+                
+                # Force a reload of config
+                load_config()
+                
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Cache-Control', 'no-cache')
+                self.end_headers()
+                response = json.dumps({"status": "success", "message": "Configuration saved successfully"})
+                self.wfile.write(response.encode())
+                print(f"Config saved successfully: {CONFIG_FILE}")
+                
+            except json.JSONDecodeError as e:
+                print(f"JSON parse error: {e}")
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "error", "message": f"Invalid JSON: {str(e)}"}).encode())
+                
+            except IOError as e:
+                print(f"File I/O error: {e}")
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "error", "message": f"File error: {str(e)}"}).encode())
+                
+            except Exception as e:
+                print(f"Config save error: {e}")
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode())
+            return
+        
+        self.send_response(404)
+        self.end_headers()
+
     def do_GET(self):
         # Extract path without query string
         path = self.path.split('?')[0]

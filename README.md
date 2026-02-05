@@ -1,5 +1,5 @@
 # TrueNAS Scale Drive Bay Assignment
-**version 19.1**
+**version 19.3**
 
 
 A dashboard to show my disk array arrangement, status, and activity.

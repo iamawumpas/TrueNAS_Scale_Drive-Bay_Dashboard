@@ -1,5 +1,21 @@
 # Storage Dashboard - Change Log
 
+## Version 19.5:
+* **Unified Menu Control Standards**
+    * Standardized all input controls across menus with consistent sizing: 32px height for dropdowns, sliders, and spinners; 32×32px square color pickers
+    * Improved menu layout with inline field controls for more compact and readable interfaces
+* **Enhanced Text Customization**
+    * Redesigned Chassis "Font & Text" section with inline Font, Color, and Size controls
+    * Implemented slider-based font sizing (0-100 scale) for intuitive visual adjustment of text scales
+    * Extended the same visual arrangement to all Bay text fields (Pool Name, Disk Number, Serial, Size) for consistency
+    * Reorganized text transform options in a 2-column grid layout with visual previews
+* **Grill Pattern Control**
+    * Converted grill size from text input to intuitive slider (0-100 mapping to 10px-20px)
+* **Menu UI Polish**
+    * Increased section heading sizes (16.5pt) for better visual hierarchy
+    * Removed button outlines and simplified menu button styling for a cleaner interface
+    * Implemented hover effect using text-shadow to avoid layout shifts when hovering menu items
+
 ## Version 19.1:
 * **Moved configurable items to 'config.json' 
 

@@ -34,8 +34,8 @@
     z-index: 1; 
     pointer-events: none;
     background-image: radial-gradient(circle, #000 42%, transparent 45%), radial-gradient(circle, #000 42%, transparent 45%);
-    background-size: 18px 18px; 
-    background-position: 0 0, 9px 9px;
+    background-size: var(--bay-grill-size) var(--bay-grill-size); 
+    background-position: 0 0, calc(var(--bay-grill-size) / 2) calc(var(--bay-grill-size) / 2);
 }
 
 .bay-id { 

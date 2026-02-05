@@ -2,3 +2,19 @@
 @import 'Chassis.css';
 @import 'Bay.css';
 @import 'LEDs.css';
+
+body {
+    background-color: var(--page-bg-color);
+    color: #ffffff;
+    margin: 0;
+    padding: 10px;
+    font-family: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    overflow: visible;
+}
+
+#canvas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    overflow: visible;
+}

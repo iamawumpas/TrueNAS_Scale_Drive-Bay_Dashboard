@@ -31,9 +31,15 @@
     --legend-title-color: rgba(255, 255, 255, 0.9);
     --legend-title-size: 1.25rem;
     --legend-title-weight: 800;
-    --legend-flare-angle: 30deg;
-    --legend-flare-offset-x: -50%;
-    --legend-flare-offset-y: -50%;
+
+    /* Flare Effect - dynamically set from config.json */
+    --flare-color: #ffffff;
+    --flare-angle: 45deg;
+    --flare-offset-x: 50%;
+    --flare-offset-y: 50%;
+    --flare-opacity: 0.225;
+    --flare-spread: 20%;
+    --flare-size: 1;
 
     /* Bay ID - dynamically set from config.json */
     --bay-id-color: #ffaa00;
@@ -80,11 +86,32 @@
     --chassis-border: #333333;
     --chassis-shadow: rgba(0,0,0,0.8);
     --chassis-header-divider: rgba(255,255,255,0.1);
+    --chassis-scratch-opacity: 0.3;
 
     /* Bay colors - dynamically set from config.json */
     --bay-bg-base: #121212;
     --bay-border: #333333;
     --bay-top-border: #444444;
+    --bay-grill-size: 18px;
+    
+    /* Bay text styling - separate variables for each property */
+    --bay-pool-weight: 700;
+    --bay-pool-style: normal;
+    --bay-pool-transform: none;
+    --bay-idx-weight: 700;
+    --bay-idx-style: normal;
+    --bay-idx-transform: none;
+    --bay-sn-weight: 700;
+    --bay-sn-style: normal;
+    --bay-sn-transform: none;
+    --bay-size-weight: 700;
+    --bay-size-style: normal;
+    --bay-size-transform: none;
+
+    /* Chassis text styling - dynamically set from config.json */
+    --chassis-font: var(--font-default);
+    --chassis-font-size: 1em;
+    --chassis-font-color: #ffffff;
 
     /* LED colors - dynamically set from config.json */
     --led-allocated-healthy: #00ff00;
@@ -96,7 +123,13 @@
     --led-unalloc-error: #ffaa00;
     --led-unalloc-fault: #ff0000;
     --led-activity: #008cff;
-}
+
+    /* Environment settings */
+    --page-bg-color: #0a0a0a;
+    --menu-bg-color: #2a2a2a;
+    --menu-border-color: rgba(255, 255, 255, 0.15);
+    --menu-text-color: #ffffff;
+    --menu-opacity: 1;
 
 /* Global Typography - Default to legend font unless overridden */
 .legend-box, 

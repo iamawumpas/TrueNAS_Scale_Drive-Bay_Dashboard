@@ -1,0 +1,370 @@
+/* Menu.css - Dashboard Settings Menu */
+
+#menu-bar {
+    background: var(--menu-bg-color, linear-gradient(180deg, #222 0%, #1a1a1a 100%));
+    border-bottom: 2px solid var(--menu-border-color, #444);
+    padding: 8px 16px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    font-family: Calibri, Candara, sans-serif;
+    font-size: 12pt;
+    color: var(--menu-text-color, #ffffff);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    overflow: visible !important;
+    opacity: var(--menu-opacity, 1);
+}
+
+.menu-container {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    width: 100%;
+    overflow: visible !important;
+}
+
+/* Menu Item */
+.menu-item {
+    position: relative;
+    display: inline-block;
+    overflow: visible !important;
+}
+
+.menu-button {
+    background: transparent;
+    border: none;
+    color: var(--menu-text-color, #ffffff);
+    padding: 6px 12px;
+    cursor: pointer;
+    font-family: Calibri, Candara, sans-serif;
+    font-size: 12pt;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.menu-button:hover {
+    text-shadow: 0.5px 0 0 currentColor;
+}
+
+/* Dropdown */
+.dropdown {
+    position: relative;
+}
+
+.dropdown-content {
+    position: fixed;
+    background: var(--menu-bg-color, #1a1a1a);
+    width: 300px;
+    min-width: 300px;
+    max-width: 400px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid var(--menu-border-color, #555);
+    border-radius: 4px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.8);
+    z-index: 999999;
+    padding: 12px;
+    display: block;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    pointer-events: none;
+}
+
+.dropdown-content.active {
+    opacity: var(--menu-opacity, 1) !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+}
+
+.menu-item {
+    /* Increase hitbox for easier dropdown access */
+    padding: 4px;
+}
+
+/* Device Selector */
+.device-selector {
+    display: block;
+    padding: 8px 12px;
+    color: #cccccc;
+    text-decoration: none;
+    border-radius: 3px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.device-selector:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.device-selector.active {
+    background: rgba(100, 200, 255, 0.3);
+    color: #64c8ff;
+    font-weight: bold;
+}
+
+/* Panel Sections */
+.panel-section {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #333;
+}
+
+.panel-section:last-child {
+    border-bottom: none;
+}
+
+.panel-section h3 {
+    margin: 0 0 8px 0;
+    font-size: 16.5pt;
+    color: #64c8ff;
+    font-weight: bold;
+}
+
+.panel-section label {
+    display: block;
+    margin: 8px 0 4px 0;
+    font-size: 11pt;
+    color: #cccccc;
+}
+
+.inline-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.inline-field {
+    flex: 1 1 0;
+    min-width: 120px;
+}
+
+.inline-field label {
+    display: block;
+    margin-bottom: 4px;
+    margin-top: 0;
+    font-size: 11pt;
+}
+
+.inline-row.compact {
+    gap: 8px;
+}
+
+.inline-row.compact .inline-field {
+    min-width: 90px;
+}
+
+/* Form Inputs - Global Control Standards */
+.color-picker,
+.font-select,
+.text-input,
+.number-input,
+.range-slider {
+    width: 100%;
+    padding: 6px;
+    margin-bottom: 8px;
+    background: #2a2a2a;
+    border: 1px solid #555;
+    color: #ffffff;
+    border-radius: 3px;
+    font-family: Calibri, Candara, sans-serif;
+    font-size: 11pt;
+    box-sizing: border-box;
+}
+
+/* Color Pickers: 32x32px square */
+.color-picker {
+    cursor: pointer;
+    height: 32px;
+    width: 32px !important;
+    padding: 0 !important;
+    margin-bottom: 8px;
+}
+
+/* Dropdowns: 32px height */
+.font-select {
+    padding: 6px;
+    height: 32px;
+}
+
+/* Text Inputs: 32px height */
+.text-input {
+    padding: 6px;
+    height: 32px;
+}
+
+/* Spinners: 32px height, max 25% menu width */
+.number-input {
+    padding: 6px;
+    height: 32px;
+    max-width: 25%;
+}
+
+/* Sliders: 32px height */
+.range-slider {
+    padding: 6px;
+    height: 32px;
+    cursor: pointer;
+    margin-bottom: 8px;
+    margin-top: 0;
+}
+
+.font-select:focus,
+.text-input:focus,
+.number-input:focus,
+.color-picker:focus,
+.range-slider:focus {
+    outline: none;
+    border-color: #64c8ff;
+    box-shadow: 0 0 4px rgba(100, 200, 255, 0.4);
+}
+
+/* Checkbox Group: 5px vertical gap */
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 8px;
+    row-gap: 5px;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 11pt;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.checkbox-group label:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.checkbox-group input[type="checkbox"],
+.flare-toggle {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    accent-color: #64c8ff;
+}
+
+/* Radio Group: 5px vertical gap, 2-column layout */
+.radio-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 8px;
+    row-gap: 5px;
+}
+
+.radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 11pt;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+}
+
+.radio-group input[type="radio"] {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    accent-color: #64c8ff;
+}
+
+.flare-toggle {
+    display: inline-block;
+    margin-right: 8px;
+}
+
+/* Save/Revert Buttons */
+.menu-buttons {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+}
+
+.save-btn,
+.revert-btn {
+    padding: 8px 16px;
+    font-family: Calibri, Candara, sans-serif;
+    font-size: 11pt;
+    font-weight: bold;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.save-btn {
+    background: #00cc00;
+    color: #ffffff;
+}
+
+.save-btn:hover {
+    background: #00ff00;
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
+}
+
+.revert-btn {
+    background: #cc0000;
+    color: #ffffff;
+}
+
+.revert-btn:hover {
+    background: #ff0000;
+    box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
+}
+
+/* Scrollbar Styling */
+.dropdown-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.dropdown-content::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+.dropdown-content::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+.dropdown-content::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    #menu-bar {
+        flex-wrap: wrap;
+    }
+
+    .menu-buttons {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-end;
+    }
+
+    .dropdown-content {
+        max-height: 60vh;
+    }
+}
