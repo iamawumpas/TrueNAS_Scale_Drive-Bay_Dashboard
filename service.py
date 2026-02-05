@@ -1,4 +1,5 @@
 import http.server, socketserver, json, time, subprocess, socket, os, re, threading, shutil
+from collections import deque
 from zfs_logic import get_zfs_topology
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -364,7 +365,8 @@ GLOBAL_DATA = {
     "topology": {},
     "io_activity": {},
     "hostname": socket.gethostname(),
-    "config": {}
+    "config": {},
+    "pool_activity_history": {}
 }
 
 # Hardcoded defaults for config.json - used to rebuild config.json if needed
@@ -715,6 +717,101 @@ def io_monitor_thread():
         GLOBAL_DATA["io_activity"] = {d: (v > 0) for d, v in cooldowns.items()}
         time.sleep(0.1)
 
+def get_dynamic_pool_mapping():
+    """Map drive base names to their ZFS pool names"""
+    mapping = {}
+    try:
+        cmd = ["lsblk", "-pno", "KNAME,LABEL,FSTYPE"]
+        output = subprocess.check_output(cmd, text=True)
+        for line in output.splitlines():
+            parts = line.split()
+            if "zfs_member" in parts and len(parts) >= 2:
+                pool_name = parts[1] if parts[1] != "zfs_member" else (parts[2] if len(parts) > 2 else "unknown")
+                dev_name = parts[0].replace("/dev/", "")
+                base_dev = "".join(filter(str.isalpha, dev_name))
+                mapping[base_dev] = pool_name
+    except: 
+        pass
+    return mapping
+
+def get_diskstats_for_pools():
+    """Read current diskstats for all drives"""
+    stats = {}
+    try:
+        with open('/proc/diskstats', 'r') as f:
+            for line in f:
+                p = line.split()
+                if len(p) < 10:
+                    continue
+                dev_name = p[2]
+                stats[dev_name] = {
+                    'r': int(p[5]) * 512,  # sectors read -> bytes
+                    'w': int(p[9]) * 512   # sectors written -> bytes
+                }
+        return stats
+    except:
+        return {}
+
+def pool_activity_monitor_thread():
+    """Monitor per-pool read/write activity with smoothing"""
+    POLL_INTERVAL = 0.05  # 10Hz sampling (50ms)
+    SMOOTHING_WINDOW = 15  # 1-second rolling average (15 samples at 10Hz)
+    HISTORY_LIMIT = 150    # 15 seconds of history (150 samples at 10Hz)
+    
+    drive_to_pool = get_dynamic_pool_mapping()
+    drives = list(drive_to_pool.keys())
+    unique_pools = set(drive_to_pool.values())
+    
+    # Initialize smoothing buffers and history
+    smoothing_buffer = {}
+    for pool in unique_pools:
+        smoothing_buffer[pool] = {
+            'r': deque([0.0] * SMOOTHING_WINDOW, maxlen=SMOOTHING_WINDOW),
+            'w': deque([0.0] * SMOOTHING_WINDOW, maxlen=SMOOTHING_WINDOW)
+        }
+        GLOBAL_DATA["pool_activity_history"][pool] = {
+            'r': deque([0.0] * HISTORY_LIMIT, maxlen=HISTORY_LIMIT),
+            'w': deque([0.0] * HISTORY_LIMIT, maxlen=HISTORY_LIMIT)
+        }
+    
+    last_raw = get_diskstats_for_pools()
+    
+    while True:
+        time.sleep(POLL_INTERVAL)
+        current_raw = get_diskstats_for_pools()
+        
+        if not current_raw or not last_raw:
+            continue
+        
+        # Calculate per-device deltas and accumulate by pool
+        for dev, stats in current_raw.items():
+            # Extract base device name (sda from sda1, nvme0n1 from nvme0n1p1)
+            base_dev = "".join(filter(str.isalpha, dev))
+            
+            if base_dev not in drive_to_pool:
+                continue
+            
+            pool = drive_to_pool[base_dev]
+            
+            if dev in last_raw:
+                r_bps = (stats['r'] - last_raw[dev]['r']) / POLL_INTERVAL
+                w_bps = (stats['w'] - last_raw[dev]['w']) / POLL_INTERVAL
+                
+                # Add to smoothing buffer for this pool
+                smoothing_buffer[pool]['r'].append(r_bps)
+                smoothing_buffer[pool]['w'].append(w_bps)
+        
+        # Calculate smoothed averages and update history
+        for pool in unique_pools:
+            if pool in smoothing_buffer:
+                avg_r = sum(smoothing_buffer[pool]['r']) / SMOOTHING_WINDOW
+                avg_w = sum(smoothing_buffer[pool]['w']) / SMOOTHING_WINDOW
+                
+                GLOBAL_DATA["pool_activity_history"][pool]['r'].append(round(avg_r, 2))
+                GLOBAL_DATA["pool_activity_history"][pool]['w'].append(round(avg_w, 2))
+        
+        last_raw = current_raw
+
 def topology_scanner_thread():
     while True:
         try:
@@ -879,6 +976,24 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(style_config).encode())
             return
+        elif path == '/pool-activity':
+            # Serve pool activity history for Chart.js visualization
+            out = {
+                'hostname': GLOBAL_DATA["hostname"],
+                'stats': {
+                    pool: {
+                        'r': list(GLOBAL_DATA["pool_activity_history"][pool]['r']),
+                        'w': list(GLOBAL_DATA["pool_activity_history"][pool]['w'])
+                    }
+                    for pool in GLOBAL_DATA["pool_activity_history"]
+                }
+            }
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            self.wfile.write(json.dumps(out).encode())
+            return
         elif path == '/livereload-status':
             # Return modification times for watched files
             files_to_watch = [
@@ -901,6 +1016,7 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     threading.Thread(target=io_monitor_thread, daemon=True).start()
     threading.Thread(target=topology_scanner_thread, daemon=True).start()
+    threading.Thread(target=pool_activity_monitor_thread, daemon=True).start()
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("0.0.0.0", PORT), FastHandler) as httpd:
         httpd.serve_forever()

@@ -8,10 +8,24 @@
     <title>Storage Dashboard v13</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="Menu.css">
+    <link rel="stylesheet" href="ActivityMonitor.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
+    <!-- Activity Monitor Section (below menu, above drive bay chassis) -->
+    <div id="activity-chassis" style="display: none;">
+        <div id="activity-header">
+            <span id="activity-hostname">Pool Activity</span>
+            <span class="activity-sub-text">Real-Time Read/Write</span>
+        </div>
+        <div id="activity-container"></div>
+    </div>
+
+    <!-- Main Drive Bay Dashboard -->
     <div id="canvas"></div>
+    
     <script src="livereload.js"></script>
+    <script src="ActivityMonitor.js"></script>
     <script type="module" src="app.js"></script>
 </body>
 </html>

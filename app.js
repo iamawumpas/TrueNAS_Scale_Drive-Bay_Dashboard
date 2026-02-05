@@ -7,6 +7,7 @@ import { MenuSystem } from './MenuSystem.js';
 let lastUIConfigSignature = '';
 let lastStyleConfigSignature = '';
 let menuSystem = null;
+let activityMonitor = null;
 let forceRedraw = false;
 
 // Listen for menu save/revert events
@@ -288,6 +289,12 @@ async function update() {
             // After redraw, reapply CSS variables from menu system
             console.log('Reapplying CSS variables after redraw');
             menuSystem.applyChangesToUI();
+        }
+        
+        // Initialize activity monitor on first update
+        if (!activityMonitor && window.ActivityMonitor) {
+            activityMonitor = new window.ActivityMonitor();
+            activityMonitor.initialize();
         }
         
         // Reset force redraw flag

@@ -1,5 +1,20 @@
 # Storage Dashboard - Change Log
 
+## Version 20:
+* **Real-Time Pool Activity Monitor**
+    * Integrated live read/write activity graphs for all ZFS pools using Chart.js
+    * Added dedicated activity monitoring chassis displayed between menu bar and drive bay displays
+    * Implemented 10Hz data sampling with 1-second rolling average for smooth graph visualization
+    * Displays 15 seconds of historical activity data per pool
+    * Automatic pool detection and dynamic graph generation
+    * Beveled glass card design matching overall dashboard aesthetic
+    * Centered layout with responsive column fitting
+* **Backend Enhancements**
+    * Added pool activity monitoring thread with per-pool bandwidth tracking
+    * New `/pool-activity` API endpoint for activity history data
+    * Dynamic drive-to-pool mapping using lsblk detection
+    * Efficient diskstats polling with smoothing buffers
+
 ## Version 19.5:
 * **Unified Menu Control Standards**
     * Standardized all input controls across menus with consistent sizing: 32px height for dropdowns, sliders, and spinners; 32×32px square color pickers
