@@ -1,5 +1,29 @@
 # Storage Dashboard - Change Log
 
+## Version 20.4:
+* **Activity Monitor Customization**
+    * Created dedicated "Activity Monitor Settings" menu item for chart configuration
+    * Moved all chart customization controls (colors, dimensions, styling) to Activity Monitor Settings
+    * Implemented inline number spinners for chart dimensions with automatic 'px' suffix handling
+    * Added chart height, card width, and card spacing controls with real-time preview
+    * Added line tension and line width customization for smooth graph rendering
+* **Chart Color Enhancements**
+    * Chart read and write dot colors now automatically linked to their respective line colors
+    * Added Y-axis label color customization
+    * Added Y-axis grid line color customization with increased opacity (0.3) for better visibility
+    * All chart colors persist to `config.json` under `chart.colors` section
+* **Menu System Restructuring**
+    * Created "Disk Storage Settings" parent menu with dropdown submenu architecture
+    * Separated Chassis Settings and Bay Settings into independent submenu buttons
+    * Implemented bold text styling for selected menu items and parent menus
+    * Parent menu remains bolded while navigating through submenus
+    * Removed background highlighting from submenu items (text-only bold indication)
+* **Configuration Management Improvements**
+    * Fixed critical bug where chart configuration changes weren't persisting after save/refresh
+    * Updated `/save-config` endpoint to properly reload configuration into GLOBAL_DATA after disk write
+    * Chart settings now properly save and restore across browser sessions
+    * All menu state properly maintained during save/revert operations
+
 ## Version 20.2:
 * **Dynamic Port Configuration**
     * Added "Listening Port" spinner control to Dashboard Settings menu (top of menu)

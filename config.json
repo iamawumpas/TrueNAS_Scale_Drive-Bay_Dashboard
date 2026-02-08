@@ -244,3 +244,29 @@
                 "flare_size": 50,
                 "flare_shape": 100
             }
+        }
+    },
+    "__REMARK_CHART": "Activity Monitor chart colors, gradients, and dimensions.",
+    "chart": {
+        "__REMARK_COLORS": "Line and gradient colors for pool activity charts.",
+        "colors": {
+            "readColor": "#2a00d6",
+            "writeColor": "#ff9f00",
+            "readDotColor": "#2a00d6",
+            "writeDotColor": "#ff9f00",
+            "readGradientTop": "rgba(42, 0, 214, 0.5)",
+            "readGradientBottom": "rgba(42, 0, 214, 0)",
+            "writeGradientTop": "rgba(255, 159, 0, 0.5)",
+            "writeGradientBottom": "rgba(255, 159, 0, 0)"
+        },
+        "__REMARK_DIMENSIONS": "Chart sizing and line styling parameters.",
+        "dimensions": {
+            "chartHeight": "75px",
+            "cardWidth": "250px",
+            "cardMarginRight": "20px",
+            "containerGap": "20px",
+            "lineTension": "0.7",
+            "lineWidth": "2"
+        }
+    }
+}

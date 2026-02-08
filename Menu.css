@@ -50,6 +50,10 @@
     text-shadow: 0.5px 0 0 currentColor;
 }
 
+.menu-button.selected {
+    font-weight: bold;
+}
+
 /* Dropdown */
 .dropdown {
     position: relative;
@@ -79,6 +83,62 @@
     opacity: var(--menu-opacity, 1) !important;
     visibility: visible !important;
     pointer-events: auto !important;
+}
+
+/* Submenu Styling */
+.disk-storage-submenu {
+    position: fixed !important;
+    width: 300px;
+    min-width: 300px;
+    max-width: 400px;
+    padding: 0 !important;
+    display: none !important;
+    flex-direction: column;
+    gap: 0 !important;
+    background: var(--menu-bg-color, #1a1a1a);
+    border: 1px solid var(--menu-border-color, #555);
+    border-radius: 4px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.8);
+    z-index: 999998;
+}
+
+.disk-storage-submenu.active {
+    display: flex !important;
+    opacity: var(--menu-opacity, 1) !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+}
+
+.submenu-item {
+    padding: 0;
+    margin: 0;
+}
+
+.submenu-button {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #cccccc;
+    border: none;
+    border-bottom: 1px solid #333;
+    text-align: left;
+    cursor: pointer;
+    font-size: 11pt;
+    transition: all 0.2s ease;
+}
+
+.submenu-button:last-child {
+    border-bottom: none;
+}
+
+.submenu-button:hover {
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.submenu-button.selected {
+    font-weight: bold;
 }
 
 .menu-item {
@@ -202,12 +262,11 @@
     height: 32px;
 }
 
-/* Spinners: 32px height, max 25% menu width */
+/* Spinners: 32px height */
 .number-input,
 .port-input {
     padding: 6px;
     height: 32px;
-    max-width: 25%;
 }
 
 /* Sliders: 32px height */
@@ -256,11 +315,28 @@
 }
 
 .checkbox-group input[type="checkbox"],
-.flare-toggle {
+.flare-toggle,
+.fullscreen-toggle {
     cursor: pointer;
     width: 16px;
     height: 16px;
     accent-color: #64c8ff;
+}
+
+/* Standard checkbox label styling */
+.panel-section label:has(input[type="checkbox"]) {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 4px 0;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.panel-section label:has(input[type="checkbox"]):hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* Radio Group: 5px vertical gap, 2-column layout */

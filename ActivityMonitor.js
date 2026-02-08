@@ -23,6 +23,9 @@ class ActivityMonitor {
         
         // Handle window resize for responsive layout
         window.addEventListener('resize', () => this.reflowLayout());
+        
+        // Store reference globally for menu system to trigger updates
+        window.activityMonitor = this;
     }
 
     formatUnits(value) {
@@ -41,8 +44,13 @@ class ActivityMonitor {
         
         this.chassis.style.display = 'flex';
         
-        const cardW = 250;
-        const gap = 20;
+        // Get card width and gap from CSS variables
+        const style = getComputedStyle(document.documentElement);
+        const cardWStr = style.getPropertyValue('--chart-card-width').trim() || '250px';
+        const gapStr = style.getPropertyValue('--chart-container-gap').trim() || '20px';
+        
+        const cardW = parseInt(cardWStr);
+        const gap = parseInt(gapStr);
         const paddingTotal = 0;
         const fudge = window.innerWidth * 0.01;
         const maxAvailable = document.documentElement.clientWidth * 0.95;
@@ -89,6 +97,36 @@ class ActivityMonitor {
         this.updateInterval = setInterval(() => this.updateLoop(), 50);
     }
 
+    getChartConfig() {
+        // Get chart configuration from CSS variables set by config.json
+        const root = document.documentElement;
+        const style = getComputedStyle(root);
+        
+        const readColor = style.getPropertyValue('--chart-read-color').trim() || '#2a00d6';
+        const writeColor = style.getPropertyValue('--chart-write-color').trim() || '#ff9f00';
+        const readGradientTop = style.getPropertyValue('--chart-read-gradient-top').trim() || 'rgba(42, 0, 214, 0.5)';
+        const readGradientBottom = style.getPropertyValue('--chart-read-gradient-bottom').trim() || 'rgba(42, 0, 214, 0)';
+        const writeGradientTop = style.getPropertyValue('--chart-write-gradient-top').trim() || 'rgba(255, 159, 0, 0.5)';
+        const writeGradientBottom = style.getPropertyValue('--chart-write-gradient-bottom').trim() || 'rgba(255, 159, 0, 0)';
+        const lineTension = parseFloat(style.getPropertyValue('--chart-line-tension').trim() || '0.7');
+        const lineWidth = parseInt(style.getPropertyValue('--chart-line-width').trim() || '2');
+        const yAxisLabelColor = style.getPropertyValue('--chart-y-axis-label-color').trim() || '#888888';
+        const yAxisGridColor = style.getPropertyValue('--chart-y-axis-grid-color').trim() || 'rgba(255, 255, 255, 0.3)';
+        
+        return {
+            readColor,
+            writeColor,
+            readGradientTop,
+            readGradientBottom,
+            writeGradientTop,
+            writeGradientBottom,
+            lineTension,
+            lineWidth,
+            yAxisLabelColor,
+            yAxisGridColor
+        };
+    }
+
     createChart(name) {
         const div = document.createElement('div');
         div.className = 'activity-card';
@@ -118,14 +156,30 @@ class ActivityMonitor {
 
         const ctx = document.getElementById(`activity-chart-${name}`).getContext('2d');
         
-        // Create gradient fills
+        // Get chart configuration from CSS variables
+        const config = this.getChartConfig();
+        
+        // Create gradient fills using configured colors
         const gradientRead = ctx.createLinearGradient(0, 0, 0, 150);
-        gradientRead.addColorStop(0, 'rgba(42, 0, 214, 0.5)');
-        gradientRead.addColorStop(1, 'rgba(42, 0, 214, 0)');
+        gradientRead.addColorStop(0, config.readGradientTop);
+        gradientRead.addColorStop(1, config.readGradientBottom);
         
         const gradientWrite = ctx.createLinearGradient(0, 0, 0, 150);
-        gradientWrite.addColorStop(0, 'rgba(255, 159, 0, 0.5)');
-        gradientWrite.addColorStop(1, 'rgba(255, 159, 0, 0)');
+        gradientWrite.addColorStop(0, config.writeGradientTop);
+        gradientWrite.addColorStop(1, config.writeGradientBottom);
+
+        // Convert hex colors to rgba if needed (for line colors)
+        const hexToRgba = (hex, alpha = 1) => {
+            if (!hex.startsWith('#')) return hex; // Already in rgba format
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        };
+
+        // Line colors - convert hex to rgba with full opacity
+        const readColorRgba = hexToRgba(config.readColor, 1);
+        const writeColorRgba = hexToRgba(config.writeColor, 1);
 
         return new Chart(ctx, {
             type: 'line',
@@ -134,21 +188,21 @@ class ActivityMonitor {
                 datasets: [
                     {
                         data: [],
-                        borderColor: 'rgba(42, 0, 214, 1)',
+                        borderColor: readColorRgba,
                         backgroundColor: gradientRead,
                         fill: true,
                         pointRadius: 0,
-                        borderWidth: 2,
-                        tension: 0.7
+                        borderWidth: config.lineWidth,
+                        tension: config.lineTension
                     },
                     {
                         data: [],
-                        borderColor: 'rgba(255, 159, 0, 1)',
+                        borderColor: writeColorRgba,
                         backgroundColor: gradientWrite,
                         fill: true,
                         pointRadius: 0,
-                        borderWidth: 2,
-                        tension: 0.7
+                        borderWidth: config.lineWidth,
+                        tension: config.lineTension
                     }
                 ]
             },
@@ -159,9 +213,9 @@ class ActivityMonitor {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        grid: { color: config.yAxisGridColor },
                         ticks: {
-                            color: '#888',
+                            color: config.yAxisLabelColor,
                             font: { size: 9 },
                             maxTicksLimit: 3,
                             callback: (v) => this.formatUnits(v)
@@ -172,6 +226,36 @@ class ActivityMonitor {
                 plugins: { legend: { display: false } }
             }
         });
+    }
+
+    recreateCharts() {
+        // Destroy existing charts and recreate them with new configuration
+        console.log('Recreating charts with updated configuration...');
+        
+        const poolNames = Object.keys(this.charts);
+        
+        // Destroy all existing charts
+        for (const pool in this.charts) {
+            if (this.charts[pool]) {
+                this.charts[pool].destroy();
+            }
+        }
+        
+        // Clear the container
+        if (this.container) {
+            this.container.innerHTML = '';
+        }
+        
+        // Reset charts object
+        this.charts = {};
+        
+        // Recreate charts for each pool
+        poolNames.forEach(pool => {
+            this.charts[pool] = this.createChart(pool);
+        });
+        
+        // Reflow the layout
+        this.reflowLayout();
     }
 
     destroy() {

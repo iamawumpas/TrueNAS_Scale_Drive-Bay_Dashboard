@@ -527,9 +527,33 @@ DEFAULT_CONFIG = {
             "unalloc_fault": "#ff0000",
             "activity": "#008cff"
         }
+    },
+    "__REMARK_CHART": "Activity Monitor chart colors, gradients, and dimensions.",
+    "chart": {
+        "__REMARK_COLORS": "Line and gradient colors for pool activity charts.",
+        "colors": {
+            "readColor": "#2a00d6",
+            "writeColor": "#ff9f00",
+            "readDotColor": "#2a00d6",
+            "writeDotColor": "#ff9f00",
+            "readGradientTop": "rgba(42, 0, 214, 0.5)",
+            "readGradientBottom": "rgba(42, 0, 214, 0)",
+            "writeGradientTop": "rgba(255, 159, 0, 0.5)",
+            "writeGradientBottom": "rgba(255, 159, 0, 0)"
+        },
+        "__REMARK_DIMENSIONS": "Chart sizing and line styling parameters.",
+        "dimensions": {
+            "chartHeight": "75px",
+            "cardWidth": "250px",
+            "cardMarginRight": "20px",
+            "containerGap": "20px",
+            "lineTension": "0.7",
+            "lineWidth": "2"
+        }
     }
 }
 
+# config.json remarks as requested
 CONFIG_MTIME = 0
 CONFIG_CACHE = DEFAULT_CONFIG.copy()
 
@@ -912,7 +936,13 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
             content_length = int(self.headers.get('Content-Length', 0))
             try:
                 body = self.rfile.read(content_length).decode('utf-8')
+                print(f"[SAVE-CONFIG] Received body length: {len(body)}")
+                print(f"[SAVE-CONFIG] Received body (first 500 chars): {body[:500]}")
+                
                 updated_config = json.loads(body)
+                print(f"[SAVE-CONFIG] Parsed config successfully")
+                if 'chart' in updated_config:
+                    print(f"[SAVE-CONFIG] Chart config in received data: {updated_config['chart']}")
                 
                 # Ensure the config file directory exists
                 os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
@@ -921,13 +951,16 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
                 with open(CONFIG_FILE, 'w') as f:
                     json.dump(updated_config, f, indent=4)
                 
+                print(f"[SAVE-CONFIG] Written to file: {CONFIG_FILE}")
+                
                 # Invalidate the cache so it reloads on next request
                 global CONFIG_MTIME, CONFIG_CACHE
                 CONFIG_MTIME = 0
                 CONFIG_CACHE = None
                 
-                # Force a reload of config
-                load_config()
+                # Force a reload of config and update GLOBAL_DATA
+                GLOBAL_DATA["config"] = load_config()
+                print(f"[SAVE-CONFIG] Config reloaded after save")
                 
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
@@ -935,24 +968,24 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 response = json.dumps({"status": "success", "message": "Configuration saved successfully"})
                 self.wfile.write(response.encode())
-                print(f"Config saved successfully: {CONFIG_FILE}")
+                print(f"[SAVE-CONFIG] Sent 200 success response")
                 
             except json.JSONDecodeError as e:
-                print(f"JSON parse error: {e}")
+                print(f"[SAVE-CONFIG] JSON parse error: {e}")
                 self.send_response(400)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps({"status": "error", "message": f"Invalid JSON: {str(e)}"}).encode())
                 
             except IOError as e:
-                print(f"File I/O error: {e}")
+                print(f"[SAVE-CONFIG] File I/O error: {e}")
                 self.send_response(500)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps({"status": "error", "message": f"File error: {str(e)}"}).encode())
                 
             except Exception as e:
-                print(f"Config save error: {e}")
+                print(f"[SAVE-CONFIG] Config save error: {e}")
                 self.send_response(500)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()

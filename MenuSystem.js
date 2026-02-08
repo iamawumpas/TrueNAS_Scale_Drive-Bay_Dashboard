@@ -77,22 +77,6 @@ export class MenuSystem {
             this.selectedDevice = this.devices[0];
         }
 
-        // Chassis menu
-        const chassisPanel = this.buildChassisPanel();
-        menuHTML += `
-            <div class="menu-item dropdown" data-dropdown="chassis">
-                <button class="menu-button">Chassis Settings</button>
-            </div>
-        `;
-
-        // Bay Settings menu
-        const bayPanel = this.buildBayPanel();
-        menuHTML += `
-            <div class="menu-item dropdown" data-dropdown="bay">
-                <button class="menu-button">Bay Settings</button>
-            </div>
-        `;
-
         // Environment menu
         const environmentPanel = this.buildEnvironmentPanel();
         menuHTML += `
@@ -101,12 +85,41 @@ export class MenuSystem {
             </div>
         `;
 
+        // Activity Monitor menu
+        const activityMonitorPanel = this.buildActivityMonitorPanel();
+        menuHTML += `
+            <div class="menu-item dropdown" data-dropdown="activity-monitor">
+                <button class="menu-button">Activity Monitor Settings</button>
+            </div>
+        `;
+
+
+        // Disk Storage Settings parent menu with Chassis and Bay sub-menus
+        const chassisPanel = this.buildChassisPanel();
+        const bayPanel = this.buildBayPanel();
+        menuHTML += `
+            <div class="menu-item dropdown" data-dropdown="disk-storage">
+                <button class="menu-button">Disk Storage Settings</button>
+                <div class="dropdown-content disk-storage-submenu">
+                    <div class="submenu-item dropdown" data-dropdown="chassis">
+                        <button class="submenu-button">Chassis Settings</button>
+                    </div>
+                    <div class="submenu-item dropdown" data-dropdown="bay">
+                        <button class="submenu-button">Bay Settings</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+
+
         menuHTML += '</div>';
         
         // Build dropdown HTML separately - will be appended to body
         const dropdownHTML = [
             `<div class="dropdown-content chassis-panel" data-dropdown-content="chassis">${chassisPanel}</div>`,
             `<div class="dropdown-content bay-panel" data-dropdown-content="bay">${bayPanel}</div>`,
+            `<div class="dropdown-content activity-monitor-panel" data-dropdown-content="activity-monitor">${activityMonitorPanel}</div>`,
             `<div class="dropdown-content environment-panel" data-dropdown-content="environment">${environmentPanel}</div>`
         ];
 
@@ -248,6 +261,92 @@ export class MenuSystem {
                 <label>Bays per Row (1-${this.getMaxBaysForDevice(this.selectedDevice)})</label>
                 <input type="number" class="number-input" data-key="chassis.bays_per_row" 
                     value="${chassis.bays_per_row || 4}" min="1" max="${this.getMaxBaysForDevice(this.selectedDevice)}">
+            </div>
+        `;
+    }
+
+    buildActivityMonitorPanel() {
+        const chart = this.currentConfig.chart || {};
+        const chartColors = chart.colors || {};
+        const chartDimensions = chart.dimensions || {};
+
+        return `
+            <div class="panel-section">
+                <h3>Chart Colors</h3>
+
+                <div class="inline-row">
+                    <div class="inline-field">
+                        <label>Read Line Color</label>
+                        <input type="color" class="color-picker" data-key="chart.colors.readColor" 
+                            value="${this.hexToColor(chartColors.readColor || '#2a00d6')}">
+                    </div>
+
+                    <div class="inline-field">
+                        <label>Write Line Color</label>
+                        <input type="color" class="color-picker" data-key="chart.colors.writeColor" 
+                            value="${this.hexToColor(chartColors.writeColor || '#ff9f00')}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Chart Axes</h3>
+
+                <div class="inline-row">
+                    <div class="inline-field">
+                        <label>Y-Axis Label Color</label>
+                        <input type="color" class="color-picker" data-key="chart.colors.yAxisLabelColor" 
+                            value="${this.hexToColor(chartColors.yAxisLabelColor || '#888888')}">
+                    </div>
+
+                    <div class="inline-field">
+                        <label>Y-Axis Grid Color</label>
+                        <input type="color" class="color-picker" data-key="chart.colors.yAxisGridColor" 
+                            value="${this.hexToColor(chartColors.yAxisGridColor || '#888888')}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Chart Styling</h3>
+
+                <div class="inline-row">
+                    <div class="inline-field">
+                        <label>Line Tension (0-1)</label>
+                        <input type="range" class="range-slider" data-key="chart.dimensions.lineTension" 
+                            value="${chartDimensions.lineTension || '0.7'}" min="0" max="1" step="0.05">
+                    </div>
+
+                    <div class="inline-field">
+                        <label>Line Width (1-5)</label>
+                        <input type="range" class="range-slider" data-key="chart.dimensions.lineWidth" 
+                            value="${chartDimensions.lineWidth || '2'}" min="1" max="5" step="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Chart Dimensions</h3>
+
+                <div class="inline-row compact">
+                    <div class="inline-field">
+                        <label>Chart Height</label>
+                        <input type="number" class="number-input" data-key="chart.dimensions.chartHeight" 
+                            value="${(chartDimensions.chartHeight || '75px').replace('px', '')}" min="20" max="300">
+                    </div>
+
+                    <div class="inline-field">
+                        <label>Card Width</label>
+                        <input type="number" class="number-input" data-key="chart.dimensions.cardWidth" 
+                            value="${(chartDimensions.cardWidth || '250px').replace('px', '')}" min="100" max="500">
+                    </div>
+
+                    <div class="inline-field">
+                        <label>Card Spacing</label>
+                        <input type="number" class="number-input" data-key="chart.dimensions.containerGap" 
+                            value="${(chartDimensions.containerGap || '20px').replace('px', '')}" min="5" max="100">
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -620,39 +719,112 @@ export class MenuSystem {
                 
                 const menuItem = btn.closest('.menu-item');
                 const dropdownType = menuItem.dataset.dropdown;
+                
+                // Special handling for disk-storage parent - don't close other dropdowns
+                if (dropdownType === 'disk-storage') {
+                    const diskStorageDropdown = menuItem.querySelector('.disk-storage-submenu');
+                    if (diskStorageDropdown) {
+                        diskStorageDropdown.classList.toggle('active');
+                        
+                        // Update selected state - keep disk-storage selected when submenu is open
+                        if (diskStorageDropdown.classList.contains('active')) {
+                            // Remove selected from all menu buttons
+                            document.querySelectorAll('.menu-button').forEach(b => b.classList.remove('selected'));
+                            // Add selected to this button
+                            btn.classList.add('selected');
+                            
+                            const rect = btn.getBoundingClientRect();
+                            diskStorageDropdown.style.top = (rect.bottom + 4) + 'px';
+                            diskStorageDropdown.style.left = rect.left + 'px';
+                        } else {
+                            btn.classList.remove('selected');
+                        }
+                    }
+                } else {
+                    const dropdown = document.querySelector(`[data-dropdown-content="${dropdownType}"]`);
+                    
+                    if (dropdown) {
+                        // Remove selected from all menu buttons and close their dropdowns
+                        document.querySelectorAll('.menu-button').forEach(b => b.classList.remove('selected'));
+                        document.querySelectorAll('.dropdown-content').forEach(d => {
+                            if (d !== dropdown) {
+                                d.classList.remove('active');
+                            }
+                        });
+                        // Close the disk-storage submenu as well
+                        const diskStorageSubmenu = document.querySelector('.disk-storage-submenu');
+                        if (diskStorageSubmenu) {
+                            diskStorageSubmenu.classList.remove('active');
+                        }
+                        
+                        // Toggle this dropdown
+                        dropdown.classList.toggle('active');
+                        
+                        // Add selected class if dropdown is active
+                        if (dropdown.classList.contains('active')) {
+                            btn.classList.add('selected');
+                            const rect = btn.getBoundingClientRect();
+                            dropdown.style.top = (rect.bottom + 4) + 'px';
+                            dropdown.style.left = rect.left + 'px';
+                        } else {
+                            btn.classList.remove('selected');
+                        }
+                    }
+                }
+            });
+        });
+
+        // Submenu buttons (Chassis and Bay under Disk Storage Settings)
+        const submenuButtons = document.querySelectorAll('.submenu-button');
+        submenuButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const submenuItem = btn.closest('.submenu-item');
+                const dropdownType = submenuItem.dataset.dropdown;
                 const dropdown = document.querySelector(`[data-dropdown-content="${dropdownType}"]`);
                 
+                // Update selected state on submenu buttons
+                document.querySelectorAll('.submenu-button').forEach(b => b.classList.remove('selected'));
+                
                 if (dropdown) {
-                    // Close all other dropdowns
-                    document.querySelectorAll('.dropdown-content').forEach(d => {
+                    // Close all other main dropdowns but keep parent disk-storage open
+                    document.querySelectorAll('[data-dropdown-content]').forEach(d => {
                         if (d !== dropdown) {
                             d.classList.remove('active');
                         }
                     });
-                    // Toggle this dropdown
-                    dropdown.classList.toggle('active');
+                    // Show this dropdown
+                    dropdown.classList.add('active');
+                    btn.classList.add('selected');
                     
-                    // Position the fixed dropdown below the button
-                    if (dropdown.classList.contains('active')) {
-                        const rect = btn.getBoundingClientRect();
-                        dropdown.style.top = (rect.bottom + 4) + 'px';
-                        dropdown.style.left = rect.left + 'px';
-                    }
+                    // Position the fixed dropdown below the submenu button
+                    const rect = btn.getBoundingClientRect();
+                    dropdown.style.top = (rect.bottom + 4) + 'px';
+                    dropdown.style.left = rect.left + 'px';
                 }
             });
         });
 
         // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
-            // Don't close if clicking on a menu button, dropdown content, or action buttons
+            // Don't close if clicking on a menu button, submenu button, dropdown content, or action buttons
             const isMenuButton = e.target.closest('.menu-button');
+            const isSubmenuButton = e.target.closest('.submenu-button');
             const isDropdownContent = e.target.closest('.dropdown-content');
             const isSaveBtn = e.target.closest('#save-btn');
             const isRevertBtn = e.target.closest('#revert-btn');
             
-            if (!isMenuButton && !isDropdownContent && !isSaveBtn && !isRevertBtn) {
+            if (!isMenuButton && !isSubmenuButton && !isDropdownContent && !isSaveBtn && !isRevertBtn) {
                 document.querySelectorAll('.dropdown-content').forEach(d => {
                     d.classList.remove('active');
+                });
+                document.querySelectorAll('.menu-button').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                document.querySelectorAll('.submenu-button').forEach(btn => {
+                    btn.classList.remove('selected');
                 });
             }
         });
@@ -771,7 +943,17 @@ export class MenuSystem {
 
     handleColorChange(e) {
         const key = e.target.dataset.key;
-        const value = e.target.value;
+        let value = e.target.value;
+        
+        // Convert hex color to rgba for grid color (maintaining 0.3 opacity for visibility)
+        if (key === 'chart.colors.yAxisGridColor') {
+            const hex = value;
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            value = `rgba(${r}, ${g}, ${b}, 0.3)`;
+        }
+        
         this.setConfigValue(key, value);
         this.applyChangesToUI();
         this.markDirty();
@@ -784,6 +966,11 @@ export class MenuSystem {
         // Handle checkboxes
         if (e.target.type === 'checkbox') {
             value = e.target.checked;
+        }
+
+        // Add 'px' suffix for chart dimension inputs
+        if (['chart.dimensions.chartHeight', 'chart.dimensions.cardWidth', 'chart.dimensions.containerGap'].includes(key)) {
+            value = value + 'px';
         }
 
         this.setConfigValue(key, value);
@@ -858,15 +1045,15 @@ export class MenuSystem {
     setConfigValue(key, value) {
         const keys = key.split('.');
         
-        // Check if this is a top-level config key (e.g., "network.port")
-        if (keys[0] === 'network' || keys[0] === 'hardware') {
+        // Check if this is a top-level config key (e.g., "network.port", "chart.colors.readColor")
+        if (keys[0] === 'network' || keys[0] === 'hardware' || keys[0] === 'chart') {
             // Handle top-level config
-            console.log(`Setting top-level config value: ${key} = ${value}`);
+            console.log(`[setConfigValue] Top-level key: ${key} = ${value}`);
             let obj = this.currentConfig;
             
             for (let i = 0; i < keys.length - 1; i++) {
                 if (!obj[keys[i]]) {
-                    console.log(`Creating path: ${keys[i]}`);
+                    console.log(`[setConfigValue] Creating path: ${keys[i]}`);
                     obj[keys[i]] = {};
                 }
                 obj = obj[keys[i]];
@@ -874,17 +1061,18 @@ export class MenuSystem {
             
             const finalKey = keys[keys.length - 1];
             obj[finalKey] = value;
-            console.log(`Set ${key} to ${value}`, 'Full config:', this.currentConfig);
+            console.log(`[setConfigValue] Set ${key} = ${value}`);
+            console.log(`[setConfigValue] Full chart config:`, this.currentConfig.chart);
         } else {
             // Handle device-specific config
             const deviceConfig = this.getDeviceConfig(this.selectedDevice);
             let obj = deviceConfig;
 
-            console.log(`Setting device config value: ${key} = ${value}`);
+            console.log(`[setConfigValue] Device config key: ${key} = ${value}`);
 
             for (let i = 0; i < keys.length - 1; i++) {
                 if (!obj[keys[i]]) {
-                    console.log(`Creating path: ${keys[i]}`);
+                    console.log(`[setConfigValue] Creating device path: ${keys[i]}`);
                     obj[keys[i]] = {};
                 }
                 obj = obj[keys[i]];
@@ -892,7 +1080,7 @@ export class MenuSystem {
 
             const finalKey = keys[keys.length - 1];
             obj[finalKey] = value;
-            console.log(`Set ${key} to ${value}`, 'Full device config:', deviceConfig);
+            console.log(`[setConfigValue] Set device ${key} = ${value}`);
         }
     }
 
@@ -953,6 +1141,21 @@ export class MenuSystem {
 
     getConfigValue(key) {
         const keyPath = key.split('.');
+        
+        // Check if this is a top-level config key (network, chart, hardware)
+        if (keyPath[0] === 'network' || keyPath[0] === 'hardware' || keyPath[0] === 'chart') {
+            let value = this.currentConfig;
+            for (let i = 0; i < keyPath.length; i++) {
+                if (value && value[keyPath[i]] !== undefined) {
+                    value = value[keyPath[i]];
+                } else {
+                    return undefined;
+                }
+            }
+            return value;
+        }
+        
+        // Handle device-specific config
         const deviceConfig = this.getDeviceConfig(this.selectedDevice);
         let value = deviceConfig;
         
@@ -972,7 +1175,19 @@ export class MenuSystem {
             const key = picker.dataset.key;
             const value = this.getConfigValue(key);
             if (value) {
-                picker.value = this.hexToColor(value);
+                // Handle rgba values (like yAxisGridColor) by extracting RGB components
+                if (value.startsWith('rgba')) {
+                    const match = value.match(/rgba\((\d+),\s*(\d+),\s*(\d+)/);
+                    if (match) {
+                        const r = parseInt(match[1]);
+                        const g = parseInt(match[2]);
+                        const b = parseInt(match[3]);
+                        const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+                        picker.value = hex;
+                    }
+                } else {
+                    picker.value = this.hexToColor(value);
+                }
             }
         });
 
@@ -990,7 +1205,12 @@ export class MenuSystem {
             const key = input.dataset.key;
             const value = this.getConfigValue(key);
             if (value !== undefined) {
-                input.value = value;
+                // Strip 'px' suffix for chart dimension inputs
+                if (['chart.dimensions.chartHeight', 'chart.dimensions.cardWidth', 'chart.dimensions.containerGap'].includes(key)) {
+                    input.value = String(value).replace('px', '');
+                } else {
+                    input.value = value;
+                }
             }
         });
 
@@ -1053,23 +1273,29 @@ export class MenuSystem {
 
     async save() {
         try {
-            console.log('Saving config:', this.currentConfig);
+            console.log('=== SAVE START ===');
+            console.log('Current config before save:', JSON.stringify(this.currentConfig, null, 2));
             
             // Check if port has changed
             const oldPort = this.originalConfig.network?.port || 8010;
             const newPort = this.currentConfig.network?.port || 8010;
             const portChanged = oldPort !== newPort;
             
+            const configToSave = this.currentConfig;
+            console.log('Config to be sent to server:', JSON.stringify(configToSave, null, 2));
+            
             const response = await fetch('/save-config', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(this.currentConfig)
+                body: JSON.stringify(configToSave)
             });
 
             const data = await response.json();
-            console.log('Save response:', data, 'Status:', response.status);
+            console.log('Save response status:', response.status);
+            console.log('Save response data:', data);
 
             if (!response.ok) {
+                console.error('Save failed with status:', response.status);
                 console.error('Save response:', data);
                 alert(`Failed to save configuration: ${data.message || 'Unknown error'}`);
                 return;
@@ -1371,9 +1597,76 @@ export class MenuSystem {
             root.style.setProperty('--menu-opacity', menuOpacity.toFixed(2));
         }
 
+        // Apply global chart configuration
+        const chart = this.currentConfig.chart || {};
+        const chartColors = chart.colors || {};
+        const chartDimensions = chart.dimensions || {};
+
+        // Chart colors
+        if (chartColors.readColor) {
+            root.style.setProperty('--chart-read-color', chartColors.readColor);
+            // Also update dot color to match line color
+            root.style.setProperty('--chart-read-dot-color', chartColors.readColor);
+        }
+        if (chartColors.writeColor) {
+            root.style.setProperty('--chart-write-color', chartColors.writeColor);
+            // Also update dot color to match line color
+            root.style.setProperty('--chart-write-dot-color', chartColors.writeColor);
+        }
+
+        // Chart gradient colors
+        if (chartColors.readGradientTop) {
+            root.style.setProperty('--chart-read-gradient-top', chartColors.readGradientTop);
+        }
+        if (chartColors.readGradientBottom) {
+            root.style.setProperty('--chart-read-gradient-bottom', chartColors.readGradientBottom);
+        }
+        if (chartColors.writeGradientTop) {
+            root.style.setProperty('--chart-write-gradient-top', chartColors.writeGradientTop);
+        }
+        if (chartColors.writeGradientBottom) {
+            root.style.setProperty('--chart-write-gradient-bottom', chartColors.writeGradientBottom);
+        }
+
+        // Chart axis colors
+        if (chartColors.yAxisLabelColor) {
+            root.style.setProperty('--chart-y-axis-label-color', chartColors.yAxisLabelColor);
+        }
+        if (chartColors.yAxisGridColor) {
+            root.style.setProperty('--chart-y-axis-grid-color', chartColors.yAxisGridColor);
+        }
+
+        // Chart dimensions
+        if (chartDimensions.lineTension !== undefined) {
+            root.style.setProperty('--chart-line-tension', String(chartDimensions.lineTension));
+        }
+        if (chartDimensions.lineWidth !== undefined) {
+            root.style.setProperty('--chart-line-width', String(chartDimensions.lineWidth));
+        }
+        if (chartDimensions.chartHeight) {
+            root.style.setProperty('--chart-height', chartDimensions.chartHeight);
+        }
+        if (chartDimensions.cardWidth) {
+            root.style.setProperty('--chart-card-width', chartDimensions.cardWidth);
+        }
+        if (chartDimensions.cardMarginRight) {
+            root.style.setProperty('--chart-card-margin-right', chartDimensions.cardMarginRight);
+        }
+        if (chartDimensions.containerGap) {
+            root.style.setProperty('--chart-container-gap', chartDimensions.containerGap);
+        }
+        if (chartDimensions.chassisPadding) {
+            root.style.setProperty('--chart-chassis-padding', chartDimensions.chassisPadding);
+        }
+
         // Force a reflow to apply CSS changes
         void document.documentElement.offsetHeight;
         console.log('Applied changes to UI for device:', this.selectedDevice);
+        
+        // Trigger chart recreation if ActivityMonitor exists
+        if (window.activityMonitor && typeof window.activityMonitor.recreateCharts === 'function') {
+            window.activityMonitor.recreateCharts();
+        }
     }
 
     getStyleWeight(styles) {
