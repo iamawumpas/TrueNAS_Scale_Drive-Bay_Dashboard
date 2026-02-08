@@ -256,8 +256,22 @@ export class MenuSystem {
         const deviceConfig = this.getDeviceConfig(this.selectedDevice);
         const environment = deviceConfig.environment || {};
         const flareAngleValue = this.getAngleValue(environment.flare_angle, 30);
+        const port = this.currentConfig.network?.port || 8010;
 
         return `
+            <div class="panel-section">
+                <h3>Network Settings</h3>
+                
+                <label>Listening Port</label>
+                <div class="inline-row">
+                    <input type="number" class="port-input" data-key="network.port" 
+                        value="${port}" min="1024" max="65535" step="1">
+                    <span class="port-info" style="margin-left: 16px; font-size: 0.85rem; color: #999;">
+                        (Restart required after change)
+                    </span>
+                </div>
+            </div>
+
             <div class="panel-section">
                 <h3>Page Background</h3>
 
@@ -630,11 +644,13 @@ export class MenuSystem {
 
         // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
-            // Don't close if clicking on a menu button, menu container, or dropdown content
+            // Don't close if clicking on a menu button, dropdown content, or action buttons
             const isMenuButton = e.target.closest('.menu-button');
             const isDropdownContent = e.target.closest('.dropdown-content');
+            const isSaveBtn = e.target.closest('#save-btn');
+            const isRevertBtn = e.target.closest('#revert-btn');
             
-            if (!isMenuButton && !isDropdownContent) {
+            if (!isMenuButton && !isDropdownContent && !isSaveBtn && !isRevertBtn) {
                 document.querySelectorAll('.dropdown-content').forEach(d => {
                     d.classList.remove('active');
                 });
@@ -723,10 +739,22 @@ export class MenuSystem {
             });
         });
 
+        // Port input - use 'input' for real-time validation
+        const portInputs = document.querySelectorAll('.port-input');
+        portInputs.forEach(input => {
+            input.addEventListener('input', (e) => {
+                const port = parseInt(e.target.value);
+                if (port >= 1024 && port <= 65535) {
+                    this.handleInputChange(e);
+                }
+            });
+        });
+
         // Save button
         const saveBtn = document.getElementById('save-btn');
         if (saveBtn) {
-            saveBtn.addEventListener('click', () => {
+            saveBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 this.save();
             });
         }
@@ -734,7 +762,8 @@ export class MenuSystem {
         // Revert button
         const revertBtn = document.getElementById('revert-btn');
         if (revertBtn) {
-            revertBtn.addEventListener('click', () => {
+            revertBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 this.revert();
             });
         }
@@ -827,23 +856,44 @@ export class MenuSystem {
     }
 
     setConfigValue(key, value) {
-        const deviceConfig = this.getDeviceConfig(this.selectedDevice);
         const keys = key.split('.');
-        let obj = deviceConfig;
-
-        console.log(`Setting config value: ${key} = ${value}`);
-
-        for (let i = 0; i < keys.length - 1; i++) {
-            if (!obj[keys[i]]) {
-                console.log(`Creating path: ${keys[i]}`);
-                obj[keys[i]] = {};
+        
+        // Check if this is a top-level config key (e.g., "network.port")
+        if (keys[0] === 'network' || keys[0] === 'hardware') {
+            // Handle top-level config
+            console.log(`Setting top-level config value: ${key} = ${value}`);
+            let obj = this.currentConfig;
+            
+            for (let i = 0; i < keys.length - 1; i++) {
+                if (!obj[keys[i]]) {
+                    console.log(`Creating path: ${keys[i]}`);
+                    obj[keys[i]] = {};
+                }
+                obj = obj[keys[i]];
             }
-            obj = obj[keys[i]];
-        }
+            
+            const finalKey = keys[keys.length - 1];
+            obj[finalKey] = value;
+            console.log(`Set ${key} to ${value}`, 'Full config:', this.currentConfig);
+        } else {
+            // Handle device-specific config
+            const deviceConfig = this.getDeviceConfig(this.selectedDevice);
+            let obj = deviceConfig;
 
-        const finalKey = keys[keys.length - 1];
-        obj[finalKey] = value;
-        console.log(`Set ${key} to ${value}`, 'Full device config:', deviceConfig);
+            console.log(`Setting device config value: ${key} = ${value}`);
+
+            for (let i = 0; i < keys.length - 1; i++) {
+                if (!obj[keys[i]]) {
+                    console.log(`Creating path: ${keys[i]}`);
+                    obj[keys[i]] = {};
+                }
+                obj = obj[keys[i]];
+            }
+
+            const finalKey = keys[keys.length - 1];
+            obj[finalKey] = value;
+            console.log(`Set ${key} to ${value}`, 'Full device config:', deviceConfig);
+        }
     }
 
     normalizeDeviceKey(device) {
@@ -890,10 +940,15 @@ export class MenuSystem {
         // Update all input fields to reflect the reverted config
         this.updateInputFieldValues();
         
-        // Close menus after reverting
+        // Close all menus after reverting
         document.querySelectorAll('.dropdown-content').forEach(d => {
             d.classList.remove('active');
         });
+        
+        // Hard refresh to ensure all changes are reverted
+        setTimeout(() => {
+            window.location.href = window.location.href;
+        }, 300);
     }
 
     getConfigValue(key) {
@@ -932,6 +987,15 @@ export class MenuSystem {
 
         // Update all number inputs
         document.querySelectorAll('.number-input').forEach(input => {
+            const key = input.dataset.key;
+            const value = this.getConfigValue(key);
+            if (value !== undefined) {
+                input.value = value;
+            }
+        });
+
+        // Update all port inputs
+        document.querySelectorAll('.port-input').forEach(input => {
             const key = input.dataset.key;
             const value = this.getConfigValue(key);
             if (value !== undefined) {
@@ -990,6 +1054,12 @@ export class MenuSystem {
     async save() {
         try {
             console.log('Saving config:', this.currentConfig);
+            
+            // Check if port has changed
+            const oldPort = this.originalConfig.network?.port || 8010;
+            const newPort = this.currentConfig.network?.port || 8010;
+            const portChanged = oldPort !== newPort;
+            
             const response = await fetch('/save-config', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1018,11 +1088,64 @@ export class MenuSystem {
                 composed: true
             }));
             
-            alert('Configuration saved successfully');
+            // If port changed, trigger restart and show modal
+            if (portChanged) {
+                try {
+                    // Trigger server restart
+                    await fetch('/trigger-restart');
+                    console.log('Server restart triggered');
+                } catch (error) {
+                    console.error('Failed to trigger restart:', error);
+                }
+                this.showPortChangeModal(oldPort, newPort);
+            } else {
+                // Close all menus after save
+                document.querySelectorAll('.dropdown-content').forEach(d => {
+                    d.classList.remove('active');
+                });
+                // Hard refresh for non-port changes
+                setTimeout(() => {
+                    window.location.href = window.location.href;
+                }, 300);
+            }
         } catch (error) {
             console.error('Save error:', error);
             alert(`Error saving configuration: ${error.message}`);
         }
+    }
+
+    showPortChangeModal(oldPort, newPort) {
+        // Create modal overlay
+        const modal = document.createElement('div');
+        modal.id = 'port-change-modal';
+        modal.innerHTML = `
+            <div class="port-change-modal-content">
+                <h2>⚠️ Listening Port Changed</h2>
+                <p><strong>Old Port:</strong> ${oldPort}</p>
+                <p><strong>New Port:</strong> ${newPort}</p>
+                <div class="port-change-warning">
+                    <p>⚠️ <strong>Important:</strong> If you have bookmarked this dashboard or created shortcuts, you will need to update them to use the new port number.</p>
+                </div>
+                <button class="port-change-acknowledge-btn">I Understand, Continue</button>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Add acknowledge button handler
+        const acknowledgeBtn = modal.querySelector('.port-change-acknowledge-btn');
+        acknowledgeBtn.addEventListener('click', () => {
+            console.log(`User acknowledged port change. Waiting for server restart, then navigating to port ${newPort}...`);
+            acknowledgeBtn.disabled = true;
+            acknowledgeBtn.textContent = 'Redirecting...';
+            
+            // Wait for server to restart (2 seconds), then navigate
+            setTimeout(() => {
+                const newUrl = `http://${window.location.hostname}:${newPort}${window.location.pathname}${window.location.search}`;
+                console.log(`Navigating to ${newUrl}`);
+                window.location.href = newUrl;
+            }, 2000);
+        });
     }
 
     applyChangesToUI() {

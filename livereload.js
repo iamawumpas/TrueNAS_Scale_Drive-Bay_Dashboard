@@ -14,7 +14,8 @@
         'Bay.css',
         'Chassis.css',
         'LEDs.css',
-        'index.html'
+        'index.html',
+        'config.json'
     ];
 
     async function checkFiles() {
@@ -26,8 +27,24 @@
                 const fileTime = data[file];
                 if (fileTime) {
                     if (lastModified[file] && lastModified[file] !== fileTime) {
-                        console.log(`File changed: ${file} - Reloading...`);
-                        location.reload();
+                        console.log(`File changed: ${file}`);
+                        
+                        if (file === 'config.json') {
+                            // For config changes, skip if port-change modal is showing
+                            // (MenuSystem will handle navigation)
+                            if (document.getElementById('port-change-modal')) {
+                                console.log('Port change modal visible - letting MenuSystem handle navigation');
+                                break;
+                            }
+                            
+                            // For other config changes, just reload
+                            console.log('Config changed - reloading page...');
+                            location.reload();
+                        } else {
+                            // For code changes, just reload the page
+                            console.log(`Reloading...`);
+                            location.reload();
+                        }
                         return;
                     }
                     lastModified[file] = fileTime;

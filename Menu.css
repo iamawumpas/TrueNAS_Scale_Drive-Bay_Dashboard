@@ -167,6 +167,7 @@
 .font-select,
 .text-input,
 .number-input,
+.port-input,
 .range-slider {
     width: 100%;
     padding: 6px;
@@ -202,7 +203,8 @@
 }
 
 /* Spinners: 32px height, max 25% menu width */
-.number-input {
+.number-input,
+.port-input {
     padding: 6px;
     height: 32px;
     max-width: 25%;
@@ -220,6 +222,7 @@
 .font-select:focus,
 .text-input:focus,
 .number-input:focus,
+.port-input:focus,
 .color-picker:focus,
 .range-slider:focus {
     outline: none;
@@ -367,4 +370,90 @@
     .dropdown-content {
         max-height: 60vh;
     }
+}
+
+/* Port Change Modal */
+#port-change-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.port-change-modal-content {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+    border: 2px solid #444;
+    border-radius: 8px;
+    padding: 30px;
+    max-width: 500px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    font-family: Calibri, Candara, sans-serif;
+}
+
+.port-change-modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #ffaa00;
+    font-size: 20pt;
+    text-align: center;
+}
+
+.port-change-modal-content p {
+    margin: 10px 0;
+    line-height: 1.6;
+    font-size: 11pt;
+}
+
+.port-change-modal-content strong {
+    color: #64c8ff;
+}
+
+.port-change-warning {
+    background: rgba(255, 170, 0, 0.1);
+    border-left: 4px solid #ffaa00;
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 4px;
+}
+
+.port-change-warning p {
+    margin: 8px 0;
+    color: #ffdd99;
+}
+
+.port-change-acknowledge-btn {
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+    border: 1px solid #0088ff;
+    color: #ffffff;
+    font-size: 12pt;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.port-change-acknowledge-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #0077dd 0%, #0063bb 100%);
+    box-shadow: 0 0 10px rgba(0, 136, 255, 0.4);
+}
+
+.port-change-acknowledge-btn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.port-change-acknowledge-btn:disabled {
+    background: linear-gradient(135deg, #444 0%, #333 100%);
+    border-color: #555;
+    cursor: not-allowed;
+    opacity: 0.7;
 }

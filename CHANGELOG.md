@@ -1,5 +1,23 @@
 # Storage Dashboard - Change Log
 
+## Version 20.2:
+* **Dynamic Port Configuration**
+    * Added "Listening Port" spinner control to Dashboard Settings menu (top of menu)
+    * Port setting stored in `config.json` under `network.port`, default 8010
+    * Real-time server restart via `start_up.sh` when port is changed
+    * Automatic browser navigation to new port URL after restart
+    * Prominent modal warning users about bookmark/shortcut updates needed
+    * Modal stays visible until user acknowledges before redirecting
+* **Configuration Improvements**
+    * Port input now properly synced during revert operations
+    * Added hard cache-clearing refresh on save/revert to ensure UI reflects actual config state
+    * Fixed dropdown menu not closing until SAVE/REVERT is clicked
+    * Port changes properly trigger restart sequence with clear user feedback
+* **Menu System Fixes**
+    * Fixed SAVE/REVERT buttons not firing when dropdown menus are open
+    * Menu dropdowns now close automatically after save/revert actions
+    * Improved event handling to prevent event propagation conflicts
+
 ## Version 20:
 * **Real-Time Pool Activity Monitor**
     * Integrated live read/write activity graphs for all ZFS pools using Chart.js

@@ -116,7 +116,18 @@ class ActivityMonitor {
             .sort((a, b) => a.id.localeCompare(b.id))
             .forEach(n => this.container.appendChild(n));
 
-        return new Chart(document.getElementById(`activity-chart-${name}`).getContext('2d'), {
+        const ctx = document.getElementById(`activity-chart-${name}`).getContext('2d');
+        
+        // Create gradient fills
+        const gradientRead = ctx.createLinearGradient(0, 0, 0, 150);
+        gradientRead.addColorStop(0, 'rgba(42, 0, 214, 0.5)');
+        gradientRead.addColorStop(1, 'rgba(42, 0, 214, 0)');
+        
+        const gradientWrite = ctx.createLinearGradient(0, 0, 0, 150);
+        gradientWrite.addColorStop(0, 'rgba(255, 159, 0, 0.5)');
+        gradientWrite.addColorStop(1, 'rgba(255, 159, 0, 0)');
+
+        return new Chart(ctx, {
             type: 'line',
             data: {
                 labels: Array(150).fill(''),
@@ -124,20 +135,20 @@ class ActivityMonitor {
                     {
                         data: [],
                         borderColor: 'rgba(42, 0, 214, 1)',
-                        backgroundColor: 'rgba(42, 0, 214, 0.2)',
+                        backgroundColor: gradientRead,
                         fill: true,
                         pointRadius: 0,
                         borderWidth: 2,
-                        tension: 0.4
+                        tension: 0.7
                     },
                     {
                         data: [],
                         borderColor: 'rgba(255, 159, 0, 1)',
-                        backgroundColor: 'rgba(255, 159, 0, 0.2)',
+                        backgroundColor: gradientWrite,
                         fill: true,
                         pointRadius: 0,
                         borderWidth: 2,
-                        tension: 0.4
+                        tension: 0.7
                     }
                 ]
             },

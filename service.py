@@ -5,7 +5,6 @@ from zfs_logic import get_zfs_topology
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(BASE_DIR, 'config.json')
 STYLE_CONFIG_FILE = os.path.join(BASE_DIR, 'config.json')
-PORT = 8010
 DEFAULT_TARGETS_PER_PORT = 4
 
 def normalize_pci_address(pci_address):
@@ -14,6 +13,8 @@ def normalize_pci_address(pci_address):
     if len(parts) == 4:
         return f"{parts[0]}:{parts[1]}:{parts[2]}.{parts[3]}"
     return pci_address
+
+
 
 def find_enclosure_slot_count(pci_address):
     enclosure_root = '/sys/class/enclosure'
@@ -692,6 +693,18 @@ def load_style_config():
         return DEFAULT_CONFIG_JSON
 
 
+def get_port():
+    """Get the listening port from config or return default"""
+    try:
+        config = load_config()
+        if config and isinstance(config.get('network'), dict):
+            port = config['network'].get('port', 8010)
+            return int(port)
+    except Exception as e:
+        print(f"Error reading port from config: {e}")
+    return 8010
+
+
 def get_io_snapshot():
     activity = {}
     try:
@@ -754,8 +767,8 @@ def get_diskstats_for_pools():
 
 def pool_activity_monitor_thread():
     """Monitor per-pool read/write activity with smoothing"""
-    POLL_INTERVAL = 0.05  # 10Hz sampling (50ms)
-    SMOOTHING_WINDOW = 15  # 1-second rolling average (15 samples at 10Hz)
+    POLL_INTERVAL = 0.05   # 10Hz sampling (50ms)
+    SMOOTHING_WINDOW = 100  # 10-second rolling average (100 samples at 10Hz)
     HISTORY_LIMIT = 150    # 15 seconds of history (150 samples at 10Hz)
     
     drive_to_pool = get_dynamic_pool_mapping()
@@ -1011,6 +1024,25 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(file_times).encode())
             return
+        elif path == '/trigger-restart':
+            # Trigger server restart for configuration changes (e.g., port change)
+            # Return the new port so the client can redirect
+            new_port = get_port()
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'status': 'restart initiated', 'port': new_port}).encode())
+            # Call start_up.sh to restart the service
+            try:
+                startup_script = os.path.join(BASE_DIR, 'start_up.sh')
+                if os.path.exists(startup_script):
+                    subprocess.Popen(['bash', startup_script])
+                    print("Restart initiated via start_up.sh")
+                else:
+                    print("Warning: start_up.sh not found")
+            except Exception as e:
+                print(f"Error triggering restart: {e}")
+            return
         return super().do_GET()
 
 if __name__ == "__main__":
@@ -1018,5 +1050,7 @@ if __name__ == "__main__":
     threading.Thread(target=topology_scanner_thread, daemon=True).start()
     threading.Thread(target=pool_activity_monitor_thread, daemon=True).start()
     socketserver.TCPServer.allow_reuse_address = True
+    PORT = get_port()
+    print(f"Starting server on port {PORT}")
     with socketserver.TCPServer(("0.0.0.0", PORT), FastHandler) as httpd:
         httpd.serve_forever()
