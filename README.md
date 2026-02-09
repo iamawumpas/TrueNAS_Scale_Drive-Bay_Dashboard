@@ -3,7 +3,7 @@
 
 
 A dashboard to show my disk array arrangement, status, and activity.
-![Disk Chassis](image.png)
+![Disk Chassis](image-2.png)
 
 
 ---
