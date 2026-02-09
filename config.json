@@ -145,6 +145,29 @@
             "flare_shape": 100
         }
     },
+    "__REMARK_CHART": "Activity Monitor chart colors, gradients, and dimensions.",
+    "chart": {
+        "__REMARK_COLORS": "Line and gradient colors for pool activity charts.",
+        "colors": {
+            "readColor": "#2a00d6",
+            "writeColor": "#ff9f00",
+            "readDotColor": "#2a00d6",
+            "writeDotColor": "#ff9f00",
+            "readGradientTop": "rgba(42, 0, 214, 0.5)",
+            "readGradientBottom": "rgba(42, 0, 214, 0)",
+            "writeGradientTop": "rgba(255, 159, 0, 0.5)",
+            "writeGradientBottom": "rgba(255, 159, 0, 0)"
+        },
+        "__REMARK_DIMENSIONS": "Chart sizing and line styling parameters.",
+        "dimensions": {
+            "chartHeight": "50px",
+            "cardWidth": "360px",
+            "cardMarginRight": "20px",
+            "containerGap": "25px",
+            "lineTension": "0.7",
+            "lineWidth": "2"
+        }
+    },
     "fonts": {
         "default": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
         "monospace": "Courier New, monospace"
@@ -205,8 +228,8 @@
                 "font_size_scale": 50,
                 "font_color": "#ffffff",
                 "style": [],
-                "rows": 1,
-                "bays_per_row": 4,
+                "rows": "1",
+                "bays_per_row": "16",
                 "flare_angle": "30deg",
                 "flare_offset_x": "-50%",
                 "flare_offset_y": "-50%",
@@ -229,7 +252,8 @@
                 "sn_size": "1.1vw",
                 "size_color": "#ff00ff",
                 "size_font": "Calibri",
-                "size_size": "1.1vw"
+                "size_size": "1.1vw",
+                "height": "44"
             },
             "environment": {
                 "page_bg_color": "#0a0a0a",
@@ -238,35 +262,12 @@
                 "menu_opacity": 100,
                 "flare_color": "#ffffff",
                 "flare_angle": 45,
-                "flare_offset_x": 50,
+                "flare_offset_x": "15",
                 "flare_offset_y": 50,
                 "flare_opacity": 0.225,
-                "flare_size": 50,
-                "flare_shape": 100
+                "flare_size": "58",
+                "flare_shape": "100"
             }
-        }
-    },
-    "__REMARK_CHART": "Activity Monitor chart colors, gradients, and dimensions.",
-    "chart": {
-        "__REMARK_COLORS": "Line and gradient colors for pool activity charts.",
-        "colors": {
-            "readColor": "#2a00d6",
-            "writeColor": "#ff9f00",
-            "readDotColor": "#2a00d6",
-            "writeDotColor": "#ff9f00",
-            "readGradientTop": "rgba(42, 0, 214, 0.5)",
-            "readGradientBottom": "rgba(42, 0, 214, 0)",
-            "writeGradientTop": "rgba(255, 159, 0, 0.5)",
-            "writeGradientBottom": "rgba(255, 159, 0, 0)"
-        },
-        "__REMARK_DIMENSIONS": "Chart sizing and line styling parameters.",
-        "dimensions": {
-            "chartHeight": "75px",
-            "cardWidth": "250px",
-            "cardMarginRight": "20px",
-            "containerGap": "20px",
-            "lineTension": "0.7",
-            "lineWidth": "2"
         }
     }
 }

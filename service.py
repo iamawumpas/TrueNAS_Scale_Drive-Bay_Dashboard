@@ -888,13 +888,21 @@ def topology_scanner_thread():
                             }
                         
                         if pci_key not in new_topology:
+                            # Get chassis config for this device (rows and bays_per_row)
+                            device_config = GLOBAL_DATA["config"].get("devices", {}).get(pci_raw, {})
+                            chassis_config = device_config.get("chassis", {})
+                            rows = chassis_config.get("rows", 1)
+                            bays_per_row = chassis_config.get("bays_per_row", controller_capacity[pci_key]["max_bays"])
+                            
                             new_topology[pci_key] = {
                                 "settings": {
                                     "pci_raw": pci_raw,
                                     "max_bays": controller_capacity[pci_key]["max_bays"],
                                     "has_backplane": controller_capacity[pci_key]["has_backplane"],
                                     "ports": controller_capacity[pci_key]["ports"],
-                                    "capacity_unknown": controller_capacity[pci_key]["capacity_unknown"]
+                                    "capacity_unknown": controller_capacity[pci_key]["capacity_unknown"],
+                                    "rows": rows,
+                                    "bays_per_row": bays_per_row
                                 },
                                 "disks": []
                             }

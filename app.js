@@ -240,13 +240,33 @@ async function update() {
                 const rows = chassisData.settings.rows || 1;
                 const baysPerRow = chassisData.settings.bays_per_row || maxBays;
                 
+                // Get device-specific bay height from config
+                const pciRaw = chassisData.settings.pci_raw || pci;
+                const deviceConfig = data.config?.devices?.[pciRaw] || {};
+                const bayHeight = deviceConfig.bay?.height || 35;
+                
+                // Apply bay height only if not in preview mode (menuSystem not dirty)
+                // This prevents overwriting live preview changes every 100ms
+                if (!menuSystem || !menuSystem.isDirty) {
+                    const storageUnit = document.getElementById(`unit-${pci}`);
+                    if (storageUnit) {
+                        storageUnit.style.setProperty('--bay-height', `${bayHeight}vh`);
+                    }
+                    slotContainer.style.gridAutoRows = `${bayHeight}vh`;
+                }
+                
                 // Set grid layout with proper row and column configuration
                 slotContainer.style.gridTemplateColumns = `repeat(${baysPerRow}, 4.5vw)`;
-                slotContainer.style.gridAutoRows = '35vh';
 
                 const warning = document.getElementById(`capacity-warning-${pci}`);
                 if (warning) {
                     warning.style.display = chassisData.settings.capacity_unknown ? 'block' : 'none';
+                }
+
+                // Pad disks array with empty slots if user configured grid larger than actual bays
+                const targetCapacity = Math.max(rows * baysPerRow, maxBays);
+                while (chassisData.disks.length < targetCapacity) {
+                    chassisData.disks.push({ status: 'EMPTY' });
                 }
 
                 chassisData.disks.forEach((disk, idx) => {

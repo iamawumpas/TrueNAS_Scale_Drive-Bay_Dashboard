@@ -18,7 +18,7 @@
     position: relative; 
     width: 4.5vw; 
     min-width: 4.5vw;
-    height: 35vh; 
+    height: var(--bay-height, 35vh); 
     padding-top: 1.5vh; 
     border-top: 4px solid var(--bay-top-border); 
     box-sizing: border-box; 

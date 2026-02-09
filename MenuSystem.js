@@ -143,6 +143,22 @@ export class MenuSystem {
 
         return `
             <div class="panel-section">
+                <h3>Layout</h3>
+
+                <div class="inline-row">
+                    <div class="inline-field">
+                        <label>Rows of Bays</label>
+                        <input type="number" class="number-input" data-key="chassis.rows" 
+                            value="${chassis.rows || 1}" min="1" max="10">
+                    </div>
+                    <div class="inline-field">
+                        <label>Bays per Row (1-${this.getMaxBaysForDevice(this.selectedDevice)})</label>
+                        <input type="number" class="number-input" data-key="chassis.bays_per_row" 
+                            value="${chassis.bays_per_row || 4}" min="1" max="${this.getMaxBaysForDevice(this.selectedDevice)}">
+                    </div>
+                </div>
+            </div>
+            <div class="panel-section">
                 <h3>Chassis Appearance</h3>
 
                 <div class="inline-row">
@@ -251,17 +267,6 @@ export class MenuSystem {
                 </div>
             </div>
 
-            <div class="panel-section">
-                <h3>Layout</h3>
-
-                <label>Rows of Bays</label>
-                <input type="number" class="number-input" data-key="chassis.rows" 
-                    value="${chassis.rows || 1}" min="1" max="10">
-
-                <label>Bays per Row (1-${this.getMaxBaysForDevice(this.selectedDevice)})</label>
-                <input type="number" class="number-input" data-key="chassis.bays_per_row" 
-                    value="${chassis.bays_per_row || 4}" min="1" max="${this.getMaxBaysForDevice(this.selectedDevice)}">
-            </div>
         `;
     }
 
@@ -501,6 +506,10 @@ export class MenuSystem {
                             value="${bay.top_border_opacity || '1'}" min="0" max="1" step="0.1">
                     </div>
                 </div>
+
+                <label>Bay Height (vh)</label>
+                <input type="range" class="range-slider" data-key="bay.height" 
+                    value="${bay.height || '35'}" min="20" max="60" step="1">
             </div>
 
             <div class="panel-section">
@@ -720,10 +729,17 @@ export class MenuSystem {
                 const menuItem = btn.closest('.menu-item');
                 const dropdownType = menuItem.dataset.dropdown;
                 
-                // Special handling for disk-storage parent - don't close other dropdowns
+                // Special handling for disk-storage parent
                 if (dropdownType === 'disk-storage') {
                     const diskStorageDropdown = menuItem.querySelector('.disk-storage-submenu');
                     if (diskStorageDropdown) {
+                        // Close all other main dropdown-content panels (but not the disk-storage submenu)
+                        document.querySelectorAll('.dropdown-content').forEach(d => {
+                            if (d !== diskStorageDropdown) {
+                                d.classList.remove('active');
+                            }
+                        });
+                        
                         diskStorageDropdown.classList.toggle('active');
                         
                         // Update selected state - keep disk-storage selected when submenu is open
@@ -799,10 +815,16 @@ export class MenuSystem {
                     dropdown.classList.add('active');
                     btn.classList.add('selected');
                     
-                    // Position the fixed dropdown below the submenu button
-                    const rect = btn.getBoundingClientRect();
-                    dropdown.style.top = (rect.bottom + 4) + 'px';
-                    dropdown.style.left = rect.left + 'px';
+                    // Position the dropdown to the right of the parent submenu (75% offset)
+                    const parentSubmenu = btn.closest('.disk-storage-submenu');
+                    const parentRect = parentSubmenu.getBoundingClientRect();
+                    const btnRect = btn.getBoundingClientRect();
+                    
+                    // Shift 75% of parent width to the right
+                    const offsetX = parentRect.width * 0.75;
+                    
+                    dropdown.style.top = btnRect.top + 'px';
+                    dropdown.style.left = (parentRect.left + offsetX) + 'px';
                 }
             });
         });
@@ -955,7 +977,7 @@ export class MenuSystem {
         }
         
         this.setConfigValue(key, value);
-        this.applyChangesToUI();
+        this.applyChangesToUI(false); // Don't recreate charts during live preview
         this.markDirty();
     }
 
@@ -974,7 +996,7 @@ export class MenuSystem {
         }
 
         this.setConfigValue(key, value);
-        this.applyChangesToUI();
+        this.applyChangesToUI(false); // Don't recreate charts during live preview
         this.markDirty();
     }
 
@@ -1003,7 +1025,7 @@ export class MenuSystem {
             if (idx > -1) styles.splice(idx, 1);
         }
 
-        this.applyChangesToUI();
+        this.applyChangesToUI(false); // Don't recreate charts during live preview
         this.markDirty();
     }
 
@@ -1038,7 +1060,7 @@ export class MenuSystem {
             styles.push(style);
         }
 
-        this.applyChangesToUI();
+        this.applyChangesToUI(false); // Don't recreate charts during live preview
         this.markDirty();
     }
 
@@ -1374,7 +1396,7 @@ export class MenuSystem {
         });
     }
 
-    applyChangesToUI() {
+    applyChangesToUI(shouldRecreateCharts = true) {
         // Apply menu changes directly to CSS variables and DOM
         const deviceConfig = this.getDeviceConfig(this.selectedDevice);
         const root = document.documentElement;
@@ -1445,6 +1467,7 @@ export class MenuSystem {
         if (deviceConfig.bay) {
             const bay = deviceConfig.bay;
             console.log('Bay config:', bay);
+            console.log('[Bay config details] height:', bay.height, 'type:', typeof bay.height);
             
             // Apply colors with opacity
             if (bay.background_base) {
@@ -1535,6 +1558,31 @@ export class MenuSystem {
                 root.style.setProperty('--disk-size-weight', this.getStyleWeight(bay.size_style));
                 root.style.setProperty('--disk-size-style', this.getStyleFont(bay.size_style));
                 root.style.setProperty('--disk-size-transform', this.getStyleTransform(bay.size_style));
+            }
+            
+            // Bay height
+            if (bay.height !== undefined) {
+                const heightValue = Number(bay.height);
+                const safeHeight = Number.isFinite(heightValue) ? Math.min(60, Math.max(20, heightValue)) : 35;
+                console.log(`[applyChangesToUI] Setting bay height to ${safeHeight}vh`);
+                root.style.setProperty('--bay-height', `${safeHeight}vh`);
+                
+                // Update CSS variable on all storage units (takes precedence over root)
+                const storageUnits = document.querySelectorAll('.storage-unit');
+                console.log(`[applyChangesToUI] Found ${storageUnits.length} .storage-unit elements`);
+                storageUnits.forEach(unit => {
+                    unit.style.setProperty('--bay-height', `${safeHeight}vh`);
+                });
+                
+                // Also update grid row height for all storage units
+                const slotContainers = document.querySelectorAll('.slots');
+                console.log(`[applyChangesToUI] Found ${slotContainers.length} .slots containers`);
+                slotContainers.forEach(container => {
+                    console.log(`[applyChangesToUI] Setting gridAutoRows on container:`, container.id);
+                    container.style.gridAutoRows = `${safeHeight}vh`;
+                });
+            } else {
+                console.log('[applyChangesToUI] bay.height is undefined');
             }
         }
 
@@ -1663,8 +1711,8 @@ export class MenuSystem {
         void document.documentElement.offsetHeight;
         console.log('Applied changes to UI for device:', this.selectedDevice);
         
-        // Trigger chart recreation if ActivityMonitor exists
-        if (window.activityMonitor && typeof window.activityMonitor.recreateCharts === 'function') {
+        // Trigger chart recreation if ActivityMonitor exists (only when shouldRecreateCharts is true)
+        if (shouldRecreateCharts && window.activityMonitor && typeof window.activityMonitor.recreateCharts === 'function') {
             window.activityMonitor.recreateCharts();
         }
     }
