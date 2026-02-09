@@ -1,78 +1,62 @@
-# User Guide: config.json
+````markdown
+# config.json — Reference (synchronized with the running service)
 
-## Default Settings
-The system initializes with the following baseline:
-* **Port**: 8010
-* **Layout**: 1 Chassis, 16 Bays (Horizontal layout).
-* **Hardware**: Targeted at HBA PCI Address `0000:00:10.0`.
-* **Colors**: High-contrast dark theme with Green (Online), Orange (Error), and Blue (Activity) LEDs.
+This document describes the authoritative `config.json` shape used by `service.py`. When in doubt, consult the repo `config.json` file — the service will regenerate defaults from its internal `DEFAULT_CONFIG_JSON` if the file is missing or invalid.
 
-## Modifying Settings
-1. Open `config.json` in any text editor (VS Code is recommended).
-2. **Layout Changes**: Adjust `bay_height_vh` or `chassis_width_pct` to fit your specific monitor or tablet screen.
-3. **Color Changes**: Update the Hex codes in the `"colors"` block to match your preferred aesthetic (e.g., changing `led_online` to `#00ffff` for a cyan look).
-4. Save the file. The dashboard will refresh automatically.
+Top-level sections and purpose:
 
-## Handling Errors & Corruption
-If you see the hostname in the dashboard **pulsing slowly** with the message `config file error :: reverting to default settings`, the system has entered Fail-safe mode.
+- `network` (object)
+  - `port` (number): TCP port the HTTP server listens on. Default: `8010`.
 
-### Common Causes:
-1. **JSON Syntax Error**: You may have missed a comma `,` or a closing brace `}` in the config file.
-2. **Missing File**: The `config.json` was moved or deleted.
-3. **Empty File**: The file exists but contains no data.
+- `hardware` (object)
+  - `controller_overrides` (array): optional manual overrides for controllers. Each override can include `pci_address`, `ports`, and `lanes_per_port`.
 
-### How to Fix:
-- **If you made a typo**: Check your JSON syntax. You can use an online "JSON Validator" to find the missing comma or bracket. Once fixed and saved, the error message will disappear instantly.
-- **If you want to reset**: Simply delete `config.json` and restart `service.py`. The service will generate a fresh, perfectly formatted default file for you to start over with.
-- **Check the Terminal**: The `service.py` console will print a specific error message (e.g., `Expecting ',' delimiter`) to help you find the exact line causing the issue.
+- `ui` (object)
+  - Granular UI controls. This block is applied live by the front-end and contains nested objects such as `server_name`, `pci_address`, `legend`, `bay_id`, `disk_serial`, `disk_size`, `disk_pool`, `disk_index`, plus `chassis`, `bay`, `led_colors`, and `environment`.
+  - Per-element objects typically support: `color`, `font`, `size`, and `style` (array of tokens like `"bold"`, `"italic"`, `"allcaps"`).
 
-### Default settings in config.json
+- `chart` (object)
+  - Controls the Activity Monitor colors and dimensions:
+    - `colors`: `readColor`, `writeColor`, `readGradientTop`, `readGradientBottom`, `writeGradientTop`, `writeGradientBottom`, `readDotColor`, `writeDotColor`.
+    - `dimensions`: sizing and visual parameters (e.g., `chartHeight`, `cardWidth`, `lineWidth`).
+
+- `fonts`, `fontSizes`, `fontStyles`, `colors` (objects)
+  - Legacy/global style buckets that the front-end may use as fallbacks. `ui` subkeys and `devices` overrides take precedence when present.
+
+- `devices` (object)
+  - Device-specific overrides keyed by PCI address (e.g. `0000:00:10.0`). Each device entry can contain `chassis`, `bay`, and `environment` objects to override global UI for that particular controller.
+
+Editing notes and runtime behavior:
+
+- Most changes under `ui`, `fonts`, `fontSizes`, `fontStyles`, and `colors` are applied live by the browser; no service restart is required.
+- Changes to `network.port` require restarting the service; the front-end exposes a `/trigger-restart` endpoint that invokes `start_up.sh`.
+- If the `config.json` is invalid JSON the service logs an error and regenerates defaults from its built-in `DEFAULT_CONFIG_JSON`. Always back up before large edits.
+
+Minimal example:
 ```json
 {
-    "__REMARK_NETWORK": "Port the web dashboard will be accessible on.",
-    "network": {
-        "port": 8010
-    },
-    "__REMARK_LAYOUT": "Visual sizing. VH = % of screen height. PX = Minimum fixed width.",
-    "layout": {
-        "chassis_count": 1,
-        "bays_per_chassis": 16,
-        "rows_per_chassis": 1,
-        "chassis_width_pct": 100,
-        "bay_height_vh": 48,
-        "bay_width_min_px": 40
-    },
-    "__REMARK_HARDWARE": "The PCI address of your HBA (find via lspci).",
-    "hardware": {
-        "hba_pci_address": "0000:00:10.0",
-        "hba_name": "Main HBA Storage",
-        "controller_overrides": [
-            {
-                "pci_address": "0000:00:10.0",
-                "ports": 4,
-                "lanes_per_port": 4
-            }
-        ]
-    },
-    "__REMARK_COLORS": "Hex codes for the UI theme and LED status colors.",
-    "colors": {
-        "page_background": "#050505",
-        "chassis_background": "#1a1a1a",
-        "bay_background": "#121212",
-        "text_serial": "#ffff00",
-        "text_capacity": "#ff00ff",
-        "text_pool": "#ffffff",
-        "led_online": "#00ff00",
-        "led_resilver": "#ffffff",
-        "led_error": "#ffaa00",
-        "led_offline": "#ff0000",
-        "led_unused": "#8000ff",
-        "led_activity": "#008cff"
-    },
-    "__REMARK_ZFS": "Formatting for pool names and unallocated drive labels.",
-    "zfs_settings": {
-        "show_index": true,
-        "pool_separator": " - ",
-        "unallocated_label": " "
-    }
+  "network": { "port": 8010 },
+  "ui": {
+    "server_name": { "color": "#ffffff", "font": "Calibri", "size": "2.8rem", "style": ["bold"] },
+    "led_colors": { "allocated_healthy": "#00ff00", "activity": "#008cff" }
+  },
+  "devices": {
+    "0000:00:10.0": { "chassis": { "rows": 1, "bays_per_row": 16 }, "bay": { "height": "44" } }
+  }
 }
+```
+
+Where to look for authoritative references:
+
+- The live `config.json` in the repository root is canonical.
+- `service.py` contains `DEFAULT_CONFIG_JSON` used to rebuild the file when missing.
+- `CUSTOMIZATION_GUIDE.md` contains friendly examples for themes and accessibility.
+
+Troubleshooting:
+
+- If the UI is not reflecting changes:
+  - Clear browser cache or hard reload (Ctrl+F5).
+  - Check `service.py` stdout for parse errors when saving via the UI.
+  - Confirm you edited valid JSON (use an editor with JSON validation).
+
+````
