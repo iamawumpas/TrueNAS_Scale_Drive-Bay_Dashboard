@@ -2,6 +2,19 @@
 **version 20.4**
 
 
+## Documentation / Wiki
+
+I've moved detailed installation, file-overview, startup, and configuration notes into the repo `WIKI/` folder so they can be copied to the GitHub wiki or used as standalone docs:
+
+- [Installation](WIKI/Installation.md)
+- [File Overview](WIKI/FileOverview.md)
+- [start_up.sh details](WIKI/StartUp.md)
+- [Python scripts overview](WIKI/PythonScripts.md)
+- [Manual configuration & references](WIKI/ManualConfiguration.md)
+
+Also see: [CONFIG_GUIDE.md](CONFIG_GUIDE.md), [CUSTOMIZATION_GUIDE.md](CUSTOMIZATION_GUIDE.md), and [CHANGELOG.md](CHANGELOG.md) for canonical references.
+
+
 A self-hosted dashboard that visualizes TrueNAS Scale drive layout, status, and activity in a chassis-style view.
 ![Dashboard](image.png)
 
