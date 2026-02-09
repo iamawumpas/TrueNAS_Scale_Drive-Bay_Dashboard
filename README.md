@@ -1,9 +1,9 @@
-# TrueNAS Scale Drive Bay Assignment
-**version 19.3**
+# TrueNAS Scale Drive-Bay Dashboard
+**version 20.4**
 
 
-A dashboard to show my disk array arrangement, status, and activity.
-![Disk Chassis](image.png)
+A self-hosted dashboard that visualizes TrueNAS Scale drive layout, status, and activity in a chassis-style view.
+![Dashboard](image.png)
 
 
 ---
@@ -33,7 +33,17 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
     * **Red:** Drive is connected, but marked Offline by TrueNAS.
     * **Purple:** Drive is connected but is a spare or unallocated.
     * **Purple/Orange [Blinking]** Drive is connected and unallocated, but TrueNAS reports an error.
-    * **Purple/Red [Blinking]** Drive is conenced and unallocated, but TrueNAS reports faulted.
+    * **Purple/Red [Blinking]** Drive is connected and unallocated, but TrueNAS reports faulted.
+
+---
+
+## Key Features
+* **Live Configuration Menus:** Adjust chassis layout, bay appearance, fonts, colors, and chart options directly in the UI.
+* **Instant Preview:** Most styling changes (including bay height) update live without a service restart.
+* **Per-Device Overrides:** Device-specific settings stored in `config.json` under each PCI address.
+* **Flexible Layout:** Configure rows and bays-per-row, with empty bay placeholders when the grid exceeds detected drives.
+* **Activity Monitor:** Optional per-pool read/write charts with smooth updates and compact card layout.
+* **Resilient Config:** Auto-generates `config.json` if missing and falls back to hardened defaults if malformed.
 
 ---
 
@@ -42,29 +52,39 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
 1.  **SSH into the TrueNAS Scale console.**
 2.  **Create a directory on one of your Pools:**
     ```bash
-    mkdir -p /mnt/[Pool_Name]/scripts/disk_lights
+    mkdir -p /mnt/[Pool_Name]/scripts/dashboard
     ```
 3.  **Navigate to the folder:**
     ```bash
-    cd /mnt/[Pool_Name]/scripts/disk_lights
+    cd /mnt/[Pool_Name]/scripts/dashboard
     ```
-4.  **Upload Files:** Use WinSCP or your preferred file transfer tool to copy all of the files in the disk_lights folder from this repository, into this folder.
+4.  **Upload Files:** Use WinSCP or your preferred file transfer tool, to copy all of the files in the dashboard folder from this repository, into this folder on your TrueNAS server.
 5.  **Set Permissions:**
     ```bash
-    chmod +x /mnt/[Pool_Name]/scripts/disk_lights/service.py
-    chmod +X /mnt[Pool_Name]/scripts/disk_lights/start_up.sh
+    chmod +x /mnt/[Pool_Name]/scripts/dashboard/service.py
+    chmod +X /mnt[Pool_Name]/scripts/dashboard/start_up.sh
     ```
 6.  **Run the Service Manually (for testing):**
     ```bash
-    nohup python3 service.py > /dev/null 2>&1 &
+    ./start_up.sh
     ```
-    If successful, you should see a PID response like: `[1] 3321474`
-
+    If successful you will see the following output
+    ```
+    Stopping any existing service...
+    Clearing __pycache__ directories...
+    (re)starting the service...
+    ```
 7.  **Verify the Service:**
     ```bash
     ps aux | grep service.py
     ```
-    You should see two entries. The first is the running script; the second is your search command (`grep`). If you only see the `grep` entry, the service failed to start.
+    You should see two entries similat to below:
+    ```
+    root      366525  4.9  0.1 248916 19788 pts/0    Sl   17:59   0:45 python3 service.py
+    root      369663  0.0  0.0   3880  1384 pts/0    S+   18:14   0:00 grep service.py
+    ```
+    
+     The first is the running script; the second is your search command (`grep`). If you only see the `grep service.py` entry, the service failed to start.
 
 8.  **Stop the Service (if needed):**
     ```bash
@@ -75,9 +95,9 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
     To ensure the dashboard starts automatically, go to the TrueNAS Web UI:
     * Navigate to **System Settings > Advanced > Init/Shutdown Scripts**.
     * Click **Add**.
-    * **Description:** `Disk Light Service`
+    * **Description:** `Disk Status Service`
     * **Type:** `Script`
-    * **Script:** `python3 /mnt/[Pool_Name]/scripts/disk_lights/start_up.sh`
+    * **Script:** `python3 /mnt/[Pool_Name]/scripts/dashboard/start_up.sh`
     * **When:** `Post Init`
     * **Save.**
 
@@ -85,38 +105,114 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
 
 ## What do the files do?
 ### `start_up.sh`
-The startup script for TrueNAS to use at initialisation. Ensures the script directory is parsed to the various python and javascript files. 
-
+Stops the service on TrueNAS (if running), clears stale caches, and (re)launches the Python daemon.
 
 ### `service.py`
-This is the daemon that interrogates TrueNAS and your HBA to identify:
-* The number of used ports.
-* Disk serial numbers.
-* Slot numbers on breakout cables (see **Logic**).
-* Formatted disk capacity (not vdev capacity).
-* TrueNAS drive status and read/write activity.
-* Pool names, and which drives are allocated to each pool and their order.
+Main daemon that interrogates TrueNAS and your HBA to identify:
+* Used ports
+* Disk serial numbers
+* Breakout slot positions (see **Logic**)
+* Formatted disk capacity (not vdev capacity)
+* Drive status and activity
+* Pool names and drive-to-pool mapping
 
-Limited customisation can now be made from within the service.py script in the --- CONFIGURATION SECTION ----.
+It also hosts the web dashboard on **port 8010** by default (configurable).
 
-This script also acts as a basic web server to host the dashboard. It uses **port 8010** by default (this can be changed within the script).
+### `zfs_logic.py`
+Helper logic for drive and pool discovery used by `service.py`.
+
+### `app.js`
+Client entry point that fetches `/data`, renders chassis and bays, and drives live updates.
+
+### `MenuSystem.js`
+Builds the configuration menus, handles input, previews changes, and saves to `config.json`.
+
+### `Chassis.js`
+Generates chassis markup and container layout for each device.
+
+### `Bay.js`
+Generates bay markup for each drive slot.
+
+### `DiskInfo.js`
+Formats disk metadata (capacity, pool, serial, index) for display.
+
+### `LEDManager.js`
+Maps disk states to LED classes for consistent status colors.
+
+### `ActivityMonitor.js`
+Fetches pool activity data and renders the read/write charts.
+
+### `index.html`
+Static HTML shell that loads the dashboard scripts and styles.
+
+### `style.css`
+Base styling for overall layout and global theme variables.
+
+### `Base.css`
+Common typography and shared UI styling.
+
+### `Chassis.css`
+Styling for chassis containers and layout framing.
+
+### `Bay.css`
+Styling for bays, including size, grill pattern, and labels.
+
+### `LEDs.css`
+LED indicator styles and animations.
+
+### `Menu.css`
+Menu layout and form control styling.
+
+### `ActivityMonitor.css`
+Styles for the activity monitor cards and charts.
+
+### `livereload.js`
+Optional dev helper for auto-refresh during local development.
+
+### `config.json`
+Primary configuration store, auto-generated on first run if missing.
+
+### `config.json.backup`
+Local backup copy of the configuration (optional).
+
+### `CONFIG_GUIDE.md`
+Detailed reference for configuration keys and examples.
+
+### `CUSTOMIZATION_GUIDE.md`
+Tips for theming, fonts, colors, and layout tweaks.
+
+### `Developer_Notes.md`
+Implementation notes and internal architecture notes.
+
+### `CHANGELOG.md`
+Version history and feature highlights.
+
+### `LICENSE`
+Project license.
+
+### `image.png`
+README screenshot (you will update this).
+
+### `.gitignore`
+Git ignore rules for generated and local-only files.
+
+### `__pycache__/`
+Python bytecode cache directory (generated at runtime).
 
 ---
 
 ## Logic
-The logic assumes a specific physical setup based on my hardware:
-* The HBA has **4 ports**.
-* Each port uses a breakout cable supporting **4 SATA drives**.
-
-| Port | SATA Slots |
-| :--- | :--- |
-| **Port 1** | SATA 1-4 |
-| **Port 2** | SATA 5-8 |
-| **Port 3** | SATA 9-12 |
-| **Port 4** | SATA 13-16 |
+The logic now builds the layout dynamically from what TrueNAS reports:
+* **Controller discovery:** Scans `/dev/disk/by-path` for PCI-based storage controllers and skips virtual/emulated controllers.
+* **Capacity detection:**
+  * If an enclosure/backplane is detected under `/sys/class/enclosure`, the slot count is used as the bay capacity.
+  * If no backplane is found, it falls back to SAS phy counts or vendor tools (sas2ircu/sas3ircu/storcli) to estimate direct-attach capacity.
+  * Capacity can be overridden in `config.json` per controller (ports, lanes, max_bays).
+* **Bay numbering:** Each disk path is parsed for tokens like `phy`, `ata`, `sas`, `port`, `slot`, or `exp` followed by a number, which becomes the bay index.
+* **Layout vs hardware:** Rows and bays-per-row are display settings. They do not change the detected bay count, only how the grid is drawn.
 
 > **[NOTE]**
-> Since I don't currently have a backplane, the HBA cannot report the physical "slot" location, but it can identify which cable a drive is connected to (mine are numbered 1, 2, 3, 4,). The dashboard assumes the drives are physically arranged in the order the cables are plugged in. To change the display order, simply swap the SATA connectors on the physical drives.
+> Without a backplane, physical slot order is inferred from the by-path naming. If your cable order does not match the displayed order, swap SATA connectors or adjust layout settings.
 
 ---
 ## Configuration System
@@ -132,19 +228,7 @@ The dashboard is controlled by a central `config.json` file. This file dictates 
 ---
 
 ## Future Plans
-* **Dynamic Logic:** Detect the specific device TrueNAS reports to better design the chassis layout automatically.
-* **Become Fully customisable.**
-  * adjust chassis colour scheme .
-  * adjust status LED colours, activity LED colours.
-  * adjust the dimensions of the bays.
-  * adjust the number of rows of bays per chassis.
-  * adjust chassis width.
-  * adjust drive bay colour scheme.
-  * adjust drive bay information colours.
-  * which PCI devices are displayed.
-  * drag and drop drive bays to match your physical layout.
-* **Pool IO Graphs**
-  * display the last 60s.
-  * server side cache of data.
-  * read and write data.
-  * 1 graph per pool.
+* **Responsive Chassis Width:** Allow dynamic chassis width adjustment to better fit different screen sizes and preferences.
+* **Visual Reordering:** Drag-and-drop bay rearrangement to customize logical order independent of physical HBA port mapping.
+* **Extended Metrics:** Detailed per-drive latency tracking, temperature monitoring via SMART data, and predictive health metrics.
+* **Mobile Responsive Design:** Optimize dashboard layout for smaller screens and mobile devices.
