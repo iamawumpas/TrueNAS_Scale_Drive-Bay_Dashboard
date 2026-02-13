@@ -1,0 +1,274 @@
+{
+  "fonts": {
+    "default": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+    "monospace": "Courier New, monospace"
+  },
+  "fontSizes": {
+    "legendTitle": "1.25rem",
+    "legend": "0.75rem",
+    "serverName": "2.8rem",
+    "pciAddress": "1.1rem",
+    "bayId": "0.8vw",
+    "diskSerial": "1.1vw",
+    "diskSize": "1.1vw",
+    "diskPool": "1.1vw",
+    "diskIndex": "1.1vw"
+  },
+  "fontStyles": {
+    "bold": "bold",
+    "italic": "italic",
+    "underline": "underline",
+    "smallCaps": "small-caps",
+    "allCaps": "uppercase"
+  },
+  "colors": {
+    "serverName": "#ffffff",
+    "pciAddress": "#666666",
+    "legend": "#cccccc",
+    "legendTitle": "rgba(255, 255, 255, 0.9)",
+    "bayId": "#ffaa00",
+    "diskSerial": "#ffff00",
+    "diskSize": "#ff00ff",
+    "diskPool": "#ffffff",
+    "diskIndex": "#00ffff",
+    "chassisBgBase": "#1a1a1a",
+    "chassisBorder": "#333333",
+    "chassisShadow": "rgba(0,0,0,0.8)",
+    "bayBgBase": "#121212",
+    "bayBorder": "#333333",
+    "bayTopBorder": "#444444",
+    "ledAllocatedHealthy": "#00ff00",
+    "ledAllocatedOffline": "#555555",
+    "ledError": "#ffaa00",
+    "ledFaulted": "#ff0000",
+    "ledResilvering": "#ffffff",
+    "ledUnallocated": "#a000ff",
+    "ledUnallocError": "#ffaa00",
+    "ledUnallocFault": "#ff0000",
+    "ledActivity": "#008cff"
+  },
+  "__REMARK_NETWORK": "Port settings for the web dashboard.",
+  "network": {
+    "port": 8010
+  },
+  "__REMARK_HARDWARE": "Optional overrides for controller ports and lanes per port.",
+  "hardware": {
+    "controller_overrides": [
+      {
+        "pci_address": "0000:00:10.0",
+        "ports": 4,
+        "lanes_per_port": 4
+      }
+    ]
+  },
+  "__REMARK_UI": "Dashboard UI configuration. All values are applied live without restart.\nUse style arrays to combine: [\"bold\", \"italic\", \"allcaps\"]",
+  "ui": {
+    "__REMARK_SERVER_NAME": "Server Name display (top-left).",
+    "server_name": {
+      "color": "#ffffff",
+      "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+      "size": "2.8rem",
+      "style": [
+        "bold",
+        "allcaps"
+      ]
+    },
+    "__REMARK_PCI_ADDRESS": "PCI address line under server name.",
+    "pci_address": {
+      "color": "#666666",
+      "font": "Courier New, monospace",
+      "size": "1.1rem",
+      "style": [
+        "bold"
+      ]
+    },
+    "__REMARK_LEGEND": "Legend label box in the header.",
+    "legend": {
+      "title_color": "rgba(255, 255, 255, 0.9)",
+      "title_size": "1.25rem",
+      "title_weight": "800",
+      "item_color": "#cccccc",
+      "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+      "size": "0.75rem",
+      "style": [
+        "bold",
+        "allcaps"
+      ],
+      "flare": {
+        "angle": "30deg",
+        "offset_x": "-50%",
+        "offset_y": "-50%"
+      }
+    },
+    "__REMARK_BAY_ID": "Bay label (e.g., BAY 1).",
+    "bay_id": {
+      "color": "#ffaa00",
+      "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+      "size": "0.8vw",
+      "style": [
+        "bold",
+        "allcaps"
+      ]
+    },
+    "__REMARK_DISK_SERIAL": "Disk serial suffix text.",
+    "disk_serial": {
+      "color": "#ffff00",
+      "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+      "size": "1.1vw",
+      "style": [
+        "bold"
+      ]
+    },
+    "__REMARK_DISK_SIZE": "Disk capacity text.",
+    "disk_size": {
+      "color": "#ff00ff",
+      "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+      "size": "1.1vw",
+      "style": [
+        "bold"
+      ]
+    },
+    "__REMARK_DISK_POOL": "Pool name text.",
+    "disk_pool": {
+      "color": "#ffffff",
+      "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+      "size": "1.1vw",
+      "style": [
+        "bold"
+      ]
+    },
+    "__REMARK_DISK_INDEX": "Pool index text (e.g., #2).",
+    "disk_index": {
+      "color": "#00ffff",
+      "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+      "size": "1.1vw",
+      "style": [
+        "bold"
+      ]
+    },
+    "__REMARK_CHASSIS": "Chassis enclosure body styling.",
+    "chassis": {
+      "background_base": "#1a1a1a",
+      "border": "#333333",
+      "shadow": "rgba(0,0,0,0.8)",
+      "header_divider": "rgba(255,255,255,0.1)",
+      "font_size_scale": 50,
+      "font_color": "#ffffff"
+    },
+    "__REMARK_BAY": "Drive bay card styling.",
+    "bay": {
+      "background_base": "#121212",
+      "border": "#333333",
+      "top_border": "#444444",
+      "grill_size_scale": 50,
+      "pool_size_scale": 50,
+      "idx_size_scale": 50,
+      "sn_size_scale": 50,
+      "size_size_scale": 50
+    },
+    "__REMARK_LEDS": "LED and legend dot colors.",
+    "led_colors": {
+      "allocated_healthy": "#00ff00",
+      "allocated_offline": "#555555",
+      "error": "#ffaa00",
+      "faulted": "#ff0000",
+      "resilvering": "#ffffff",
+      "unallocated": "#a000ff",
+      "unalloc_error": "#ffaa00",
+      "unalloc_fault": "#ff0000",
+      "activity": "#008cff"
+    },
+    "__REMARK_ENVIRONMENT": "Environment settings for page background, menu styling, and flare effects.",
+    "environment": {
+      "page_bg_color": "#0a0a0a",
+      "menu_bg_color": "#2a2a2a",
+      "menu_text_color": "#ffffff",
+      "menu_opacity": 100,
+      "flare_color": "#ffffff",
+      "flare_angle": 45,
+      "flare_offset_x": 50,
+      "flare_offset_y": 50,
+      "flare_opacity": 0.225,
+      "flare_size": 50,
+      "flare_shape": 100
+    }
+  },
+  "__REMARK_CHART": "Activity Monitor chart colors, gradients, and dimensions.",
+  "chart": {
+    "__REMARK_COLORS": "Line and gradient colors for pool activity charts.",
+    "colors": {
+      "readColor": "#2a00d6",
+      "writeColor": "#ff9f00",
+      "readDotColor": "#2a00d6",
+      "writeDotColor": "#ff9f00",
+      "readGradientTop": "rgba(42, 0, 214, 0.5)",
+      "readGradientBottom": "rgba(42, 0, 214, 0)",
+      "writeGradientTop": "rgba(255, 159, 0, 0.5)",
+      "writeGradientBottom": "rgba(255, 159, 0, 0)",
+      "yAxisLabelColor": "#ffffff"
+    },
+    "__REMARK_DIMENSIONS": "Chart sizing and line styling parameters.",
+    "dimensions": {
+      "chartHeight": "50px",
+      "cardWidth": "360px",
+      "cardMarginRight": "20px",
+      "containerGap": "25px",
+      "lineTension": "0.7",
+      "lineWidth": "2"
+    }
+  },
+  "__REMARK_DEVICES": "Per-device configuration. Keys are PCI addresses. Settings here override global ui config for that device.",
+  "devices": {
+    "0000:00:10.0": {
+      "chassis": {
+        "background_base": "#1a1a1a",
+        "border": "#333333",
+        "shadow": "rgba(0,0,0,0.8)",
+        "header_divider": "rgba(255,255,255,0.1)",
+        "font": "Calibri",
+        "font_size_scale": 50,
+        "font_color": "#ffffff",
+        "style": [],
+        "rows": "1",
+        "bays_per_row": "16",
+        "flare_angle": "30deg",
+        "flare_offset_x": "-50%",
+        "flare_offset_y": "-50%",
+        "flare_opacity": "0.5",
+        "flare_enabled": true
+      },
+      "bay": {
+        "background_base": "#121212",
+        "border": "#333333",
+        "top_border": "#444444",
+        "grill_size": "18px",
+        "pool_color": "#ffffff",
+        "pool_font": "Calibri",
+        "pool_size": "1.1vw",
+        "idx_color": "#00ffff",
+        "idx_font": "Calibri",
+        "idx_size": "1.1vw",
+        "sn_color": "#ffff00",
+        "sn_font": "Calibri",
+        "sn_size": "1.1vw",
+        "size_color": "#ff00ff",
+        "size_font": "Calibri",
+        "size_size": "1.1vw",
+        "height": "34"
+      },
+      "environment": {
+        "page_bg_color": "#0a0a0a",
+        "menu_bg_color": "#2a2a2a",
+        "menu_text_color": "#ffffff",
+        "menu_opacity": 100,
+        "flare_color": "#ffffff",
+        "flare_angle": 45,
+        "flare_offset_x": "15",
+        "flare_offset_y": 50,
+        "flare_opacity": 0.225,
+        "flare_size": "58",
+        "flare_shape": "100"
+      }
+    }
+  }
+}

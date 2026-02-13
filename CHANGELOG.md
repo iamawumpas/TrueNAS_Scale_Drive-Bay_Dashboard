@@ -1,5 +1,15 @@
 # Storage Dashboard - Change Log
 
+## Version 20.5:
+* **Performance & UI Optimizations**
+    - Added `ui/utils.js` with shared UI helpers to centralize CSS-variable writes and common DOM helpers.
+    - Consolidated repeated CSS-variable set operations into `applyConfigMap()` to reduce style thrash.
+    - Introduced DOM caches (`unitsMap`, `slotContainersMap`) to avoid expensive repeated queries.
+    - Implemented delta-updates (`updateTextIfChanged`, `setClassIfChanged`) to minimize DOM writes for hot-path updates (disk cells, LEDs).
+    - Applied per-unit CSS-variable overrides immediately when unit elements are created to avoid redundant global writes.
+    - Gated verbose debug logging behind `UI_DEBUG` to reduce console noise in normal operation.
+    - Fixed a `MenuSystem.js` syntax regression and applied low-risk refactors to improve runtime stability.
+
 ## Version 20.4:
 * **Bay Height Customization**
     * Added adjustable bay height slider (20-60vh range) in Bay Appearance section of Bay Settings submenu

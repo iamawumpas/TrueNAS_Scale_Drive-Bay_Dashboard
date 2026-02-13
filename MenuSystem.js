@@ -1,4 +1,5 @@
 // MenuSystem.js - Dynamic menu for customizing dashboard settings
+import { applyConfigMap } from './ui/utils.js';
 
 export class MenuSystem {
     constructor(topology, currentConfig) {
@@ -382,6 +383,7 @@ export class MenuSystem {
                 <label>Background Color</label>
                 <input type="color" class="color-picker" data-key="environment.page_bg_color" 
                     value="${this.hexToColor(environment.page_bg_color || '#0a0a0a')}">
+                
             </div>
 
             <div class="panel-section">
@@ -933,6 +935,7 @@ export class MenuSystem {
             });
         });
 
+
         // Port input - use 'input' for real-time validation
         const portInputs = document.querySelectorAll('.port-input');
         portInputs.forEach(input => {
@@ -1403,64 +1406,52 @@ export class MenuSystem {
 
         console.log('Applying changes for device:', this.selectedDevice, deviceConfig);
 
-        // Apply chassis settings
+        // Apply chassis settings via mapping
         if (deviceConfig.chassis) {
             const chassis = deviceConfig.chassis;
             console.log('Chassis config:', chassis);
-            
-            // Apply colors with opacity
+            const chassisMap = {};
             if (chassis.background_base) {
                 const opacity = chassis.background_opacity !== undefined ? chassis.background_opacity : 1;
                 const color = this.hexToRgba(chassis.background_base, opacity);
-                root.style.setProperty('--chassis-bg-base', color);
+                chassisMap['--chassis-bg-base'] = color;
                 console.log('Set --chassis-bg-base to', color);
-                
-                // Also check if the element exists and verify it's being applied
                 const storageUnits = document.querySelectorAll('.storage-unit');
-                console.log(`Found ${storageUnits.length} storage unit elements`);
                 if (storageUnits.length > 0) {
+                    console.log(`Found ${storageUnits.length} storage unit elements`);
                     const computedBg = window.getComputedStyle(storageUnits[0]).backgroundColor;
                     console.log('First storage-unit computed background-color:', computedBg);
                 }
             }
-            
             if (chassis.border) {
                 const opacity = chassis.border_opacity !== undefined ? chassis.border_opacity : 1;
                 const color = this.hexToRgba(chassis.border, opacity);
-                root.style.setProperty('--chassis-border', color);
+                chassisMap['--chassis-border'] = color;
             }
-            
             if (chassis.shadow) {
                 const opacity = chassis.shadow_opacity !== undefined ? chassis.shadow_opacity : 0.8;
                 const color = this.hexToRgba(chassis.shadow, opacity);
-                root.style.setProperty('--chassis-shadow', color);
+                chassisMap['--chassis-shadow'] = color;
             }
-            
             if (chassis.header_divider) {
                 const opacity = chassis.header_divider_opacity !== undefined ? chassis.header_divider_opacity : 0.1;
                 const color = this.hexToRgba(chassis.header_divider, opacity);
-                root.style.setProperty('--chassis-header-divider', color);
+                chassisMap['--chassis-header-divider'] = color;
             }
-            
-            if (chassis.scratch_opacity !== undefined) {
-                root.style.setProperty('--chassis-scratch-opacity', chassis.scratch_opacity);
-            }
-            
-            if (chassis.font) root.style.setProperty('--chassis-font', chassis.font);
-            
-            // Convert font_size_scale (0-100) to em (0.5-1.5)
+            if (chassis.scratch_opacity !== undefined) chassisMap['--chassis-scratch-opacity'] = chassis.scratch_opacity;
+            if (chassis.font) chassisMap['--chassis-font'] = chassis.font;
             if (chassis.font_size_scale !== undefined) {
                 const scaleValue = Number(chassis.font_size_scale);
                 const safeSizeScale = Number.isFinite(scaleValue) ? Math.min(100, Math.max(0, scaleValue)) : 50;
                 const fontSizeEm = 0.5 + (safeSizeScale / 100) * 1.0;
-                root.style.setProperty('--chassis-font-size', `${fontSizeEm}em`);
+                chassisMap['--chassis-font-size'] = `${fontSizeEm}em`;
             }
-            
-            if (chassis.font_color) root.style.setProperty('--chassis-font-color', chassis.font_color);
-            if (chassis.flare_angle) root.style.setProperty('--legend-flare-angle', chassis.flare_angle);
-            if (chassis.flare_offset_x) root.style.setProperty('--legend-flare-offset-x', chassis.flare_offset_x);
-            if (chassis.flare_offset_y) root.style.setProperty('--legend-flare-offset-y', chassis.flare_offset_y);
-            if (chassis.flare_opacity) root.style.setProperty('--legend-flare-opacity', chassis.flare_opacity);
+            if (chassis.font_color) chassisMap['--chassis-font-color'] = chassis.font_color;
+            if (chassis.flare_angle) chassisMap['--legend-flare-angle'] = chassis.flare_angle;
+            if (chassis.flare_offset_x) chassisMap['--legend-flare-offset-x'] = chassis.flare_offset_x;
+            if (chassis.flare_offset_y) chassisMap['--legend-flare-offset-y'] = chassis.flare_offset_y;
+            if (chassis.flare_opacity) chassisMap['--legend-flare-opacity'] = chassis.flare_opacity;
+            applyConfigMap(root, chassisMap);
         }
 
         // Apply bay settings
@@ -1469,243 +1460,182 @@ export class MenuSystem {
             console.log('Bay config:', bay);
             console.log('[Bay config details] height:', bay.height, 'type:', typeof bay.height);
             
-            // Apply colors with opacity
+            // Apply bay settings via mapping
+            const bayMap = {};
             if (bay.background_base) {
                 const opacity = bay.background_opacity !== undefined ? bay.background_opacity : 1;
-                const color = this.hexToRgba(bay.background_base, opacity);
-                root.style.setProperty('--bay-bg-base', color);
+                bayMap['--bay-bg-base'] = this.hexToRgba(bay.background_base, opacity);
             }
-            
             if (bay.border) {
                 const opacity = bay.border_opacity !== undefined ? bay.border_opacity : 1;
-                const color = this.hexToRgba(bay.border, opacity);
-                root.style.setProperty('--bay-border', color);
+                bayMap['--bay-border'] = this.hexToRgba(bay.border, opacity);
             }
-            
             if (bay.top_border) {
                 const opacity = bay.top_border_opacity !== undefined ? bay.top_border_opacity : 1;
-                const color = this.hexToRgba(bay.top_border, opacity);
-                root.style.setProperty('--bay-top-border', color);
+                bayMap['--bay-top-border'] = this.hexToRgba(bay.top_border, opacity);
             }
-            
-            if (bay.grill_size) root.style.setProperty('--bay-grill-size', bay.grill_size);
+            if (bay.grill_size) bayMap['--bay-grill-size'] = bay.grill_size;
             if (bay.grill_size_scale !== undefined) {
                 const scaleValue = Number(bay.grill_size_scale);
                 const safeScale = Number.isFinite(scaleValue) ? Math.min(100, Math.max(0, scaleValue)) : 50;
                 const grillSize = 10 + (safeScale / 100) * 10;
-                root.style.setProperty('--bay-grill-size', `${grillSize}px`);
+                bayMap['--bay-grill-size'] = `${grillSize}px`;
             }
-            
-            // Pool settings
-            if (bay.pool_color) root.style.setProperty('--disk-pool-color', bay.pool_color);
-            if (bay.pool_font) root.style.setProperty('--disk-pool-font', bay.pool_font);
-            if (bay.pool_size) root.style.setProperty('--disk-pool-size', bay.pool_size);
+            if (bay.pool_color) bayMap['--disk-pool-color'] = bay.pool_color;
+            if (bay.pool_font) bayMap['--disk-pool-font'] = bay.pool_font;
+            if (bay.pool_size) bayMap['--disk-pool-size'] = bay.pool_size;
             if (bay.pool_size_scale !== undefined) {
                 const scaleValue = Number(bay.pool_size_scale);
                 const safeSizeScale = Number.isFinite(scaleValue) ? Math.min(100, Math.max(0, scaleValue)) : 50;
                 const fontSizeVw = 0.5 + (safeSizeScale / 100) * 1.0;
-                root.style.setProperty('--disk-pool-size', `${fontSizeVw}vw`);
+                bayMap['--disk-pool-size'] = `${fontSizeVw}vw`;
             }
             if (bay.pool_style) {
-                root.style.setProperty('--disk-pool-weight', this.getStyleWeight(bay.pool_style));
-                root.style.setProperty('--disk-pool-style', this.getStyleFont(bay.pool_style));
-                root.style.setProperty('--disk-pool-transform', this.getStyleTransform(bay.pool_style));
+                bayMap['--disk-pool-weight'] = this.getStyleWeight(bay.pool_style);
+                bayMap['--disk-pool-style'] = this.getStyleFont(bay.pool_style);
+                bayMap['--disk-pool-transform'] = this.getStyleTransform(bay.pool_style);
             }
             
             // Index settings
-            if (bay.idx_color) root.style.setProperty('--disk-index-color', bay.idx_color);
-            if (bay.idx_font) root.style.setProperty('--disk-index-font', bay.idx_font);
-            if (bay.idx_size) root.style.setProperty('--disk-index-size', bay.idx_size);
+            if (bay.idx_color) bayMap['--disk-index-color'] = bay.idx_color;
+            if (bay.idx_font) bayMap['--disk-index-font'] = bay.idx_font;
+            if (bay.idx_size) bayMap['--disk-index-size'] = bay.idx_size;
             if (bay.idx_size_scale !== undefined) {
                 const scaleValue = Number(bay.idx_size_scale);
                 const safeSizeScale = Number.isFinite(scaleValue) ? Math.min(100, Math.max(0, scaleValue)) : 50;
                 const fontSizeVw = 0.5 + (safeSizeScale / 100) * 1.0;
-                root.style.setProperty('--disk-index-size', `${fontSizeVw}vw`);
+                bayMap['--disk-index-size'] = `${fontSizeVw}vw`;
             }
             if (bay.idx_style) {
-                root.style.setProperty('--disk-index-weight', this.getStyleWeight(bay.idx_style));
-                root.style.setProperty('--disk-index-style', this.getStyleFont(bay.idx_style));
-                root.style.setProperty('--disk-index-transform', this.getStyleTransform(bay.idx_style));
+                bayMap['--disk-index-weight'] = this.getStyleWeight(bay.idx_style);
+                bayMap['--disk-index-style'] = this.getStyleFont(bay.idx_style);
+                bayMap['--disk-index-transform'] = this.getStyleTransform(bay.idx_style);
             }
             
             // Serial settings
-            if (bay.sn_color) root.style.setProperty('--disk-serial-color', bay.sn_color);
-            if (bay.sn_font) root.style.setProperty('--disk-serial-font', bay.sn_font);
-            if (bay.sn_size) root.style.setProperty('--disk-serial-size', bay.sn_size);
+            if (bay.sn_color) bayMap['--disk-serial-color'] = bay.sn_color;
+            if (bay.sn_font) bayMap['--disk-serial-font'] = bay.sn_font;
+            if (bay.sn_size) bayMap['--disk-serial-size'] = bay.sn_size;
             if (bay.sn_size_scale !== undefined) {
                 const scaleValue = Number(bay.sn_size_scale);
                 const safeSizeScale = Number.isFinite(scaleValue) ? Math.min(100, Math.max(0, scaleValue)) : 50;
                 const fontSizeVw = 0.5 + (safeSizeScale / 100) * 1.0;
-                root.style.setProperty('--disk-serial-size', `${fontSizeVw}vw`);
+                bayMap['--disk-serial-size'] = `${fontSizeVw}vw`;
             }
             if (bay.sn_style) {
-                root.style.setProperty('--disk-serial-weight', this.getStyleWeight(bay.sn_style));
-                root.style.setProperty('--disk-serial-style', this.getStyleFont(bay.sn_style));
-                root.style.setProperty('--disk-serial-transform', this.getStyleTransform(bay.sn_style));
+                bayMap['--disk-serial-weight'] = this.getStyleWeight(bay.sn_style);
+                bayMap['--disk-serial-style'] = this.getStyleFont(bay.sn_style);
+                bayMap['--disk-serial-transform'] = this.getStyleTransform(bay.sn_style);
             }
-            
+
             // Size settings
-            if (bay.size_color) root.style.setProperty('--disk-size-color', bay.size_color);
-            if (bay.size_font) root.style.setProperty('--disk-size-font', bay.size_font);
-            if (bay.size_size) root.style.setProperty('--disk-size-size', bay.size_size);
+            if (bay.size_color) bayMap['--disk-size-color'] = bay.size_color;
+            if (bay.size_font) bayMap['--disk-size-font'] = bay.size_font;
+            if (bay.size_size) bayMap['--disk-size-size'] = bay.size_size;
             if (bay.size_size_scale !== undefined) {
                 const scaleValue = Number(bay.size_size_scale);
                 const safeSizeScale = Number.isFinite(scaleValue) ? Math.min(100, Math.max(0, scaleValue)) : 50;
                 const fontSizeVw = 0.5 + (safeSizeScale / 100) * 1.0;
-                root.style.setProperty('--disk-size-size', `${fontSizeVw}vw`);
+                bayMap['--disk-size-size'] = `${fontSizeVw}vw`;
             }
             if (bay.size_style) {
-                root.style.setProperty('--disk-size-weight', this.getStyleWeight(bay.size_style));
-                root.style.setProperty('--disk-size-style', this.getStyleFont(bay.size_style));
-                root.style.setProperty('--disk-size-transform', this.getStyleTransform(bay.size_style));
+                bayMap['--disk-size-weight'] = this.getStyleWeight(bay.size_style);
+                bayMap['--disk-size-style'] = this.getStyleFont(bay.size_style);
+                bayMap['--disk-size-transform'] = this.getStyleTransform(bay.size_style);
             }
-            
+
+            // Apply bayMap to root
+            applyConfigMap(root, bayMap);
+
             // Bay height
             if (bay.height !== undefined) {
                 const heightValue = Number(bay.height);
                 const safeHeight = Number.isFinite(heightValue) ? Math.min(60, Math.max(20, heightValue)) : 35;
                 console.log(`[applyChangesToUI] Setting bay height to ${safeHeight}vh`);
-                root.style.setProperty('--bay-height', `${safeHeight}vh`);
-                
+                applyConfigMap(root, {'--bay-height': `${safeHeight}vh`});
+
                 // Update CSS variable on all storage units (takes precedence over root)
                 const storageUnits = document.querySelectorAll('.storage-unit');
-                console.log(`[applyChangesToUI] Found ${storageUnits.length} .storage-unit elements`);
-                storageUnits.forEach(unit => {
-                    unit.style.setProperty('--bay-height', `${safeHeight}vh`);
-                });
-                
+                if (storageUnits.length > 0) {
+                    console.log(`[applyChangesToUI] Found ${storageUnits.length} .storage-unit elements`);
+                    storageUnits.forEach(unit => {
+                        applyConfigMap(unit, {'--bay-height': `${safeHeight}vh`});
+                    });
+                }
+
                 // Also update grid row height for all storage units
                 const slotContainers = document.querySelectorAll('.slots');
-                console.log(`[applyChangesToUI] Found ${slotContainers.length} .slots containers`);
-                slotContainers.forEach(container => {
-                    console.log(`[applyChangesToUI] Setting gridAutoRows on container:`, container.id);
-                    container.style.gridAutoRows = `${safeHeight}vh`;
-                });
+                if (slotContainers.length > 0) {
+                    console.log(`[applyChangesToUI] Found ${slotContainers.length} .slots containers`);
+                    slotContainers.forEach(container => {
+                        console.log(`[applyChangesToUI] Setting gridAutoRows on container:`, container.id);
+                        container.style.gridAutoRows = `${safeHeight}vh`;
+                    });
+                }
             } else {
                 console.log('[applyChangesToUI] bay.height is undefined');
             }
         }
 
-        // Apply environment settings (always apply, even if not explicitly configured)
+        // Apply environment settings via mapping
         const env = deviceConfig.environment || {};
-        
-        // Flare Color
-        const flareColor = env.flare_color || '#ffffff';
-        root.style.setProperty('--flare-color', flareColor);
-
-        // Flare Angle (0-360 degrees)
-        const flareAngle = this.getAngleValue(env.flare_angle, 30);
-        root.style.setProperty('--flare-angle', `${flareAngle}deg`);
-
-        // Flare Offset X (percentage, can be negative or > 100)
+        const envMap = {};
+        envMap['--flare-color'] = env.flare_color || '#ffffff';
+        envMap['--flare-angle'] = `${this.getAngleValue(env.flare_angle, 30)}deg`;
         const flareOffsetX = env.flare_offset_x !== undefined ? env.flare_offset_x : 10;
-        root.style.setProperty('--flare-offset-x', `${flareOffsetX}%`);
-
-        // Flare Offset Y (percentage, can be negative or > 100)
         const flareOffsetY = env.flare_offset_y !== undefined ? env.flare_offset_y : 10;
-        root.style.setProperty('--flare-offset-y', `${flareOffsetY}%`);
-
-        // Flare Opacity (0-0.3 range for subtle effect)
-        const flareOpacity = env.flare_opacity !== undefined ? env.flare_opacity : 0.15;
-        const safeOpacity = Number(flareOpacity);
-        root.style.setProperty('--flare-opacity', String(safeOpacity));
-
-        // Flare Shape (0-100 slider, converts to gradient spread 2%-20%)
+        envMap['--flare-offset-x'] = `${flareOffsetX}%`;
+        envMap['--flare-offset-y'] = `${flareOffsetY}%`;
+        envMap['--flare-opacity'] = String(Number(env.flare_opacity !== undefined ? env.flare_opacity : 0.15));
         const shapeValue = env.flare_shape !== undefined ? Number(env.flare_shape) : 50;
         const safeShape = Number.isFinite(shapeValue) ? Math.min(100, Math.max(0, shapeValue)) : 50;
         const spread = 2 + (safeShape / 100) * 18;
-        root.style.setProperty('--flare-spread', `${spread}%`);
-
-        // Flare Size (0-100 slider, converts to scale 0.5-1.5)
+        envMap['--flare-spread'] = `${spread}%`;
         const sizeValue = env.flare_size !== undefined ? Number(env.flare_size) : 50;
         const safeSize = Number.isFinite(sizeValue) ? Math.min(100, Math.max(0, sizeValue)) : 50;
         const sizeScale = 0.5 + (safeSize / 100) * 1.0;
-        root.style.setProperty('--flare-size', String(sizeScale));
-        
-        // Apply page background
+        envMap['--flare-size'] = String(sizeScale);
         if (env.page_bg_color) {
-            root.style.setProperty('--page-bg-color', env.page_bg_color);
+            envMap['--page-bg-color'] = env.page_bg_color;
             document.body.style.backgroundColor = env.page_bg_color;
         }
-        
-        // Apply menu styling
-        if (env.menu_bg_color) {
-            root.style.setProperty('--menu-bg-color', env.menu_bg_color);
-        }
-        
-        if (env.menu_text_color) {
-            root.style.setProperty('--menu-text-color', env.menu_text_color);
-        }
-        
-        // Always set menu opacity, default to 1 if not specified
-        {
-            const menuOpacityPercent = env.menu_opacity !== undefined ? Number(env.menu_opacity) : 100;
-            const safePercent = Number.isFinite(menuOpacityPercent) ? Math.min(100, Math.max(0, menuOpacityPercent)) : 100;
-            const menuOpacity = 0.75 + (safePercent / 100) * 0.25;
-            root.style.setProperty('--menu-opacity', menuOpacity.toFixed(2));
-        }
+        if (env.menu_bg_color) envMap['--menu-bg-color'] = env.menu_bg_color;
+        if (env.menu_text_color) envMap['--menu-text-color'] = env.menu_text_color;
+        const menuOpacityPercent = env.menu_opacity !== undefined ? Number(env.menu_opacity) : 100;
+        const safePercent = Number.isFinite(menuOpacityPercent) ? Math.min(100, Math.max(0, menuOpacityPercent)) : 100;
+        const menuOpacity = 0.75 + (safePercent / 100) * 0.25;
+        envMap['--menu-opacity'] = menuOpacity.toFixed(2);
+        applyConfigMap(root, envMap);
 
         // Apply global chart configuration
         const chart = this.currentConfig.chart || {};
         const chartColors = chart.colors || {};
         const chartDimensions = chart.dimensions || {};
 
-        // Chart colors
+        // Chart settings via mapping
+        const chartMap = {};
         if (chartColors.readColor) {
-            root.style.setProperty('--chart-read-color', chartColors.readColor);
-            // Also update dot color to match line color
-            root.style.setProperty('--chart-read-dot-color', chartColors.readColor);
+            chartMap['--chart-read-color'] = chartColors.readColor;
+            chartMap['--chart-read-dot-color'] = chartColors.readColor;
         }
         if (chartColors.writeColor) {
-            root.style.setProperty('--chart-write-color', chartColors.writeColor);
-            // Also update dot color to match line color
-            root.style.setProperty('--chart-write-dot-color', chartColors.writeColor);
+            chartMap['--chart-write-color'] = chartColors.writeColor;
+            chartMap['--chart-write-dot-color'] = chartColors.writeColor;
         }
-
-        // Chart gradient colors
-        if (chartColors.readGradientTop) {
-            root.style.setProperty('--chart-read-gradient-top', chartColors.readGradientTop);
-        }
-        if (chartColors.readGradientBottom) {
-            root.style.setProperty('--chart-read-gradient-bottom', chartColors.readGradientBottom);
-        }
-        if (chartColors.writeGradientTop) {
-            root.style.setProperty('--chart-write-gradient-top', chartColors.writeGradientTop);
-        }
-        if (chartColors.writeGradientBottom) {
-            root.style.setProperty('--chart-write-gradient-bottom', chartColors.writeGradientBottom);
-        }
-
-        // Chart axis colors
-        if (chartColors.yAxisLabelColor) {
-            root.style.setProperty('--chart-y-axis-label-color', chartColors.yAxisLabelColor);
-        }
-        if (chartColors.yAxisGridColor) {
-            root.style.setProperty('--chart-y-axis-grid-color', chartColors.yAxisGridColor);
-        }
-
-        // Chart dimensions
-        if (chartDimensions.lineTension !== undefined) {
-            root.style.setProperty('--chart-line-tension', String(chartDimensions.lineTension));
-        }
-        if (chartDimensions.lineWidth !== undefined) {
-            root.style.setProperty('--chart-line-width', String(chartDimensions.lineWidth));
-        }
-        if (chartDimensions.chartHeight) {
-            root.style.setProperty('--chart-height', chartDimensions.chartHeight);
-        }
-        if (chartDimensions.cardWidth) {
-            root.style.setProperty('--chart-card-width', chartDimensions.cardWidth);
-        }
-        if (chartDimensions.cardMarginRight) {
-            root.style.setProperty('--chart-card-margin-right', chartDimensions.cardMarginRight);
-        }
-        if (chartDimensions.containerGap) {
-            root.style.setProperty('--chart-container-gap', chartDimensions.containerGap);
-        }
-        if (chartDimensions.chassisPadding) {
-            root.style.setProperty('--chart-chassis-padding', chartDimensions.chassisPadding);
-        }
+        if (chartColors.readGradientTop) chartMap['--chart-read-gradient-top'] = chartColors.readGradientTop;
+        if (chartColors.readGradientBottom) chartMap['--chart-read-gradient-bottom'] = chartColors.readGradientBottom;
+        if (chartColors.writeGradientTop) chartMap['--chart-write-gradient-top'] = chartColors.writeGradientTop;
+        if (chartColors.writeGradientBottom) chartMap['--chart-write-gradient-bottom'] = chartColors.writeGradientBottom;
+        if (chartColors.yAxisLabelColor) chartMap['--chart-y-axis-label-color'] = chartColors.yAxisLabelColor;
+        if (chartColors.yAxisGridColor) chartMap['--chart-y-axis-grid-color'] = chartColors.yAxisGridColor;
+        if (chartDimensions.lineTension !== undefined) chartMap['--chart-line-tension'] = String(chartDimensions.lineTension);
+        if (chartDimensions.lineWidth !== undefined) chartMap['--chart-line-width'] = String(chartDimensions.lineWidth);
+        if (chartDimensions.chartHeight) chartMap['--chart-height'] = chartDimensions.chartHeight;
+        if (chartDimensions.cardWidth) chartMap['--chart-card-width'] = chartDimensions.cardWidth;
+        if (chartDimensions.cardMarginRight) chartMap['--chart-card-margin-right'] = chartDimensions.cardMarginRight;
+        if (chartDimensions.containerGap) chartMap['--chart-container-gap'] = chartDimensions.containerGap;
+        if (chartDimensions.chassisPadding) chartMap['--chart-chassis-padding'] = chartDimensions.chassisPadding;
+        applyConfigMap(root, chartMap);
 
         // Force a reflow to apply CSS changes
         void document.documentElement.offsetHeight;
@@ -1756,6 +1686,8 @@ export class MenuSystem {
         }
         return fallback;
     }
+
+    
 
     hexToColor(hex) {
         // Convert various color formats to hex for color picker

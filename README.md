@@ -1,5 +1,5 @@
 # TrueNAS Scale Drive-Bay Dashboard
-**version 20.4**
+**version v20.5**
 
 
 ## Documentation / Wiki

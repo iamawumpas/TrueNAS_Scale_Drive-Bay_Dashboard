@@ -3,25 +3,29 @@ import { getDiskData } from './DiskInfo.js';
 import { createChassisHTML } from './Chassis.js';
 import { createBayHTML } from './Bay.js';
 import { MenuSystem } from './MenuSystem.js';
+import { applyConfigMap, updateTextIfChanged, setClassIfChanged, debugLog } from './ui/utils.js';
 
 let lastUIConfigSignature = '';
 let lastStyleConfigSignature = '';
 let menuSystem = null;
 let activityMonitor = null;
 let forceRedraw = false;
+// DOM caches to reduce repeated queries
+const unitsMap = new Map(); // pci -> unit element
+const slotContainersMap = new Map(); // pci -> slot container element
 
 // Listen for menu save/revert events
 window.addEventListener('configSaved', (e) => {
-    console.log('configSaved event received:', e);
+    if (window.UI_DEBUG) console.log('configSaved event received:', e);
     forceRedraw = true;
-    console.log('Set forceRedraw to true, calling update');
+    if (window.UI_DEBUG) console.log('Set forceRedraw to true, calling update');
     update();
 }, true);
 
 window.addEventListener('configReverted', (e) => {
-    console.log('configReverted event received:', e);
+    if (window.UI_DEBUG) console.log('configReverted event received:', e);
     forceRedraw = true;
-    console.log('Set forceRedraw to true, calling update');
+    if (window.UI_DEBUG) console.log('Set forceRedraw to true, calling update');
     update();
 }, true);
 
@@ -34,26 +38,27 @@ function applyStyleConfigFromJSON(styleConfig) {
 
     const root = document.documentElement;
     
-    // Apply fonts
+    // Apply fonts via mapping
     if (styleConfig.fonts) {
+        const fontMap = {};
         if (styleConfig.fonts.default) {
-            root.style.setProperty('--font-default', styleConfig.fonts.default);
-            // Update all font variables that use default font
-            root.style.setProperty('--server-name-font', styleConfig.fonts.default);
-            root.style.setProperty('--legend-font', styleConfig.fonts.default);
-            root.style.setProperty('--bay-id-font', styleConfig.fonts.default);
-            root.style.setProperty('--disk-serial-font', styleConfig.fonts.default);
-            root.style.setProperty('--disk-size-font', styleConfig.fonts.default);
-            root.style.setProperty('--disk-pool-font', styleConfig.fonts.default);
-            root.style.setProperty('--disk-index-font', styleConfig.fonts.default);
+            fontMap['--font-default'] = styleConfig.fonts.default;
+            fontMap['--server-name-font'] = styleConfig.fonts.default;
+            fontMap['--legend-font'] = styleConfig.fonts.default;
+            fontMap['--bay-id-font'] = styleConfig.fonts.default;
+            fontMap['--disk-serial-font'] = styleConfig.fonts.default;
+            fontMap['--disk-size-font'] = styleConfig.fonts.default;
+            fontMap['--disk-pool-font'] = styleConfig.fonts.default;
+            fontMap['--disk-index-font'] = styleConfig.fonts.default;
         }
         if (styleConfig.fonts.monospace) {
-            root.style.setProperty('--font-monospace', styleConfig.fonts.monospace);
-            root.style.setProperty('--pci-address-font', styleConfig.fonts.monospace);
+            fontMap['--font-monospace'] = styleConfig.fonts.monospace;
+            fontMap['--pci-address-font'] = styleConfig.fonts.monospace;
         }
+        applyConfigMap(root, fontMap);
     }
     
-    // Apply colors
+    // Apply colors via mapping
     if (styleConfig.colors) {
         const colorMap = {
             'serverName': '--server-name-color',
@@ -81,15 +86,14 @@ function applyStyleConfigFromJSON(styleConfig) {
             'ledUnallocFault': '--led-unalloc-fault',
             'ledActivity': '--led-activity'
         };
-        
+        const map = {};
         Object.entries(colorMap).forEach(([key, cssVar]) => {
-            if (styleConfig.colors[key]) {
-                root.style.setProperty(cssVar, styleConfig.colors[key]);
-            }
+            if (styleConfig.colors[key]) map[cssVar] = styleConfig.colors[key];
         });
+        applyConfigMap(root, map);
     }
     
-    // Apply font sizes
+    // Apply font sizes via mapping
     if (styleConfig.fontSizes) {
         const sizeMap = {
             'legendTitle': '--legend-title-size',
@@ -102,12 +106,11 @@ function applyStyleConfigFromJSON(styleConfig) {
             'diskPool': '--disk-pool-size',
             'diskIndex': '--disk-index-size'
         };
-        
+        const map = {};
         Object.entries(sizeMap).forEach(([key, cssVar]) => {
-            if (styleConfig.fontSizes[key]) {
-                root.style.setProperty(cssVar, styleConfig.fontSizes[key]);
-            }
+            if (styleConfig.fontSizes[key]) map[cssVar] = styleConfig.fontSizes[key];
         });
+        applyConfigMap(root, map);
     }
     
     console.log('Style config applied from config.json');
@@ -117,18 +120,21 @@ function applyStyleConfigFromJSON(styleConfig) {
 function applyStyleConfig(prefix, cfg) {
     if (!cfg || typeof cfg !== 'object') return;
     const root = document.documentElement;
-    if (cfg.color) root.style.setProperty(`--${prefix}-color`, cfg.color);
-    if (cfg.font) root.style.setProperty(`--${prefix}-font`, cfg.font);
-    if (cfg.size) root.style.setProperty(`--${prefix}-size`, cfg.size);
+    const map = {};
+    if (cfg.color) map[`--${prefix}-color`] = cfg.color;
+    if (cfg.font) map[`--${prefix}-font`] = cfg.font;
+    if (cfg.size) map[`--${prefix}-size`] = cfg.size;
 
     const styles = Array.isArray(cfg.style) ? cfg.style.map(s => String(s).toLowerCase()) : [];
     const isBold = styles.includes('bold');
     const isItalic = styles.includes('italic');
     const isAllCaps = styles.includes('allcaps');
 
-    root.style.setProperty(`--${prefix}-weight`, isBold ? '700' : '400');
-    root.style.setProperty(`--${prefix}-style`, isItalic ? 'italic' : 'normal');
-    root.style.setProperty(`--${prefix}-transform`, isAllCaps ? 'uppercase' : 'none');
+    map[`--${prefix}-weight`] = isBold ? '700' : '400';
+    map[`--${prefix}-style`] = isItalic ? 'italic' : 'normal';
+    map[`--${prefix}-transform`] = isAllCaps ? 'uppercase' : 'none';
+
+    applyConfigMap(root, map);
 }
 
 function applyUIConfig(config) {
@@ -148,40 +154,42 @@ function applyUIConfig(config) {
     applyStyleConfig('disk-index', ui.disk_index);
 
     const root = document.documentElement;
+    const map = {};
     if (ui.chassis) {
-        if (ui.chassis.background_base) root.style.setProperty('--chassis-bg-base', ui.chassis.background_base);
-        if (ui.chassis.border) root.style.setProperty('--chassis-border', ui.chassis.border);
-        if (ui.chassis.shadow) root.style.setProperty('--chassis-shadow', ui.chassis.shadow);
-        if (ui.chassis.header_divider) root.style.setProperty('--chassis-header-divider', ui.chassis.header_divider);
+        if (ui.chassis.background_base) map['--chassis-bg-base'] = ui.chassis.background_base;
+        if (ui.chassis.border) map['--chassis-border'] = ui.chassis.border;
+        if (ui.chassis.shadow) map['--chassis-shadow'] = ui.chassis.shadow;
+        if (ui.chassis.header_divider) map['--chassis-header-divider'] = ui.chassis.header_divider;
     }
     if (ui.bay) {
-        if (ui.bay.background_base) root.style.setProperty('--bay-bg-base', ui.bay.background_base);
-        if (ui.bay.border) root.style.setProperty('--bay-border', ui.bay.border);
-        if (ui.bay.top_border) root.style.setProperty('--bay-top-border', ui.bay.top_border);
+        if (ui.bay.background_base) map['--bay-bg-base'] = ui.bay.background_base;
+        if (ui.bay.border) map['--bay-border'] = ui.bay.border;
+        if (ui.bay.top_border) map['--bay-top-border'] = ui.bay.top_border;
     }
     if (ui.legend?.flare) {
         const flare = ui.legend.flare;
-        if (flare.angle) root.style.setProperty('--flare-angle', flare.angle);
-        if (flare.offset_x) root.style.setProperty('--flare-offset-x', flare.offset_x);
-        if (flare.offset_y) root.style.setProperty('--flare-offset-y', flare.offset_y);
+        if (flare.angle) map['--flare-angle'] = flare.angle;
+        if (flare.offset_x) map['--flare-offset-x'] = flare.offset_x;
+        if (flare.offset_y) map['--flare-offset-y'] = flare.offset_y;
     }
     if (ui.legend) {
-        if (ui.legend.title_color) root.style.setProperty('--legend-title-color', ui.legend.title_color);
-        if (ui.legend.title_size) root.style.setProperty('--legend-title-size', ui.legend.title_size);
-        if (ui.legend.title_weight) root.style.setProperty('--legend-title-weight', ui.legend.title_weight);
+        if (ui.legend.title_color) map['--legend-title-color'] = ui.legend.title_color;
+        if (ui.legend.title_size) map['--legend-title-size'] = ui.legend.title_size;
+        if (ui.legend.title_weight) map['--legend-title-weight'] = ui.legend.title_weight;
     }
     if (ui.led_colors) {
         const led = ui.led_colors;
-        if (led.allocated_healthy) root.style.setProperty('--led-allocated-healthy', led.allocated_healthy);
-        if (led.allocated_offline) root.style.setProperty('--led-allocated-offline', led.allocated_offline);
-        if (led.error) root.style.setProperty('--led-error', led.error);
-        if (led.faulted) root.style.setProperty('--led-faulted', led.faulted);
-        if (led.resilvering) root.style.setProperty('--led-resilvering', led.resilvering);
-        if (led.unallocated) root.style.setProperty('--led-unallocated', led.unallocated);
-        if (led.unalloc_error) root.style.setProperty('--led-unalloc-error', led.unalloc_error);
-        if (led.unalloc_fault) root.style.setProperty('--led-unalloc-fault', led.unalloc_fault);
-        if (led.activity) root.style.setProperty('--led-activity', led.activity);
+        if (led.allocated_healthy) map['--led-allocated-healthy'] = led.allocated_healthy;
+        if (led.allocated_offline) map['--led-allocated-offline'] = led.allocated_offline;
+        if (led.error) map['--led-error'] = led.error;
+        if (led.faulted) map['--led-faulted'] = led.faulted;
+        if (led.resilvering) map['--led-resilvering'] = led.resilvering;
+        if (led.unallocated) map['--led-unallocated'] = led.unallocated;
+        if (led.unalloc_error) map['--led-unalloc-error'] = led.unalloc_error;
+        if (led.unalloc_fault) map['--led-unalloc-fault'] = led.unalloc_fault;
+        if (led.activity) map['--led-activity'] = led.activity;
     }
+    applyConfigMap(root, map);
 }
 
 async function update() {
@@ -189,12 +197,15 @@ async function update() {
         // Ensure flare variables are set with defaults immediately
         const root = document.documentElement;
         if (!root.style.getPropertyValue('--flare-opacity')) {
-            root.style.setProperty('--flare-opacity', '0.225');
-            root.style.setProperty('--flare-spread', '20%');
-            root.style.setProperty('--flare-offset-x', '50%');
-            root.style.setProperty('--flare-offset-y', '50%');
-            root.style.setProperty('--flare-angle', '45deg');
-            root.style.setProperty('--flare-size', '1');
+            const flareDefaults = {
+                '--flare-opacity': '0.225',
+                '--flare-spread': '20%',
+                '--flare-offset-x': '50%',
+                '--flare-offset-y': '50%',
+                '--flare-angle': '45deg',
+                '--flare-size': '1'
+            };
+            applyConfigMap(root, flareDefaults);
         }
         
         // Load style configuration from config.json with cache busting
@@ -212,6 +223,8 @@ async function update() {
         
         const res = await fetch('/data');
         const data = await res.json();
+        // Set UI debug flag from config (so debugLog can be gated)
+        try { window.UI_DEBUG = !!(data.config && data.config.ui && data.config.ui.debug); } catch (e) { window.UI_DEBUG = false; }
         const canvas = document.getElementById('canvas');
 
         applyUIConfig(data.config);
@@ -219,23 +232,45 @@ async function update() {
         requestAnimationFrame(() => {
             Object.keys(data.topology).forEach(pci => {
                 const chassisData = data.topology[pci];
-                let unit = document.getElementById(`unit-${pci}`);
-                
+                let unit = unitsMap.get(pci) || document.getElementById(`unit-${pci}`);
+
                 if (!unit || forceRedraw) {
-                    console.log(`${forceRedraw ? 'Force redraw' : 'First draw'} for unit-${pci}`);
+                    if (window.UI_DEBUG) console.log(`${forceRedraw ? 'Force redraw' : 'First draw'} for unit-${pci}`);
                     if (unit) {
-                        console.log(`Removing existing unit-${pci}`);
+                        if (window.UI_DEBUG) console.log(`Removing existing unit-${pci}`);
                         unit.remove();
+                        unitsMap.delete(pci);
+                        slotContainersMap.delete(pci);
                     }
                     unit = document.createElement('div');
                     unit.id = `unit-${pci}`;
                     unit.className = 'storage-unit';
                     unit.innerHTML = createChassisHTML(pci, data);
                     canvas.appendChild(unit);
-                    console.log(`Created new unit-${pci}`);
+                    unitsMap.set(pci, unit);
+                    // Apply device-specific per-unit CSS overrides immediately so new elements inherit them
+                    try {
+                        const pciRawLocal = chassisData.settings.pci_raw || pci;
+                        const deviceCfgLocal = data.config?.devices?.[pciRawLocal] || {};
+                        const unitMap = {};
+                        // Bay height (per-device override)
+                        const bh = deviceCfgLocal.bay?.height || bayHeight || 35;
+                        unitMap['--bay-height'] = `${bh}vh`;
+                        // Apply any bay background override if present
+                        if (deviceCfgLocal.bay?.background_base) unitMap['--bay-bg-base'] = deviceCfgLocal.bay.background_base;
+                        applyConfigMap(unit, unitMap);
+                        // If slots container exists immediately, set its grid rows
+                        const sc = document.getElementById(`slots-${pci}`);
+                        if (sc) sc.style.gridAutoRows = `${bh}vh`;
+                    } catch (e) { /* non-fatal */ }
+                    if (window.UI_DEBUG) console.log(`Created new unit-${pci}`);
                 }
 
-                const slotContainer = document.getElementById(`slots-${pci}`);
+                let slotContainer = slotContainersMap.get(pci) || document.getElementById(`slots-${pci}`);
+                if (!slotContainer && unit) {
+                    slotContainer = document.getElementById(`slots-${pci}`);
+                    if (slotContainer) slotContainersMap.set(pci, slotContainer);
+                }
                 const maxBays = chassisData.settings.max_bays;
                 const rows = chassisData.settings.rows || 1;
                 const baysPerRow = chassisData.settings.bays_per_row || maxBays;
@@ -248,15 +283,20 @@ async function update() {
                 // Apply bay height only if not in preview mode (menuSystem not dirty)
                 // This prevents overwriting live preview changes every 100ms
                 if (!menuSystem || !menuSystem.isDirty) {
-                    const storageUnit = document.getElementById(`unit-${pci}`);
+                    const storageUnit = unitsMap.get(pci) || document.getElementById(`unit-${pci}`);
                     if (storageUnit) {
-                        storageUnit.style.setProperty('--bay-height', `${bayHeight}vh`);
+                        const desired = `${bayHeight}vh`;
+                        const current = storageUnit.style.getPropertyValue('--bay-height');
+                        if (current !== desired) applyConfigMap(storageUnit, {'--bay-height': desired});
                     }
-                    slotContainer.style.gridAutoRows = `${bayHeight}vh`;
+                    if (slotContainer) {
+                        const desiredRows = `${bayHeight}vh`;
+                        if (slotContainer.style.gridAutoRows !== desiredRows) slotContainer.style.gridAutoRows = desiredRows;
+                    }
                 }
                 
                 // Set grid layout with proper row and column configuration
-                slotContainer.style.gridTemplateColumns = `repeat(${baysPerRow}, 4.5vw)`;
+                if (slotContainer) slotContainer.style.gridTemplateColumns = `repeat(${baysPerRow}, 4.5vw)`;
 
                 const warning = document.getElementById(`capacity-warning-${pci}`);
                 if (warning) {
@@ -276,13 +316,15 @@ async function update() {
                         el.className = 'caddy';
                         el.id = `disk-${pci}-${idx}`;
                         el.innerHTML = createBayHTML(idx); 
-                        slotContainer.appendChild(el);
+                        if (slotContainer) slotContainer.appendChild(el);
                     }
                     
                     const info = getDiskData(disk);
-                    el.querySelector('.status-led').className = `led status-led ${getLEDClass(disk)}`;
-                    el.querySelector('.activity-led').classList.toggle('active', disk.active === true);
-                    
+                    const statusLed = el.querySelector('.status-led');
+                    if (statusLed) setClassIfChanged(statusLed, `led status-led ${getLEDClass(disk)}`);
+                    const activityLed = el.querySelector('.activity-led');
+                    if (activityLed) activityLed.classList.toggle('active', disk.active === true);
+
                     const cells = {
                         '.sn-cell': info.sn,
                         '.size-cell': info.size,
@@ -292,30 +334,30 @@ async function update() {
 
                     Object.entries(cells).forEach(([selector, val]) => {
                         const cell = el.querySelector(selector);
-                        if (!val || val === '&nbsp;' || val.includes('&nbsp;')) {
-                            cell.textContent = '\u00A0';
+                        if (!cell) return;
+                        if (!val || val === '&nbsp;' || (typeof val === 'string' && val.includes('&nbsp;'))) {
+                            updateTextIfChanged(cell, '\u00A0');
                         } else {
-                            cell.textContent = val;
+                            updateTextIfChanged(cell, val);
                         }
                     });
                 });
             });
-        });
+            // Initialize menu system on first update (after DOM elements were created)
+            if (!menuSystem) {
+                menuSystem = new MenuSystem(data.topology, data.config);
+            } else if (forceRedraw) {
+                // After redraw, reapply CSS variables from menu system
+                console.log('Reapplying CSS variables after redraw');
+                menuSystem.applyChangesToUI();
+            }
 
-        // Initialize menu system on first update
-        if (!menuSystem) {
-            menuSystem = new MenuSystem(data.topology, data.config);
-        } else if (forceRedraw) {
-            // After redraw, reapply CSS variables from menu system
-            console.log('Reapplying CSS variables after redraw');
-            menuSystem.applyChangesToUI();
-        }
-        
-        // Initialize activity monitor on first update
-        if (!activityMonitor && window.ActivityMonitor) {
-            activityMonitor = new window.ActivityMonitor();
-            activityMonitor.initialize();
-        }
+            // Initialize activity monitor on first update (after DOM available)
+            if (!activityMonitor && window.ActivityMonitor) {
+                activityMonitor = new window.ActivityMonitor();
+                activityMonitor.initialize();
+            }
+        });
         
         // Reset force redraw flag
         if (forceRedraw) {
