@@ -11,7 +11,10 @@ body {
     font-family: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
     overflow: visible;
 }
-
+#dashboard-wrapper {
+    width: fit-content;
+    margin: 0 auto;
+}
 #canvas {
     display: flex;
     flex-wrap: wrap;

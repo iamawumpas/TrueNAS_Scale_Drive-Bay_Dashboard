@@ -527,6 +527,22 @@ DEFAULT_CONFIG = {
             "unalloc_fault": "#ff0000",
             "activity": "#008cff"
         }
+        ,
+        "__REMARK_ENVIRONMENT": "Environment settings for page background, menu styling, and flare effects.",
+        "environment": {
+            "page_bg_color": "#0a0a0a",
+            "menu_bg_color": "#2a2a2a",
+            "menu_text_color": "#ffffff",
+            "menu_opacity": 100,
+            "flare_color": "#ffffff",
+            "flare_angle": 45,
+            "flare_offset_x": 50,
+            "flare_offset_y": 50,
+            "flare_opacity": 0.225,
+            "flare_size": 50,
+            "flare_shape": 100,
+            "scale": 100
+        }
     },
     "__REMARK_CHART": "Activity Monitor chart colors, gradients, and dimensions.",
     "chart": {

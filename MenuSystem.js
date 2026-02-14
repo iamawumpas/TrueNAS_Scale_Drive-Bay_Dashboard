@@ -367,24 +367,48 @@ export class MenuSystem {
             <div class="panel-section">
                 <h3>Network Settings</h3>
                 
-                <label>Listening Port</label>
-                <div class="inline-row">
-                    <input type="number" class="port-input" data-key="network.port" 
-                        value="${port}" min="1024" max="65535" step="1">
-                    <span class="port-info" style="margin-left: 16px; font-size: 0.85rem; color: #999;">
+                <div class="inline-row" style="align-items: flex-end;">
+                    <div class="inline-field" style="flex: 0 0 25%; max-width: 25%; min-width: 80px;">
+                        <label style="white-space: nowrap;">Listening Port</label>
+                        <input type="number" class="port-input" data-key="network.port" 
+                            value="${port}" min="1024" max="65535" step="1">
+                    </div>
+                    <span class="port-info" style="margin-left: 16px; margin-bottom: 8px; font-size: 0.85rem; color: #999;">
                         (Restart required after change)
                     </span>
                 </div>
             </div>
 
             <div class="panel-section">
-                <h3>Page Background</h3>
+                <h3>Page</h3>
 
                 <label>Background Color</label>
                 <input type="color" class="color-picker" data-key="environment.page_bg_color" 
                     value="${this.hexToColor(environment.page_bg_color || '#0a0a0a')}">
                 
-            </div>
+            
+
+               <div class="inline-row compact" style="margin-top:8px;">
+                    <div class="inline-field" style="flex: 0.8; min-width: 100px;">
+                        <label>Dashboard Scale (%)</label>
+                        <input type="range" class="range-slider" data-key="environment.scale" 
+                            value="${environment.scale !== undefined ? environment.scale : 100}" min="50" max="150" step="1">
+                    </div>
+                    <div class="inline-field" style="flex: 0.2; min-width: 50px;">
+                        <label>&nbsp;</label>
+                        <input type="text" id="scale-display" class="text-input" readonly 
+                            value="${environment.scale !== undefined ? environment.scale : 100}%" 
+                            style="text-align: center; background: #1a1a1a; color: #64c8ff; cursor: default;">
+                    </div>
+                </div>
+	    </div>
+
+
+
+
+
+
+
 
             <div class="panel-section">
                 <h3>Menu Styling</h3>
@@ -458,6 +482,7 @@ export class MenuSystem {
                             value="${environment.flare_shape || '50'}" min="0" max="100" step="1">
                     </div>
                 </div>
+
             </div>
         `;
     }
@@ -908,6 +933,14 @@ export class MenuSystem {
         rangeSliders.forEach(input => {
             input.addEventListener('input', (e) => {
                 this.handleInputChange(e);
+                
+                // Update scale display textbox if this is the scale slider
+                if (e.target.dataset.key === 'environment.scale') {
+                    const scaleDisplay = document.getElementById('scale-display');
+                    if (scaleDisplay) {
+                        scaleDisplay.value = e.target.value + '%';
+                    }
+                }
             });
         });
 
@@ -1354,9 +1387,11 @@ export class MenuSystem {
                 document.querySelectorAll('.dropdown-content').forEach(d => {
                     d.classList.remove('active');
                 });
-                // Hard refresh for non-port changes
+                // Hard refresh with cache-busting to ensure chassis redraws
                 setTimeout(() => {
-                    window.location.href = window.location.href;
+                    const cacheBuster = `?t=${Date.now()}`;
+                    const currentUrl = window.location.href.split('?')[0];
+                    window.location.href = currentUrl + cacheBuster;
                 }, 300);
             }
         } catch (error) {
@@ -1606,6 +1641,26 @@ export class MenuSystem {
         const menuOpacity = 0.75 + (safePercent / 100) * 0.25;
         envMap['--menu-opacity'] = menuOpacity.toFixed(2);
         applyConfigMap(root, envMap);
+
+        // Apply dashboard scale (per-device) via CSS zoom property on #dashboard-wrapper
+        // zoom affects layout dimensions (unlike transform), eliminating scrollbar issues
+        try {
+            const wrapper = document.getElementById('dashboard-wrapper');
+            if (wrapper) {
+                const scalePercent = (deviceConfig.environment && deviceConfig.environment.scale !== undefined)
+                    ? Number(deviceConfig.environment.scale)
+                    : 100;
+                const scaleVal = Number.isFinite(scalePercent) ? (scalePercent / 100) : 1;
+                
+                // Apply zoom - this scales both visually AND in layout
+                wrapper.style.zoom = scaleVal;
+                
+                // Simple centering: wrapper already inherits body flow, just ensure horizontal center
+                wrapper.style.marginLeft = 'auto';
+                wrapper.style.marginRight = 'auto';
+                wrapper.style.marginTop = '30px';  // 30px gap below menu bar
+            }
+        } catch (e) { /* non-fatal */ }
 
         // Apply global chart configuration
         const chart = this.currentConfig.chart || {};

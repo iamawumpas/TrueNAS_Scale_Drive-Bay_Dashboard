@@ -142,7 +142,8 @@
             "flare_offset_y": 50,
             "flare_opacity": 0.225,
             "flare_size": 50,
-            "flare_shape": 100
+            "flare_shape": 100,
+            "scale": 100
         }
     },
     "__REMARK_CHART": "Activity Monitor chart colors, gradients, and dimensions.",
@@ -156,7 +157,8 @@
             "readGradientTop": "rgba(42, 0, 214, 0.5)",
             "readGradientBottom": "rgba(42, 0, 214, 0)",
             "writeGradientTop": "rgba(255, 159, 0, 0.5)",
-            "writeGradientBottom": "rgba(255, 159, 0, 0)"
+            "writeGradientBottom": "rgba(255, 159, 0, 0)",
+            "yAxisLabelColor": "#ffffff"
         },
         "__REMARK_DIMENSIONS": "Chart sizing and line styling parameters.",
         "dimensions": {
@@ -228,7 +230,7 @@
                 "font_size_scale": 50,
                 "font_color": "#ffffff",
                 "style": [],
-                "rows": "1",
+                "rows": "2",
                 "bays_per_row": "16",
                 "flare_angle": "30deg",
                 "flare_offset_x": "-50%",
@@ -266,7 +268,8 @@
                 "flare_offset_y": 50,
                 "flare_opacity": 0.225,
                 "flare_size": "58",
-                "flare_shape": "100"
+                "flare_shape": "100",
+                "scale": "86"
             }
         }
     }

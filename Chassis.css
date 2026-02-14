@@ -170,3 +170,8 @@
     font-size: 0.85rem;
     letter-spacing: 0.3px;
 }
+
+/* Keep inter-chassis spacing, but tighten final chassis to sit close to wrapper bottom */
+.storage-unit:last-child {
+    margin-bottom: 5px;
+}

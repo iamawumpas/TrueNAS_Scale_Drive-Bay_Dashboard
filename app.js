@@ -221,7 +221,7 @@ async function update() {
             console.warn('Style config fetch error:', styleErr);
         }
         
-        const res = await fetch('/data');
+        const res = await fetch('/data?' + Date.now());
         const data = await res.json();
         // Set UI debug flag from config (so debugLog can be gated)
         try { window.UI_DEBUG = !!(data.config && data.config.ui && data.config.ui.debug); } catch (e) { window.UI_DEBUG = false; }

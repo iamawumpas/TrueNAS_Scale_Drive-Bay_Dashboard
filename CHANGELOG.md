@@ -1,5 +1,27 @@
 # Storage Dashboard - Change Log
 
+## Version 20.6:
+* **Dashboard Scale Control**
+    * Added dashboard scale slider (50-150%, step 1) in Dashboard Settings → Environment panel
+    * Live percentage display textbox (read-only) with 80/20 layout split alongside slider
+    * Real-time preview of dashboard zoom during adjustment
+    * Switched from CSS `transform: scale()` to `zoom` property - fixes layout dimensions and scrollbar issues
+    * Properly scales both visual appearance and layout flow (eliminates spurious scrollbars when zoomed out)
+* **Layout & Spacing Improvements**
+    * Increased gap between menu bar and activity monitor to 30px for better visual separation
+    * Dashboard wrapper auto-centered with fit-content width constraint
+    * Reduced chassis bottom margin to 5px (via `:last-child` selector for final chassis only)
+    * Wrapper properly positioned below menu bar with no excessive whitespace
+* **Network Settings UI Enhancements**
+    * Listening port textbox constrained to 25% max-width for cleaner layout
+    * Port label displays on single line with `white-space: nowrap`
+    * Restart notification text aligned with bottom of port textbox
+* **Cache-Busting & Redraw Fixes**
+    * Enhanced cache-busting on save: adds timestamp query parameter to force full page reload
+    * Added cache-busting to `/data` endpoint in `app.js` for fresh topology fetch
+    * Fixed issue where changing chassis rows or bays_per_row required manual hard refresh
+    * Chassis now properly redraws with new layout immediately after save
+
 ## Version 20.5:
 * **Performance & UI Optimizations**
     - Added `ui/utils.js` with shared UI helpers to centralize CSS-variable writes and common DOM helpers.
