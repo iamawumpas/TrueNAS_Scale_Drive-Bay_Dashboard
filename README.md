@@ -18,6 +18,25 @@ Also see: [CONFIG_GUIDE.md](CONFIG_GUIDE.md), [CUSTOMIZATION_GUIDE.md](CUSTOMIZA
 A self-hosted dashboard that visualizes TrueNAS Scale drive layout, status, and activity in a chassis-style view.
 ![Dashboard](image.png)
 
+---
+
+## System Requirements
+
+**Primary Target:** TrueNAS Scale (recommended for TrueNAS API integration)
+
+**Also Runs On:** Any Linux distribution with ZFS support (Ubuntu, Debian, Proxmox, etc.)
+
+**File System:** ZFS is **required**. This project does NOT support other file systems (ext4, btrfs, LVM, etc.).
+
+**Minimum Requirements:**
+1. **Linux OS** (Ubuntu 20.04+, Debian 11+, Proxmox 7+, or equivalent)
+2. **ZFS** installed and configured with at least one pool
+3. **Python 3.6+** (no external pip dependencies)
+4. **HTTP port available** (default 8010, configurable in `config.json`)
+
+**Optional:**
+- **TrueNAS middleware (`midclt`)** — enables native API integration on TrueNAS Scale (graceful fallback to `zpool` parsing if unavailable)
+- **SES/Enclosure support** — automatically detected from `/sys/class/enclosure` if hardware supports it
 
 ---
 
@@ -76,6 +95,22 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
 * **Flexible Layout:** Configure rows and bays-per-row, with empty bay placeholders when the grid exceeds detected drives.
 * **Activity Monitor:** Optional per-pool read/write charts with smooth updates and compact card layout.
 * **Resilient Config:** Auto-generates `config.json` if missing and falls back to hardened defaults if malformed.
+
+---
+
+## Known Limitations
+
+### Pool Dependency (TrueNAS Scale)
+On TrueNAS Scale, the default installation places the dashboard on a data pool (`/mnt/[Pool_Name]/scripts/dashboard`). **If that pool goes offline, the dashboard service cannot run.** This is problematic since the dashboard's primary purpose is to monitor pool health.
+
+**Workarounds:**
+1. **Recommended:** Install the dashboard on the root filesystem instead (requires TrueNAS Scale custom configuration)
+2. **For Non-TrueNAS Linux:** Install on a system directory like `/opt/zfs-dashboard` (independent of pool state)
+3. **High Availability:** Ensure the pool has redundancy (mirrored vdevs, raidz) to minimize offline risk
+4. **Docker Alternative:** Run the dashboard in a container from root filesystem for pool-independent operation
+
+### File System Requirements
+This dashboard **only works with ZFS**. It does NOT support ext4, btrfs, LVM, or other file systems.
 
 ---
 
