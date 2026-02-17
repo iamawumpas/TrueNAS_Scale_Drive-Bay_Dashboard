@@ -192,6 +192,45 @@ function applyUIConfig(config) {
     applyConfigMap(root, map);
 }
 
+function updateAPIWarning(apiStatus) {
+    let warningBar = document.getElementById('api-warning-bar');
+    
+    if (!apiStatus.available) {
+        // Create warning bar if it doesn't exist
+        if (!warningBar) {
+            warningBar = document.createElement('div');
+            warningBar.id = 'api-warning-bar';
+            warningBar.className = 'api-warning-bar';
+            document.body.insertBefore(warningBar, document.body.firstChild);
+        }
+        
+        // Update warning message
+        warningBar.innerHTML = `
+            <div class="api-warning-content">
+                <span class="api-warning-icon">⚠️</span>
+                <span class="api-warning-text">TrueNAS Scale API has changed or is unavailable - ${apiStatus.error_message}</span>
+                <span class="api-warning-fallback">(Using fallback mode)</span>
+            </div>
+        `;
+        warningBar.style.display = 'flex';
+        
+        // Also change menu bar to red
+        const menuBar = document.getElementById('menu-bar');
+        if (menuBar) {
+            menuBar.classList.add('api-error');
+        }
+    } else {
+        // Remove warning if API is back online
+        if (warningBar) {
+            warningBar.style.display = 'none';
+        }
+        const menuBar = document.getElementById('menu-bar');
+        if (menuBar) {
+            menuBar.classList.remove('api-error');
+        }
+    }
+}
+
 async function update() {
     try {
         // Ensure flare variables are set with defaults immediately
@@ -223,6 +262,10 @@ async function update() {
         
         const res = await fetch('/data?' + Date.now());
         const data = await res.json();
+        
+        // Check API status and show warning if API has changed/failed
+        updateAPIWarning(data.api_status || { available: true, error_message: "" });
+        
         // Set UI debug flag from config (so debugLog can be gated)
         try { window.UI_DEBUG = !!(data.config && data.config.ui && data.config.ui.debug); } catch (e) { window.UI_DEBUG = false; }
         const canvas = document.getElementById('canvas');

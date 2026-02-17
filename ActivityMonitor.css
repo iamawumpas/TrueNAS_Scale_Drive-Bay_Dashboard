@@ -156,3 +156,53 @@
     height: var(--chart-height);
     position: relative;
 }
+
+/* Pool State Overlays */
+.pool-state-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: 6px;
+    pointer-events: none;
+}
+
+.pool-state-overlay.pool-faulted {
+    background: linear-gradient(135deg, #cc0000 0%, #ff0000 100%);
+    border: 2px solid #ffffff;
+    box-shadow: 
+        inset 0 0 20px rgba(0, 0, 0, 0.5),
+        0 0 15px rgba(255, 0, 0, 0.6);
+}
+
+.pool-state-overlay.pool-degraded {
+    background: rgba(255, 165, 0, 0.3);
+    border: 2px solid #ffa500;
+    backdrop-filter: blur(2px);
+}
+
+.pool-state-text {
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 1.4em;
+    font-variant: small-caps;
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+.pool-faulted .pool-state-text {
+    animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.05); }
+}

@@ -6,6 +6,7 @@ class ActivityMonitor {
         this.container = null;
         this.chassis = null;
         this.updateInterval = null;
+        this.poolStates = {};  // Track pool states from API
     }
 
     initialize() {
@@ -68,6 +69,11 @@ class ActivityMonitor {
             const payload = await res.json();
             const data = payload.stats;
             
+            // Fetch pool states from main data endpoint
+            const dataRes = await fetch('/data?t=' + Date.now());
+            const mainData = await dataRes.json();
+            this.poolStates = mainData.pool_states || {};
+            
             let needsReflow = false;
             
             for (const pool in data) {
@@ -76,9 +82,15 @@ class ActivityMonitor {
                     needsReflow = true;
                 }
                 
-                this.charts[pool].data.datasets[0].data = data[pool].r;
-                this.charts[pool].data.datasets[1].data = data[pool].w;
-                this.charts[pool].update('none');
+                // Update pool state overlay
+                this.updatePoolStateOverlay(pool);
+                
+                // Only update chart data if pool is not FAULTED
+                if (this.poolStates[pool] !== 'FAULTED') {
+                    this.charts[pool].data.datasets[0].data = data[pool].r;
+                    this.charts[pool].data.datasets[1].data = data[pool].w;
+                    this.charts[pool].update('none');
+                }
             }
             
             if (needsReflow) {
@@ -145,6 +157,7 @@ class ActivityMonitor {
             </div>
             <div class="activity-chart-wrap">
                 <canvas id="activity-chart-${name}"></canvas>
+                <div class="pool-state-overlay" id="pool-state-${name}"></div>
             </div>`;
         
         this.container.appendChild(div);
@@ -226,6 +239,36 @@ class ActivityMonitor {
                 plugins: { legend: { display: false } }
             }
         });
+    }
+
+    updatePoolStateOverlay(poolName) {
+        const overlay = document.getElementById(`pool-state-${poolName}`);
+        if (!overlay) return;
+        
+        const poolState = this.poolStates[poolName];
+        
+        if (poolState === 'FAULTED' || poolState === 'SUSPENDED') {
+            // Show RED box with white "FAULTED" text (no chart)
+            overlay.className = 'pool-state-overlay pool-faulted';
+            overlay.innerHTML = '<div class="pool-state-text">FAULTED</div>';
+            overlay.style.display = 'flex';
+            // Hide the chart canvas
+            const canvas = document.getElementById(`activity-chart-${poolName}`);
+            if (canvas) canvas.style.opacity = '0';
+        } else if (poolState === 'DEGRADED') {
+            // Show "DEGRADED" overlay on top of chart
+            overlay.className = 'pool-state-overlay pool-degraded';
+            overlay.innerHTML = '<div class="pool-state-text">DEGRADED</div>';
+            overlay.style.display = 'flex';
+            // Keep chart visible
+            const canvas = document.getElementById(`activity-chart-${poolName}`);
+            if (canvas) canvas.style.opacity = '1';
+        } else {
+            // Hide overlay for healthy pools
+            overlay.style.display = 'none';
+            const canvas = document.getElementById(`activity-chart-${poolName}`);
+            if (canvas) canvas.style.opacity = '1';
+        }
     }
 
     recreateCharts() {

@@ -1,5 +1,57 @@
 /* Menu.css - Dashboard Settings Menu */
 
+/* API Warning Bar */
+.api-warning-bar {
+    background: linear-gradient(135deg, #cc0000 0%, #ff0000 100%);
+    border-bottom: 3px solid #ffffff;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Calibri, Candara, sans-serif;
+    color: #ffffff;
+    position: sticky;
+    top: 0;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(255, 0, 0, 0.6);
+    animation: warning-pulse 2s infinite;
+}
+
+.api-warning-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14pt;
+    font-weight: bold;
+}
+
+.api-warning-icon {
+    font-size: 20pt;
+    animation: warning-shake 0.5s infinite;
+}
+
+.api-warning-text {
+    flex: 1;
+}
+
+.api-warning-fallback {
+    font-size: 11pt;
+    font-style: italic;
+    opacity: 0.9;
+}
+
+@keyframes warning-pulse {
+    0%, 100% { box-shadow: 0 4px 12px rgba(255, 0, 0, 0.6); }
+    50% { box-shadow: 0 4px 20px rgba(255, 0, 0, 0.9); }
+}
+
+@keyframes warning-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+}
+
+/* Menu Bar - Red Background on API Error */
 #menu-bar {
     background: var(--menu-bg-color, linear-gradient(180deg, #222 0%, #1a1a1a 100%));
     border-bottom: 2px solid var(--menu-border-color, #444);
@@ -16,6 +68,12 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     overflow: visible !important;
     opacity: var(--menu-opacity, 1);
+    transition: background 0.3s ease;
+}
+
+#menu-bar.api-error {
+    background: linear-gradient(135deg, #aa0000 0%, #cc0000 100%) !important;
+    border-bottom: 2px solid #ffffff !important;
 }
 
 .menu-container {

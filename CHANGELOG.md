@@ -1,5 +1,70 @@
 # Storage Dashboard - Change Log
 
+## Version 21.0:
+* **TrueNAS Scale API Integration**
+    * **Primary Detection Method:** Native TrueNAS Scale API via `midclt call pool.query` for direct ZFS pool/disk metadata
+    * **Intelligent Fallback:** Automatic fallback to `zpool status -v -p` parsing if API unavailable
+    * **Direct Integer Error Counts:** No K/M/G suffix parsing needed - API provides exact error numbers
+    * **Enhanced State Detection:** Properly detects ONLINE, DEGRADED, FAULTED, UNAVAIL, REMOVED, OFFLINE, RESILVERING states
+    * **Pool-Level Monitoring:** Tracks pool states (ONLINE, DEGRADED, FAULTED, SUSPENDED) independent of disk states
+    * **Recursive vdev Processing:** Parses nested vdev structures (raidz, mirror) with accurate error propagation
+* **API Change Detection & Monitoring**
+    * **Red Warning Bar:** Prominent warning banner at top of page when TrueNAS API changes or becomes unavailable
+    * **Menu Bar Alert:** Menu bar changes to red background with white text to indicate API issues
+    * **Error Details:** Shows specific error message (timeout, call failure, JSON parse error, not found)
+    * **Fallback Mode Indicator:** Clearly displays "(Using fallback mode)" when running on zpool status parsing
+    * **Pulsing Animation:** Warning banner pulses to draw attention without being intrusive
+* **Enhanced Error Detection Logic**
+    * **READ/WRITE/CKSUM Parsing:** All error columns properly parsed and tracked per disk
+    * **UNAVAIL State:** Disks in UNAVAIL state marked as FAULTED (red)
+    * **REMOVED State:** Physically removed disks marked as FAULTED (red)
+    * **Error-Based DEGRADED:** Any disk with READ > 0, WRITE > 0, or CKSUM > 0 automatically marked DEGRADED (orange)
+    * **Pool FAULTED/SUSPENDED:** All disks in FAULTED/SUSPENDED pools marked as FAULTED (red) regardless of individual state
+    * **Multiple Regex Patterns:** Separate patterns for disks with/without error columns for robust parsing
+* **Pool State Visual Indicators**
+    * **FAULTED/SUSPENDED Pools:** Activity chart replaced with solid RED box displaying "FAULTED" in white text
+    * **DEGRADED Pools:** Orange overlay with "DEGRADED" text displayed on top of activity chart
+    * **Pulsing Warning:** FAULTED pool indicators pulse to draw attention
+    * **Automatic Chart Hiding:** Chart canvas hidden when pool is FAULTED (no data available)
+    * **Pool State Tracking:** Pool states passed from backend to frontend for real-time display updates
+* **Blinking LED Animations - CRITICAL FIXES**
+    * **Fixed Missing Animations:** Added CSS animations for `status-led.allocated-offline`, `status-led.unalloc-error`, `status-led.unalloc-fault`
+    * **Allocated Offline:** Blinks between GREEN and GRAY (1s interval) for offline allocated disks
+    * **Unallocated Error:** Blinks between PURPLE and ORANGE (1s interval) for spare disks with errors
+    * **Unallocated Fault:** Blinks between PURPLE and RED (1s interval) for faulted spare disks
+    * **Radial Gradient Preservation:** Blinking maintains 3D LED sphere appearance with proper gradients
+    * **Glow Effects:** Box-shadow colors change with blink state for realistic LED effect
+* **Complete Disk State Coverage**
+    * **Priority 1:** Pool FAULTED/SUSPENDED → All disks RED
+    * **Priority 2:** Disk resilvering/repairing/replacing → WHITE
+    * **Priority 3:** Disk UNAVAIL/REMOVED → RED (allocated) or PURPLE/RED blink (unallocated)
+    * **Priority 4:** Disk has errors (R/W/C > 0) → ORANGE (allocated) or PURPLE/ORANGE blink (unallocated)
+    * **Priority 5:** Disk FAULTED → RED (allocated) or PURPLE/RED blink (unallocated)
+    * **Priority 6:** Disk DEGRADED → ORANGE
+    * **Priority 7:** Disk OFFLINE → GREEN/GRAY blink
+    * **Priority 8:** Disk ONLINE → GREEN (allocated) or PURPLE (unallocated)
+* **Improved ZFS Parsing**
+    * **`zpool status -v -p` Flag:** Uses `-p` flag for exact numeric error counts (no suffix parsing)
+    * **Dual Pattern Matching:** Handles both error-column and no-error-column line formats
+    * **Repairing Keyword Detection:** Detects "(repairing)", "(resilvering)", "(replacing)" text indicators
+    * **Whitespace Resilient:** Regex patterns handle variable spacing in zpool output
+* **Backend Architecture Improvements**
+    * **Tupled Return Values:** `get_zfs_topology()` now returns `(zfs_map, pool_states)` tuple
+    * **API Status Tracking:** New `get_api_status()` function returns `{available: bool, error_message: str}`
+    * **Global Pool States:** Pool states stored in `GLOBAL_DATA["pool_states"]` for frontend access
+    * **Global API Status:** API status stored in `GLOBAL_DATA["api_status"]` for monitoring
+    * **Enhanced `/data` Endpoint:** Returns `pool_states` and `api_status` in JSON response
+* **Code Quality & Maintainability**
+    * **Modular Error Handling:** Try/except blocks with specific error types (TimeoutExpired, CalledProcessError, JSONDecodeError)
+    * **Comprehensive Logging:** Debug output for all state transitions and error detections
+    * **Error Count Storage:** `read_errors`, `write_errors`, `cksum_errors` tracked per disk for future features
+    * **vdev Status Preservation:** Original vdev status stored alongside computed final state
+* **User Experience Enhancements**
+    * **Clear Visual Hierarchy:** Pool issues immediately visible via color-coded overlays
+    * **No Silent Failures:** API issues prominently displayed rather than hidden
+    * **Fallback Reliability:** System continues working even if API becomes unavailable
+    * **Future-Proof:** API detection allows graceful handling of TrueNAS updates
+
 ## Version 20.6:
 * **Dashboard Scale Control**
     * Added dashboard scale slider (50-150%, step 1) in Dashboard Settings → Environment panel

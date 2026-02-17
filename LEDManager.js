@@ -3,17 +3,24 @@ export function getLEDClass(disk) {
     const isAllocated = disk.pool_name && disk.pool_name !== "";
     const state = disk.state;
 
+    // Priority 1: Resilvering/repairing (white)
     if (state === "RESILVERING") return 'white';
 
     if (isAllocated) {
-        if (state === "OFFLINE") return 'allocated-offline';
-        if (state === "ONLINE") return 'green';
-        if (state === "DEGRADED") return 'orange';
-        if (state === "FAULTED") return 'red';
+        // Allocated disk states
+        if (state === "OFFLINE") return 'allocated-offline';  // Blinks green/gray
+        if (state === "ONLINE") return 'green';               // Solid green
+        if (state === "DEGRADED") return 'orange';            // Solid orange (errors)
+        if (state === "FAULTED") return 'red';                // Solid red (faulted)
+        if (state === "UNAVAIL") return 'red';                // Solid red (unavailable)
+        if (state === "REMOVED") return 'red';                // Solid red (removed)
     } else {
-        if (state === "ONLINE" || state === "UNALLOCATED") return 'purple';
-        if (state === "DEGRADED") return 'unalloc-error';
-        if (state === "FAULTED") return 'unalloc-fault';
+        // Unallocated disk states
+        if (state === "ONLINE" || state === "UNALLOCATED") return 'purple';  // Solid purple (healthy spare)
+        if (state === "DEGRADED") return 'unalloc-error';                     // Blinks purple/orange (spare with errors)
+        if (state === "FAULTED") return 'unalloc-fault';                      // Blinks purple/red (spare faulted)
+        if (state === "UNAVAIL") return 'unalloc-fault';                      // Blinks purple/red (spare unavailable)
+        if (state === "REMOVED") return 'unalloc-fault';                      // Blinks purple/red (spare removed)
     }
     return '';
 }

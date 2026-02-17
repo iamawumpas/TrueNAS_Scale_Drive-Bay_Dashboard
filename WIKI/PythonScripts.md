@@ -13,7 +13,14 @@ This project contains two primary Python components:
   - Contains background threads that scan topology, monitor I/O activity, and collect pool activity history. If `config.json` is missing or invalid the service will regenerate defaults from `DEFAULT_CONFIG_JSON`.
 
 - `zfs_logic.py` — ZFS helper
-  - Provides `get_zfs_topology(uuid_to_dev_map)` which parses `zpool status` output to map disks (by UUID or name) to pool, index, and state (including resilvering). Used by `service.py` to build the topology mapping.
+  - Provides `get_zfs_topology(uuid_to_dev_map)` which uses a dual-method detection system:
+    - **Primary**: TrueNAS Scale API via `midclt call pool.query` for comprehensive pool, disk, and error information
+    - **Fallback**: Parses `zpool status -v -p` output when API is unavailable
+  - Returns a tuple: `(zfs_map, pool_states)` containing disk mappings and pool-level states (ONLINE, DEGRADED, FAULTED, SUSPENDED)
+  - Detects all disk states: ONLINE, DEGRADED, FAULTED, UNAVAIL, REMOVED, OFFLINE, RESILVERING
+  - Parses disk errors: READ, WRITE, and CHECKSUM counts
+  - Also provides `get_api_status()` to report API availability for monitoring purposes
+  - Used by `service.py` to build the topology mapping and pool state information.
 
 Notes:
 - `service.py` also exposes a small POST endpoint to persist configuration changes. The front-end `MenuSystem.js` calls this when users click SAVE.

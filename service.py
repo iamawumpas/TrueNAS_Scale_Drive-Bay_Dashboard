@@ -1,6 +1,6 @@
 import http.server, socketserver, json, time, subprocess, socket, os, re, threading, shutil
 from collections import deque
-from zfs_logic import get_zfs_topology
+from zfs_logic import get_zfs_topology, get_api_status
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(BASE_DIR, 'config.json')
@@ -876,7 +876,11 @@ def topology_scanner_thread():
                     real = os.path.realpath(os.path.join('/dev/disk/by-partuuid', uid))
                     uuid_map[uid] = re.sub(r'p?\d+$', '', os.path.basename(real))
             
-            zfs_map = get_zfs_topology(uuid_map)
+            # Get ZFS topology and pool states from API or fallback
+            zfs_map, pool_states = get_zfs_topology(uuid_map)
+            GLOBAL_DATA["pool_states"] = pool_states  # Store pool states for frontend
+            GLOBAL_DATA["api_status"] = get_api_status()  # Store API status
+            
             new_topology = {}
             controller_capacity = {}
             path_dir = '/dev/disk/by-path'
@@ -1024,7 +1028,13 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
         path = self.path.split('?')[0]
         
         if path == '/data':
-            resp = {"hostname": GLOBAL_DATA["hostname"], "topology": {}, "config": GLOBAL_DATA.get("config", {})}
+            resp = {
+                "hostname": GLOBAL_DATA["hostname"], 
+                "topology": {}, 
+                "config": GLOBAL_DATA.get("config", {}),
+                "pool_states": GLOBAL_DATA.get("pool_states", {}),
+                "api_status": GLOBAL_DATA.get("api_status", {"available": True, "error_message": ""})
+            }
             for pci, data in GLOBAL_DATA["topology"].items():
                 resp["topology"][pci] = {
                     "settings": data["settings"],

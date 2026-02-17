@@ -1,5 +1,5 @@
 # TrueNAS Scale Drive-Bay Dashboard
-**version v20.6**
+**version v21.0**
 
 
 ## Documentation / Wiki
@@ -38,15 +38,34 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
 * **Physical Arrangement:** Shows drives as detected by the HBA and the specific breakout cables attached (since I don't have a backplane).
 * **Identification:** Displays formatted Drive Capacity and the **last 3 digits of the drive serial number** (I label my physical disks this way for easy tracing).
 * **Activity:** Real-time read/write activity via a blue "blinky" LED.
-* **Status Indicators:**
-    * **Green:** Drive is connected, and TrueNAS reports it is functioning normally.
-    * **Green [Blinking]** Drive is connected but TrueNAS is reporting *OFFLINE*
-    * **Orange:** Drive is connected, but TrueNAS is reporting error(s).
-    * **Silver:** Drive is connected and currently resilvering.
-    * **Red:** Drive is connected, but marked Offline by TrueNAS.
-    * **Purple:** Drive is connected but is a spare or unallocated.
-    * **Purple/Orange [Blinking]** Drive is connected and unallocated, but TrueNAS reports an error.
-    * **Purple/Red [Blinking]** Drive is connected and unallocated, but TrueNAS reports faulted.
+* **Status Indicators (Allocated Disks):**
+    * **Green:** Drive is healthy and functioning normally in a pool
+    * **Green/Gray [Blinking]:** Drive is allocated but marked OFFLINE by TrueNAS
+    * **Orange:** Drive has READ/WRITE/CHECKSUM errors but still functioning
+    * **White:** Drive is currently resilvering/repairing/replacing
+    * **Red:** Drive is FAULTED, UNAVAIL, REMOVED, or in a FAULTED/SUSPENDED pool
+
+* **Status Indicators (Unallocated/Spare Disks):**
+    * **Purple:** Healthy spare drive ready for use
+    * **Purple/Orange [Blinking]:** Spare drive with READ/WRITE/CHECKSUM errors
+    * **Purple/Red [Blinking]:** Spare drive is FAULTED, UNAVAIL, or REMOVED
+
+* **Pool Activity Monitor:**
+    * **Normal:** Real-time read/write activity charts for each pool
+    * **DEGRADED Pool:** Orange "DEGRADED" overlay on chart (pool still functioning)
+    * **FAULTED/SUSPENDED Pool:** Red box with "FAULTED" text replaces chart (pool I/O suspended)
+
+---
+
+## What's New in v21.0?
+
+* **🔌 Native TrueNAS Scale API Integration:** Direct access to ZFS metadata via `midclt` for faster, more accurate disk state detection
+* **🚨 Intelligent Error Detection:** Automatically detects and displays READ, WRITE, and CHECKSUM errors on all disks
+* **⚠️ API Change Monitoring:** Red warning banner and menu bar alert if TrueNAS API changes or becomes unavailable
+* **📊 Pool State Visualization:** FAULTED pools show red box, DEGRADED pools show orange overlay on activity charts
+* **💡 Blinking LED Animations:** Unallocated disks with errors or faults now properly blink purple/orange or purple/red
+* **🔄 Automatic Fallback:** Seamlessly falls back to `zpool status` parsing if API is unavailable
+* **🎯 Complete State Coverage:** Detects ONLINE, DEGRADED, FAULTED, UNAVAIL, REMOVED, OFFLINE, RESILVERING states
 
 ---
 
