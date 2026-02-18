@@ -260,39 +260,11 @@ def fallback_to_zpool_status(uuid_to_dev_map):
                     "pool": current_pool,
                     "idx": disk_idx,
                     "state": final_state,
-            
-            # Try pattern with errors
-            match = DISK_WITH_ERRORS.search(line_stripped)
-            if match and current_pool and "STATE" not in line_stripped:
-                uid, state = match.group(1), match.group(2)
-                read_err, write_err, cksum_err = int(match.group(3)), int(match.group(4)), int(match.group(5))
-                total_err = read_err + write_err + cksum_err
-                
-                disk_idx += 1
-                dev_base = uuid_to_dev_map.get(uid, uid).rstrip('0123456789')
-                
-                is_repairing = any(x in line_stripped.lower() for x in ['resilvering', 'repairing', 'replacing'])
-                
-                # Determine state
-                if current_pool_state in ['FAULTED', 'SUSPENDED']:
-                    final_state = 'FAULTED'
-                elif is_repairing:
-                    final_state = 'RESILVERING'
-                elif total_err > 0:
-                    final_state = 'DEGRADED'
-                else:
-                    final_state = state
-                
-                zfs_map[dev_base] = {
-                    "pool": current_pool,
-                    "idx": disk_idx,
-                    "state": final_state,
                     "read_errors": read_err,
                     "write_errors": write_err,
                     "cksum_errors": cksum_err,
                     "pool_state": current_pool_state
                 }
-                continue
             
             # Try pattern without errors (UNAVAIL, REMOVED)
             match = DISK_NO_ERRORS.search(line_stripped)
