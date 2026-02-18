@@ -1,3 +1,7 @@
 __pycache__/
 *.pyc
-config.json.backup
+config.json.backup.vscode/
+data.json
+data-summary.json
+.wiki_temp/
+*.code-workspace
