@@ -53,6 +53,18 @@ def get_zfs_topology_via_api(uuid_to_dev_map):
             
             pool_states[pool_name] = pool_state
             
+            # Check for active resilver/scrub/repair operation at pool level
+            scan = pool.get('scan', {})
+            scan_function = scan.get('function', '')
+            scan_state = scan.get('state', 'FINISHED')
+            is_active_resilver = scan_function == 'RESILVER' and scan_state != 'FINISHED'
+            is_active_rebuild = scan_function == 'REBUILD' and scan_state != 'FINISHED'
+            is_active_repair = scan_function == 'REPAIR' and scan_state != 'FINISHED'
+            has_active_scan = is_active_resilver or is_active_rebuild or is_active_repair
+            
+            if has_active_scan:
+                print(f"ZFS API: Pool {pool_name} has active {scan_function} (state: {scan_state})")
+            
             # Process topology
             topology = pool.get('topology', {})
             disk_idx = 0
@@ -62,6 +74,13 @@ def get_zfs_topology_via_api(uuid_to_dev_map):
                 vdevs = topology.get(vdev_type, [])
                 for vdev in vdevs:
                     disk_idx = process_vdev(vdev, pool_name, pool_state, disk_idx, uuid_to_dev_map, zfs_map)
+            
+            # If there's an active resilver/rebuild/repair, mark all disks in this pool as RESILVERING
+            if has_active_scan:
+                for dev_base, info in zfs_map.items():
+                    if info['pool'] == pool_name:
+                        info['state'] = 'RESILVERING'
+                        print(f"ZFS API: Disk {dev_base} marked as RESILVERING due to active pool {scan_function}")
         
         # Store pool states in first disk of each pool for frontend access
         for dev_base, info in zfs_map.items():
@@ -175,6 +194,7 @@ def fallback_to_zpool_status(uuid_to_dev_map):
     print("Falling back to zpool status parsing...")
     zfs_map = {}
     pool_states = {}
+    pool_active_resilver = {}  # Track which pools have active resilver operations
     
     try:
         z_out = subprocess.check_output(['zpool', 'status', '-v', '-p'], text=True)
@@ -189,6 +209,10 @@ def fallback_to_zpool_status(uuid_to_dev_map):
         DISK_NO_ERRORS = re.compile(
             r'([0-9a-f-]{36}|sd[a-z]+[0-9]?|vd[a-z]+[0-9]?)\s+(UNAVAIL|REMOVED)'
         )
+        SCAN_ACTIVE = re.compile(
+            r'scan:\s+(resilver|rebuild|repair|scrub)\s+in\s+progress',
+            re.IGNORECASE
+        )
         
         for line in z_out.split('\n'):
             line_stripped = line.strip()
@@ -197,11 +221,45 @@ def fallback_to_zpool_status(uuid_to_dev_map):
                 current_pool = line_stripped.split(':')[1].strip()
                 disk_idx = 0
                 current_pool_state = 'ONLINE'
+                pool_active_resilver[current_pool] = False
             
             if line_stripped.startswith('state:') and current_pool:
                 current_pool_state = line_stripped.split(':')[1].strip()
                 pool_states[current_pool] = current_pool_state
                 print(f"ZFS: Pool {current_pool} state: {current_pool_state}")
+            
+            # Check for active resilver/rebuild/repair/scrub operation
+            if line_stripped.startswith('scan:') and current_pool:
+                if SCAN_ACTIVE.search(line_stripped):
+                    pool_active_resilver[current_pool] = True
+                    print(f"ZFS: Pool {current_pool} has active resilver/repair operation")
+            
+            # Try pattern with errors
+            match = DISK_WITH_ERRORS.search(line_stripped)
+            if match and current_pool and "STATE" not in line_stripped:
+                uid, state = match.group(1), match.group(2)
+                read_err, write_err, cksum_err = int(match.group(3)), int(match.group(4)), int(match.group(5))
+                total_err = read_err + write_err + cksum_err
+                
+                disk_idx += 1
+                dev_base = uuid_to_dev_map.get(uid, uid).rstrip('0123456789')
+                
+                is_repairing = any(x in line_stripped.lower() for x in ['resilvering', 'repairing', 'replacing'])
+                
+                # Determine state
+                if current_pool_state in ['FAULTED', 'SUSPENDED']:
+                    final_state = 'FAULTED'
+                elif is_repairing:
+                    final_state = 'RESILVERING'
+                elif total_err > 0:
+                    final_state = 'DEGRADED'
+                else:
+                    final_state = state
+                
+                zfs_map[dev_base] = {
+                    "pool": current_pool,
+                    "idx": disk_idx,
+                    "state": final_state,
             
             # Try pattern with errors
             match = DISK_WITH_ERRORS.search(line_stripped)
@@ -252,6 +310,14 @@ def fallback_to_zpool_status(uuid_to_dev_map):
                     "cksum_errors": 0,
                     "pool_state": current_pool_state
                 }
+        
+        # Mark all disks in pools with active resilver operations
+        for pool_name, has_resilver in pool_active_resilver.items():
+            if has_resilver:
+                for dev_base, info in zfs_map.items():
+                    if info['pool'] == pool_name:
+                        info['state'] = 'RESILVERING'
+                        print(f"ZFS: Disk {dev_base} marked as RESILVERING due to active pool operation")
     
     except Exception as e:
         print(f"Fallback ZFS Logic Error: {e}")
