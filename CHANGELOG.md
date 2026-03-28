@@ -1,5 +1,26 @@
 # Storage Dashboard - Change Log
 
+## Version 22.0:
+* **SAS HBA Backplane & Direct-Attach Support (sas2ircu / sas3ircu)**
+    * **Per-Enclosure Chassis Rendering:** Each physical SAS backplane expander now renders as its own chassis; direct-attach drives (SFF-8087 to SATA breakout) render as a separate chassis alongside it - no hard-coded bay counts
+    * **Authoritative Slot Detection:** Backplane bay count derived from the highest occupied drive slot reported by the SAS adapter (`sas2ircu`/`sas3ircu DISPLAY`), not the firmware `Numslots` field which includes management pseudo-slots
+    * **SES-Based Backplane Classification:** Enclosures are classified via the presence of an `Enclosure services device` block in adapter output; the HBA virtual enclosure is correctly identified as direct-attach regardless of whether it appears in the Enclosure information header
+    * **Direct-Attach Capacity Calculation:** Direct-attach bay count = HBA virtual enclosure `Numslots` minus lanes consumed by connected backplane ports (`DEFAULT_TARGETS_PER_PORT` per backplane), giving the true number of remaining direct-connect PHY lanes
+    * **Dynamic Multi-Adapter Discovery:** Topology scanner probes each HBA PCI address against available ircu tools; falls back to `/dev/disk/by-path` for controllers with no ircu support (NVMe, non-SAS HBAs)
+    * **Per-Controller Sub-Keys:** ircu-derived chassis use `{pci_key}-e{enclosure_id}` and `{pci_key}-da` keys so multiple backplanes and the direct-attach segment are tracked independently in the topology
+* **PCI Address Normalisation**
+    * **`h`-Suffix Stripping:** `sas2ircu LIST` outputs addresses in `00h:10h:00h:00h` format; normaliser now strips `h`/`H` suffixes before comparison
+    * **Bus:Device:Function Conversion:** Short 4-part ircu addresses are correctly mapped to Linux `0000:BB:DD.F` format for matching against `/dev/disk/by-path` entries
+    * **Fallback BDF Matching:** If `LIST` parsing fails, `_find_ircu_adapter` enumerates adapters and reads Bus/Device/Function fields directly from each adapter's `DISPLAY` output
+* **Serial Number Normalisation**
+    * **Dash-Stripped Aliases:** `lsblk` includes manufacturer punctuation in serials (e.g. `WD-WCC3F3XV1DKV`) while `sas2ircu` omits it (`WDWCC3F3XV1DKV`); `build_serial_to_dev_map` now stores both forms so every disk resolves to its correct device name and ZFS pool membership
+* **ZFS State Enrichment for ircu Disks**
+    * **Full State Inheritance:** Each ircu-discovered disk is cross-referenced against `zfs_map` for pool name, pool index, ZFS state (ONLINE/DEGRADED/FAULTED/RESILVERING etc.) and activity LED
+    * **SCSI State Fallback:** Disks with no ZFS record are checked against raw SCSI state (`Failed`, `Missing`, `Critical`, `Degraded`) and marked `FAULTED` if any fault keyword is present
+    * **Model Field Added:** Drive model number from `sas2ircu` output is included in each disk record for future display use
+* **Diagnostic Endpoint**
+    * **`/ircu-debug` Endpoint:** New HTTP GET endpoint returns a 6-step JSON diagnostic report covering PCI address discovery, ircu tool availability and LIST output, adapter lookup result, per-enclosure parse results, serial-to-device mapping, and final topology with disk counts - for troubleshooting without log file access
+
 ## Version 21.0:
 * **TrueNAS Scale API Integration**
     * **Primary Detection Method:** Native TrueNAS Scale API via `midclt call pool.query` for direct ZFS pool/disk metadata
