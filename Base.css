@@ -5,6 +5,10 @@
      * Metal enclosure body = 17.5 in (44.45 cm); full rack width with flanges = 19 in. */
     --rack-chassis-width: 46vw;
     --bay-gap: 6px;
+    --rack-width-in: 19;
+    --rack-u-height-in: 1.75;
+    --server-name-scale: 1;
+    --pci-address-scale: 1;
 
     /* Font families - set from config.json */
     --font-default: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;

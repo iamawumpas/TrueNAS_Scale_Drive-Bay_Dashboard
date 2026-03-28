@@ -14,9 +14,22 @@
     width: var(--rack-chassis-width);   /* 17.5 in — standard rack-mount metal enclosure */
     max-width: calc(100vw - 32px);
     box-sizing: border-box;
-    margin: 0 auto 25px auto;
+    margin: 15px auto 15px auto;
     position: relative;
     overflow: hidden;
+}
+
+/* Vertical single-column layout: even spacing on all sides */
+@media (max-width: 1500px) {
+    .storage-unit {
+        margin: 15px auto 15px auto;
+    }
+}
+
+/* Masonry multi-column layout: reduce gap by 50% */
+@media (min-width: 1501px) {
+    .storage-unit {
+        margin: 6.25px auto 6.25px auto;
 }
 
 .chassis-inner {
@@ -55,12 +68,10 @@
 }
 
 .chassis-header {
-    display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.8fr);
-    align-items: end;
+    display: flex;
+    align-items: flex-end;
     padding: 10px 10px 20px 10px;
     border-bottom: 1px solid var(--chassis-header-divider);
-    column-gap: 12px;
 }
 
 .header-left {
@@ -72,7 +83,7 @@
 .hostname { 
     color: var(--server-name-color); 
     font-family: var(--server-name-font); 
-    font-size: var(--server-name-size); 
+    font-size: calc(var(--server-name-size) * var(--server-name-scale, 1)); 
     font-weight: var(--server-name-weight); 
     font-style: var(--server-name-style);
     text-transform: var(--server-name-transform); 
@@ -83,44 +94,59 @@
 .pci-address-grey { 
     color: var(--pci-address-color); 
     font-family: var(--pci-address-font); 
-    font-size: var(--pci-address-size); 
+    font-size: calc(var(--pci-address-size) * var(--pci-address-scale, 1)); 
     font-weight: var(--pci-address-weight);
     font-style: var(--pci-address-style);
     text-transform: var(--pci-address-transform);
     margin-top: 5px;
 }
 
-/* Legend Box styling */
-.legend-box {
-    --legend-scale: 0.9;
+/* Standalone Legend Chassis */
+#legend-chassis {
+    --legend-scale: 1;
+    background-color: #1a1a1a;
+    background-image:
+        repeating-linear-gradient(rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 2px),
+        linear-gradient(115deg, #111 0%, #222 30%, #333 45%, #222 60%, #111 100%);
+    border: 1px solid #333;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: inset 0 0 20px #000, 0 10px 30px rgba(0,0,0,0.8);
     display: flex;
     flex-direction: column;
-    width: fit-content;
-    min-width: 0;
-    max-width: 100%;
-    margin-left: 0;
-    align-items: flex-start;
-    justify-self: end;
+    align-self: stretch;
+    min-width: 200px;
+    justify-content: center;
+}
+
+#legend-chassis .legend-title {
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+}
+
+/* Inline legend-box still used within chassis headers if needed */
+.legend-box {
+    display: none;
 }
 
 .legend-title {
     color: var(--legend-title-color);
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     font-family: var(--legend-font);
     font-weight: var(--legend-weight);
     font-style: var(--legend-style);
     text-transform: var(--legend-transform);
-    letter-spacing: 1px;
-    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
 }
 
-/* Grid Layout: 4 Columns x 2 Rows */
+/* Grid Layout: 2 Columns */
 .legend-items-row {
     display: grid;
-    grid-template-columns: repeat(4, auto); 
-    grid-template-rows: repeat(2, auto);
-    column-gap: calc(25px * var(--legend-scale));
-    row-gap: calc(8px * var(--legend-scale));
+    grid-template-columns: repeat(2, auto);
+    column-gap: calc(20px * var(--legend-scale));
+    row-gap: calc(10px * var(--legend-scale));
     width: max-content;
 }
 

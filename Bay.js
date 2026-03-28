@@ -4,7 +4,6 @@ export function createBayHTML(idx) {
             <div class="led status-led"></div>
             <div class="led activity-led"></div>
         </div>
-        <div class="bay-id">BAY ${idx+1}</div>
         <div class="info-container">
             <div class="info-grid">
                 <div class="sn-cell">&nbsp;</div>
@@ -13,5 +12,5 @@ export function createBayHTML(idx) {
                 <div class="idx-cell">&nbsp;</div>
             </div>
         </div>
-        <div class="latch"></div>`;
+        <div class="latch"><span class="latch-num">${idx+1}</span></div>`;
 }

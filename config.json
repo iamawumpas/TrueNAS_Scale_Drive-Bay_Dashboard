@@ -144,6 +144,12 @@
             "flare_size": 50,
             "flare_shape": 100,
             "scale": 100
+        },
+        "__REMARK_LAYOUT": "Physical rack and bay spacing model (shared across all chassis unless overridden).",
+        "layout": {
+            "rack_width_in": 19,
+            "u_height_in": 1.75,
+            "bay_gap_px": 6
         }
     },
     "__REMARK_CHART": "Activity Monitor chart colors, gradients, and dimensions.",
@@ -234,13 +240,17 @@
                 "flare_offset_x": "-50%",
                 "flare_offset_y": "-50%",
                 "flare_opacity": "0.5",
-                "flare_enabled": true
+                "flare_enabled": true,
+                "rack_units": 2,
+                "hostname_size_scale": 100,
+                "device_id_size_scale": 100
             },
             "bay": {
                 "background_base": "#121212",
                 "border": "#333333",
                 "top_border": "#444444",
                 "grill_size": "18px",
+                "gap_px": 6,
                 "pool_color": "#ffffff",
                 "pool_font": "Calibri",
                 "pool_size": "1.1vw",
@@ -271,8 +281,13 @@
             }
         },
         "0000:00:10.0-e2": {
-            "chassis": {},
+            "chassis": {
+                "rack_units": 2,
+                "hostname_size_scale": 100,
+                "device_id_size_scale": 100
+            },
             "bay": {
+                "gap_px": 6,
                 "pool_size_scale": "32",
                 "idx_size_scale": "30",
                 "sn_size_scale": "30",

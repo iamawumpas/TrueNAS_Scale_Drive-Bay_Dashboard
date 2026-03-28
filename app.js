@@ -4,6 +4,7 @@ import { createChassisHTML } from './Chassis.js';
 import { createBayHTML } from './Bay.js';
 import { MenuSystem } from './MenuSystem.js';
 import { applyConfigMap, updateTextIfChanged, setClassIfChanged, debugLog } from './ui/utils.js';
+import { resolveLayoutSettings, applyPhysicalLayout } from './ui/layoutGeometry.js';
 
 let lastUIConfigSignature = '';
 let lastStyleConfigSignature = '';
@@ -192,6 +193,14 @@ function applyUIConfig(config) {
         if (ui.legend.title_size) map['--legend-title-size'] = ui.legend.title_size;
         if (ui.legend.title_weight) map['--legend-title-weight'] = ui.legend.title_weight;
     }
+    if (ui.layout) {
+        const rackWidthIn = Number(ui.layout.rack_width_in);
+        const uHeightIn = Number(ui.layout.u_height_in);
+        const bayGapPx = Number(ui.layout.bay_gap_px);
+        if (Number.isFinite(rackWidthIn) && rackWidthIn > 0) map['--rack-width-in'] = String(rackWidthIn);
+        if (Number.isFinite(uHeightIn) && uHeightIn > 0) map['--rack-u-height-in'] = String(uHeightIn);
+        if (Number.isFinite(bayGapPx) && bayGapPx >= 0) map['--bay-gap'] = `${bayGapPx}px`;
+    }
     if (ui.led_colors) {
         const led = ui.led_colors;
         if (led.allocated_healthy) map['--led-allocated-healthy'] = led.allocated_healthy;
@@ -291,6 +300,10 @@ async function update() {
             const effectiveConfig = (menuSystem && menuSystem.isDirty)
                 ? menuSystem.currentConfig
                 : data.config;
+            const allHeaderHeights = Array.from(document.querySelectorAll('.chassis-header'))
+                .map(el => el.getBoundingClientRect().height)
+                .filter(h => Number.isFinite(h) && h > 0);
+            const sharedHeaderHeight = allHeaderHeights.length > 0 ? Math.max(...allHeaderHeights) : 0;
 
             Object.keys(data.topology).forEach(pci => {
                 const chassisData = data.topology[pci];
@@ -343,8 +356,16 @@ async function update() {
                 const bayHeight = deviceConfig.bay?.height || 35;
                 const bayLayout = String(deviceConfig.bay?.layout || 'vertical').toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
                 const driveSequence = String(deviceConfig.bay?.drive_sequence || bayLayout).toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
-                const chassisRackUnitsValue = Number(deviceConfig.chassis?.rack_units ?? deviceConfig.bay?.rack_units ?? 2);
-                const chassisRackUnits = Number.isFinite(chassisRackUnitsValue) ? Math.max(1, chassisRackUnitsValue) : 2;
+                const layoutSettings = resolveLayoutSettings(effectiveConfig, deviceConfig);
+
+                if (unit) {
+                    const hostScaleRaw = Number(deviceConfig?.chassis?.hostname_size_scale ?? 100);
+                    const idScaleRaw = Number(deviceConfig?.chassis?.device_id_size_scale ?? 100);
+                    const hostScale = Number.isFinite(hostScaleRaw) ? Math.min(200, Math.max(50, hostScaleRaw)) / 100 : 1;
+                    const idScale = Number.isFinite(idScaleRaw) ? Math.min(200, Math.max(50, idScaleRaw)) / 100 : 1;
+                    unit.style.setProperty('--server-name-scale', `${hostScale}`);
+                    unit.style.setProperty('--pci-address-scale', `${idScale}`);
+                }
 
                 // Layout policy:
                 // - Vertical orientation: fit up to 16 drives/row in chassis width.
@@ -375,42 +396,18 @@ async function update() {
                     slotContainer.style.gridTemplateRows = driveSequence === 'vertical' ? `repeat(${rows}, auto)` : '';
 
                     const storageUnit = unitsMap.get(pci) || document.getElementById(`unit-${pci}`);
-                    if (storageUnit) {
-                        const renderedWidth = storageUnit.getBoundingClientRect().width;
-                        if (renderedWidth > 0) {
-                            const targetBayAreaHeight = renderedWidth * ((chassisRackUnits * 1.75) / 19);
-
-                            const storageUnitStyles = window.getComputedStyle(storageUnit);
-                            const slotStyles = window.getComputedStyle(slotContainer);
-                            const headerHeight = storageUnit.querySelector('.chassis-header')?.getBoundingClientRect().height || 0;
-                            const warningEl = storageUnit.querySelector('.capacity-warning');
-                            const warningHeight = warningEl && window.getComputedStyle(warningEl).display !== 'none'
-                                ? warningEl.getBoundingClientRect().height
-                                : 0;
-                            const unitVerticalPadding = (parseFloat(storageUnitStyles.paddingTop) || 0) + (parseFloat(storageUnitStyles.paddingBottom) || 0);
-                            const slotVerticalPadding = (parseFloat(slotStyles.paddingTop) || 0) + (parseFloat(slotStyles.paddingBottom) || 0);
-                            const slotHorizontalPadding = (parseFloat(slotStyles.paddingLeft) || 0) + (parseFloat(slotStyles.paddingRight) || 0);
-                            const targetChassisHeight = headerHeight + warningHeight + unitVerticalPadding + targetBayAreaHeight;
-                            storageUnit.style.height = `${targetChassisHeight}px`;
-
-                            if (bayLayout === 'vertical') {
-                                const rowGap = parseFloat(slotStyles.rowGap || slotStyles.gap || '0') || 0;
-                                const columnGap = parseFloat(slotStyles.columnGap || slotStyles.gap || '0') || 0;
-                                const slotContentHeight = Math.max(1, targetBayAreaHeight - slotVerticalPadding);
-                                const slotContentWidth = Math.max(1, slotContainer.clientWidth - slotHorizontalPadding);
-                                const rowHeight = Math.max(1, (slotContentHeight - (rowGap * Math.max(0, rows - 1))) / rows);
-                                const slotWidth = Math.max(1, (slotContentWidth - (columnGap * Math.max(0, baysPerRow - 1))) / baysPerRow);
-                                const verticalBayAspectRatio = slotWidth / rowHeight;
-
-                                slotContainer.style.height = `${targetBayAreaHeight}px`;
-                                slotContainer.style.gridTemplateRows = `repeat(${rows}, minmax(0, ${rowHeight}px))`;
-                                slotContainer.style.setProperty('--vertical-bay-aspect-ratio', `${verticalBayAspectRatio}`);
-                            } else {
-                                slotContainer.style.height = `${targetBayAreaHeight}px`;
-                                slotContainer.style.removeProperty('--vertical-bay-aspect-ratio');
-                            }
+                    applyPhysicalLayout({
+                        storageUnit,
+                        slotContainer,
+                        baysPerRow,
+                        rows,
+                        maxBays,
+                        bayLayout,
+                        settings: {
+                            ...layoutSettings,
+                            headerHeightPx: Math.max(layoutSettings.headerHeightPx || 0, sharedHeaderHeight)
                         }
-                    }
+                    });
                     slotContainer.dataset.bayLayout = bayLayout;
                     slotContainer.dataset.driveSequence = driveSequence;
                 }

@@ -1,5 +1,27 @@
 # Storage Dashboard - Change Log
 
+## Version 22.2:
+* **Physical Bay Geometry Refactor**
+    * Introduced shared geometry engine for chassis and bay sizing in `ui/layoutGeometry.js`
+    * Unified runtime and live-preview sizing paths to use identical physical layout calculations
+    * Added shared header-height baseline so matching rack-unit chassis render at consistent total heights
+* **Orientation Consistency Improvements**
+    * Updated vertical and horizontal bay layout logic to align long-edge bay sizing behavior
+    * Removed horizontal stretch-gap side effects that caused oversized empty bay-area spacing
+    * Normalized bay-field spacing to preserve consistent inter-bay gap handling across orientations
+* **Bay Face Layout Redesign**
+    * Removed legacy "BAY x" label block to free top-face space
+    * Moved bay numbering onto the latch face with centered numeric-only labels
+    * Reworked info area flow to fit cleanly between LED block and latch boundary
+* **Header and Legend Architecture Update**
+    * Moved ZFS legend from per-chassis header into dedicated standalone legend chassis
+    * Converted legend layout to compact two-column presentation for improved fit
+    * Added top-row composition to align activity monitor and legend chassis side-by-side
+* **Typography and Styling Controls**
+    * Added independent per-device hostname and device-ID scale controls
+    * Wired physical rack constants and bay-gap controls through `config.json` layout settings
+    * Tuned LED sizing/placement, including vertical LED edge offset adjustment for visual parity
+
 ## Version 22.1:
 * **Bay Layout Control & Live Preview Enhancements**
     * Reworked Bay Settings into a single panel with inline chassis target selection, bay orientation, and drive-sequence controls

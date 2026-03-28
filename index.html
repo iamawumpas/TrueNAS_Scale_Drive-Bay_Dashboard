@@ -14,13 +14,31 @@
 <body>
     <!-- Dashboard wrapper: activity monitor + drive bay chassis will be scaled together -->
     <div id="dashboard-wrapper">
-        <!-- Activity Monitor Section (below menu, above drive bay chassis) -->
-        <div id="activity-chassis" style="display: none;">
-            <div id="activity-header">
-                <span id="activity-hostname">Pool Activity</span>
-                <span class="activity-sub-text">Real-Time Read/Write</span>
+        <!-- Top row: Activity Monitor + Legend side by side -->
+        <div id="top-row">
+            <!-- Activity Monitor Section -->
+            <div id="activity-chassis" style="display: none;">
+                <div id="activity-header">
+                    <span id="activity-hostname">Pool Activity</span>
+                    <span class="activity-sub-text">Real-Time Read/Write</span>
+                </div>
+                <div id="activity-container"></div>
             </div>
-            <div id="activity-container"></div>
+
+            <!-- Legend Chassis -->
+            <div id="legend-chassis">
+                <div class="legend-title">ZFS Status</div>
+                <div class="legend-items-row">
+                    <div class="legend-item"><span class="dot green"></span> ALLOCATED-HEALTHY</div>
+                    <div class="legend-item"><span class="dot allocated-offline"></span> ALLOCATED-OFFLINE</div>
+                    <div class="legend-item"><span class="dot white"></span> RESILVERING</div>
+                    <div class="legend-item"><span class="dot orange"></span> ERROR</div>
+                    <div class="legend-item"><span class="dot red"></span> FAULTED</div>
+                    <div class="legend-item"><span class="dot purple"></span> UNALLOCATED</div>
+                    <div class="legend-item"><span class="dot unalloc-error"></span> UNALLOC-ERROR</div>
+                    <div class="legend-item"><span class="dot unalloc-fault"></span> UNALLOC-FAULT</div>
+                </div>
+            </div>
         </div>
 
         <!-- Main Drive Bay Dashboard -->

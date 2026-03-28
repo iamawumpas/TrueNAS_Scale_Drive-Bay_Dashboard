@@ -1,5 +1,6 @@
 // MenuSystem.js - Dynamic menu for customizing dashboard settings
 import { applyConfigMap } from './ui/utils.js';
+import { resolveLayoutSettings, applyPhysicalLayout } from './ui/layoutGeometry.js';
 
 export class MenuSystem {
     constructor(topology, currentConfig) {
@@ -289,6 +290,14 @@ export class MenuSystem {
                     <label style="text-transform: uppercase;"><input type="radio" class="transform-radio" data-key="chassis.style" data-style="allcaps" name="chassis-transform"
                         ${chassis.style?.includes('allcaps') ? 'checked' : ''}> All Caps</label>
                 </div>
+
+                <label>Hostname Size Scale (%)</label>
+                <input type="range" class="range-slider" data-key="chassis.hostname_size_scale"
+                    value="${chassis.hostname_size_scale || '100'}" min="50" max="200" step="1">
+
+                <label>Device ID Size Scale (%)</label>
+                <input type="range" class="range-slider" data-key="chassis.device_id_size_scale"
+                    value="${chassis.device_id_size_scale || '100'}" min="50" max="200" step="1">
             </div>
 
         `;
@@ -1567,6 +1576,16 @@ export class MenuSystem {
             if (chassis.flare_offset_y) chassisMap['--legend-flare-offset-y'] = chassis.flare_offset_y;
             if (chassis.flare_opacity) chassisMap['--legend-flare-opacity'] = chassis.flare_opacity;
             applyConfigMap(root, chassisMap);
+
+            const selectedUnit = document.getElementById(`unit-${this.selectedDevice}`);
+            if (selectedUnit) {
+                const hostScaleRaw = Number(chassis.hostname_size_scale ?? 100);
+                const idScaleRaw = Number(chassis.device_id_size_scale ?? 100);
+                const hostScale = Number.isFinite(hostScaleRaw) ? Math.min(200, Math.max(50, hostScaleRaw)) / 100 : 1;
+                const idScale = Number.isFinite(idScaleRaw) ? Math.min(200, Math.max(50, idScaleRaw)) / 100 : 1;
+                selectedUnit.style.setProperty('--server-name-scale', `${hostScale}`);
+                selectedUnit.style.setProperty('--pci-address-scale', `${idScale}`);
+            }
         }
 
         // Apply bay settings
@@ -1666,8 +1685,11 @@ export class MenuSystem {
             const maxBays = this.getMaxBaysForDevice(this.selectedDevice);
             const bayLayout = String(bay.layout || 'vertical').toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
             const driveSequence = String(bay.drive_sequence || bayLayout).toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
-            const chassisRackUnitsValue = Number(deviceConfig.chassis?.rack_units ?? bay.rack_units ?? 2);
-            const chassisRackUnits = Number.isFinite(chassisRackUnitsValue) ? Math.max(1, chassisRackUnitsValue) : 2;
+            const layoutSettings = resolveLayoutSettings(this.currentConfig, deviceConfig);
+            const allHeaderHeights = Array.from(document.querySelectorAll('.chassis-header'))
+                .map(el => el.getBoundingClientRect().height)
+                .filter(h => Number.isFinite(h) && h > 0);
+            const sharedHeaderHeight = allHeaderHeights.length > 0 ? Math.max(...allHeaderHeights) : 0;
             const baysPerRow = bayLayout === 'horizontal'
                 ? Math.max(1, Math.min(4, maxBays))
                 : Math.max(1, Math.min(16, maxBays));
@@ -1680,42 +1702,18 @@ export class MenuSystem {
                 slotContainer.style.gridTemplateRows = driveSequence === 'vertical' ? `repeat(${rows}, auto)` : '';
 
                 const storageUnit = document.getElementById(`unit-${this.selectedDevice}`);
-                if (storageUnit) {
-                    const renderedWidth = storageUnit.getBoundingClientRect().width;
-                    if (renderedWidth > 0) {
-                        const targetBayAreaHeight = renderedWidth * ((chassisRackUnits * 1.75) / 19);
-
-                        const storageUnitStyles = window.getComputedStyle(storageUnit);
-                        const slotStyles = window.getComputedStyle(slotContainer);
-                        const headerHeight = storageUnit.querySelector('.chassis-header')?.getBoundingClientRect().height || 0;
-                        const warningEl = storageUnit.querySelector('.capacity-warning');
-                        const warningHeight = warningEl && window.getComputedStyle(warningEl).display !== 'none'
-                            ? warningEl.getBoundingClientRect().height
-                            : 0;
-                        const unitVerticalPadding = (parseFloat(storageUnitStyles.paddingTop) || 0) + (parseFloat(storageUnitStyles.paddingBottom) || 0);
-                        const slotVerticalPadding = (parseFloat(slotStyles.paddingTop) || 0) + (parseFloat(slotStyles.paddingBottom) || 0);
-                        const slotHorizontalPadding = (parseFloat(slotStyles.paddingLeft) || 0) + (parseFloat(slotStyles.paddingRight) || 0);
-                        const targetChassisHeight = headerHeight + warningHeight + unitVerticalPadding + targetBayAreaHeight;
-                        storageUnit.style.height = `${targetChassisHeight}px`;
-
-                        if (bayLayout === 'vertical') {
-                            const rowGap = parseFloat(slotStyles.rowGap || slotStyles.gap || '0') || 0;
-                            const columnGap = parseFloat(slotStyles.columnGap || slotStyles.gap || '0') || 0;
-                            const slotContentHeight = Math.max(1, targetBayAreaHeight - slotVerticalPadding);
-                            const slotContentWidth = Math.max(1, slotContainer.clientWidth - slotHorizontalPadding);
-                            const rowHeight = Math.max(1, (slotContentHeight - (rowGap * Math.max(0, rows - 1))) / rows);
-                            const slotWidth = Math.max(1, (slotContentWidth - (columnGap * Math.max(0, baysPerRow - 1))) / baysPerRow);
-                            const verticalBayAspectRatio = slotWidth / rowHeight;
-
-                            slotContainer.style.height = `${targetBayAreaHeight}px`;
-                            slotContainer.style.gridTemplateRows = `repeat(${rows}, minmax(0, ${rowHeight}px))`;
-                            slotContainer.style.setProperty('--vertical-bay-aspect-ratio', `${verticalBayAspectRatio}`);
-                        } else {
-                            slotContainer.style.height = `${targetBayAreaHeight}px`;
-                            slotContainer.style.removeProperty('--vertical-bay-aspect-ratio');
-                        }
+                applyPhysicalLayout({
+                    storageUnit,
+                    slotContainer,
+                    baysPerRow,
+                    rows,
+                    maxBays,
+                    bayLayout,
+                    settings: {
+                        ...layoutSettings,
+                        headerHeightPx: Math.max(layoutSettings.headerHeightPx || 0, sharedHeaderHeight)
                     }
-                }
+                });
                 slotContainer.dataset.bayLayout = bayLayout;
                 slotContainer.dataset.driveSequence = driveSequence;
             }
