@@ -337,6 +337,26 @@ def _parse_ircu_display(ircu_tool, adapter_id):
         )
     }
 
+    # Try to extract a stable per-enclosure array address (SAS/Logical ID) that
+    # can be shown in the chassis header and used as a manual customization key.
+    enc_array_addr = {}
+    for block in re.findall(
+        r"(Enclosure#\s+:\s+\d+.*?)(?=Enclosure#\s+:\s+\d+|$)",
+        raw,
+        re.DOTALL
+    ):
+        eid_match = re.search(r"Enclosure#\s+:\s+(\d+)", block)
+        if not eid_match:
+            continue
+        enc_id = eid_match.group(1)
+        addr_match = re.search(
+            r"(?:Logical\s+ID|Enclosure\s+Logical\s+ID|SAS\s+Address)\s*:\s*([^\n\r]+)",
+            block,
+            re.IGNORECASE
+        )
+        if addr_match:
+            enc_array_addr[enc_id] = addr_match.group(1).strip()
+
     # Which enclosures contain an SES/expander device? Those are the physical backplanes.
     # The HBA's own virtual enclosure never contains an 'Enclosure services device'.
     ses_enclosures = set()
@@ -376,7 +396,12 @@ def _parse_ircu_display(ircu_tool, adapter_id):
             # is_backplane: enclosure has a physical SES/expander device
             # (enc 1 = HBA virtual enclosure has no SES → direct-attach)
             is_bp = eid in ses_enclosures
-            enclosures[eid] = {"slots": enc_slots.get(eid, 0), "is_backplane": is_bp, "drives": {}}
+            enclosures[eid] = {
+                "slots": enc_slots.get(eid, 0),
+                "is_backplane": is_bp,
+                "array_address": enc_array_addr.get(eid, ""),
+                "drives": {}
+            }
 
         enclosures[eid]["drives"][sid] = {
             "serial":     serial,
@@ -515,6 +540,8 @@ def get_ircu_slot_topology(pci_address, zfs_map, config):
         result[f"{pci_key}-e{eid}"] = {
             "settings": {
                 "pci_raw":          pci_address,
+                "array_address":    enc.get("array_address", ""),
+                "array_id":         f"e{eid}",
                 "max_bays":         num_slots,
                 "has_backplane":    True,
                 "ports":            ports,
@@ -568,6 +595,8 @@ def get_ircu_slot_topology(pci_address, zfs_map, config):
         result[f"{pci_key}-da"] = {
             "settings": {
                 "pci_raw":          pci_address,
+                "array_address":    "",
+                "array_id":         "",
                 "max_bays":         da_capacity,
                 "has_backplane":    False,
                 "ports":            ports,
@@ -924,6 +953,27 @@ def _deep_merge_dict(base, override):
             result[key] = value
     return result
 
+
+def _strip_legacy_layout_overrides(config_obj):
+    """Remove deprecated per-device chassis layout keys from config payload."""
+    if not isinstance(config_obj, dict):
+        return config_obj
+
+    devices = config_obj.get("devices")
+    if not isinstance(devices, dict):
+        return config_obj
+
+    for device_cfg in devices.values():
+        if not isinstance(device_cfg, dict):
+            continue
+        chassis_cfg = device_cfg.get("chassis")
+        if not isinstance(chassis_cfg, dict):
+            continue
+        chassis_cfg.pop("rows", None)
+        chassis_cfg.pop("bays_per_row", None)
+
+    return config_obj
+
 def load_config():
     global CONFIG_MTIME, CONFIG_CACHE
 
@@ -939,6 +989,7 @@ def load_config():
         with open(CONFIG_FILE, 'r') as f:
             data = json.load(f)
         merged = _deep_merge_dict(DEFAULT_CONFIG, data)
+        merged = _strip_legacy_layout_overrides(merged)
 
         # If new defaults were added (e.g., UI config), rewrite config.json
         # so users can see and edit the new options directly.
@@ -1268,14 +1319,14 @@ def topology_scanner_thread():
                                 continue
 
                             # Fall through to standard /dev/disk/by-path approach
-                            device_config = GLOBAL_DATA["config"].get("devices", {}).get(pci_raw, {})
-                            chassis_config = device_config.get("chassis", {})
-                            rows = int(chassis_config.get("rows", 1))
-                            bays_per_row = int(chassis_config.get("bays_per_row", controller_capacity[pci_key]["max_bays"]))
+                            rows = 1
+                            bays_per_row = controller_capacity[pci_key]["max_bays"]
 
                             new_topology[pci_key] = {
                                 "settings": {
                                     "pci_raw": pci_raw,
+                                    "array_address": "",
+                                    "array_id": "",
                                     "max_bays": controller_capacity[pci_key]["max_bays"],
                                     "has_backplane": controller_capacity[pci_key]["has_backplane"],
                                     "ports": controller_capacity[pci_key]["ports"],

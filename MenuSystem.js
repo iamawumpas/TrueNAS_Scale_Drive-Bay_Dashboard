@@ -7,6 +7,7 @@ export class MenuSystem {
         this.currentConfig = currentConfig;
         this.originalConfig = JSON.parse(JSON.stringify(currentConfig)); // Deep copy
         this.selectedDevice = null;
+        this.activeBayDevice = null;
         this.isDirty = false;
         this.webSafeFonts = [
             'Arial',
@@ -31,6 +32,20 @@ export class MenuSystem {
     init() {
         this.render();
         this.applyChangesToUI();
+    }
+
+    positionDropdownWithinViewport(dropdown, preferredLeft, preferredTop) {
+        const margin = 8;
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const dropdownWidth = dropdown.offsetWidth || 300;
+        const dropdownHeight = dropdown.offsetHeight || 300;
+
+        const safeLeft = Math.max(margin, Math.min(preferredLeft, viewportWidth - dropdownWidth - margin));
+        const safeTop = Math.max(margin, Math.min(preferredTop, viewportHeight - dropdownHeight - margin));
+
+        dropdown.style.left = `${safeLeft}px`;
+        dropdown.style.top = `${safeTop}px`;
     }
 
     render() {
@@ -58,23 +73,8 @@ export class MenuSystem {
     buildMenuHTML() {
         let menuHTML = '<div class="menu-container">';
 
-        // Device selector (if multiple devices)
-        if (this.devices.length > 1) {
-            const deviceLabel = this.selectedDevice || this.devices[0];
-            this.selectedDevice = this.selectedDevice || this.devices[0];
-            menuHTML += `
-                <div class="menu-item dropdown">
-                    <button class="menu-button">${deviceLabel}</button>
-                    <div class="dropdown-content">
-                        ${this.devices.map(dev => `
-                            <a href="#" data-device="${dev}" class="device-selector ${dev === this.selectedDevice ? 'active' : ''}">
-                                ${dev}
-                            </a>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        } else if (this.devices.length === 1) {
+        // Default to the first detected chassis when selector UI is hidden.
+        if (!this.selectedDevice && this.devices.length > 0) {
             this.selectedDevice = this.devices[0];
         }
 
@@ -97,7 +97,7 @@ export class MenuSystem {
 
         // Disk Storage Settings parent menu with Chassis and Bay sub-menus
         const chassisPanel = this.buildChassisPanel();
-        const bayPanel = this.buildBayPanel();
+        const bayPanel = this.buildBayPanel(this.selectedDevice);
         menuHTML += `
             <div class="menu-item dropdown" data-dropdown="disk-storage">
                 <button class="menu-button">Disk Storage Settings</button>
@@ -138,27 +138,50 @@ export class MenuSystem {
         return { html: menuHTML, dropdownHTML };
     }
 
+    getBayPanelId(device) {
+        return `bay-device-${this.sanitizeDropdownId(device)}`;
+    }
+
+    sanitizeDropdownId(value) {
+        return String(value).replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
+
+    getDeviceLabel(device) {
+        const settings = this.topology[device]?.settings || {};
+        const pciRaw = settings.pci_raw || device;
+        const arrayAddr = settings.array_address || settings.array_id || '';
+        return arrayAddr ? `${pciRaw} / ${arrayAddr}` : pciRaw;
+    }
+
+    buildBayDeviceListPanel() {
+        if (!this.activeBayDevice && this.devices.length > 0) {
+            this.activeBayDevice = this.devices[0];
+        }
+
+        const items = this.devices.map(device => {
+            const panelId = this.getBayPanelId(device);
+            const label = this.getDeviceLabel(device);
+            const selectedClass = this.activeBayDevice === device ? ' selected' : '';
+            return `
+                <div class="submenu-item dropdown" data-dropdown="${panelId}">
+                    <button class="submenu-button bay-device-button${selectedClass}" data-device-target="${device}">${label}</button>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="panel-section">
+                <h3>Bay Settings by Chassis</h3>
+                ${items}
+            </div>
+        `;
+    }
+
     buildChassisPanel() {
         const deviceConfig = this.getDeviceConfig(this.selectedDevice);
         const chassis = deviceConfig.chassis || {};
 
         return `
-            <div class="panel-section">
-                <h3>Layout</h3>
-
-                <div class="inline-row">
-                    <div class="inline-field">
-                        <label>Rows of Bays</label>
-                        <input type="number" class="number-input" data-key="chassis.rows" 
-                            value="${chassis.rows || 1}" min="1" max="10">
-                    </div>
-                    <div class="inline-field">
-                        <label>Bays per Row (1-${this.getMaxBaysForDevice(this.selectedDevice)})</label>
-                        <input type="number" class="number-input" data-key="chassis.bays_per_row" 
-                            value="${chassis.bays_per_row || 4}" min="1" max="${this.getMaxBaysForDevice(this.selectedDevice)}">
-                    </div>
-                </div>
-            </div>
             <div class="panel-section">
                 <h3>Chassis Appearance</h3>
 
@@ -487,11 +510,44 @@ export class MenuSystem {
         `;
     }
 
-    buildBayPanel() {
-        const deviceConfig = this.getDeviceConfig(this.selectedDevice);
+    buildBayPanel(device = this.selectedDevice) {
+        const targetDevice = device || this.selectedDevice;
+        const deviceConfig = this.getDeviceConfig(targetDevice);
         const bay = deviceConfig.bay || {};
+        const bayLayout = (bay.layout || 'vertical').toLowerCase();
+        const driveSequence = (bay.drive_sequence || bayLayout || 'vertical').toLowerCase();
 
         return `
+            <div class="panel-section">
+                <h3>Chassis</h3>
+                <label>Chassis Target</label>
+                <select class="bay-device-select">
+                    ${this.devices.map(dev => {
+                        const selected = dev === targetDevice ? 'selected' : '';
+                        const label = this.getDeviceLabel(dev);
+                        return `<option value="${dev}" ${selected}>${label}</option>`;
+                    }).join('')}
+                </select>
+            </div>
+
+            <div class="panel-section">
+                <h3>Bay Layout</h3>
+
+                <label>Bay Orientation</label>
+                <select class="text-input" data-key="bay.layout">
+                    <option value="vertical" ${bayLayout === 'vertical' ? 'selected' : ''}>Vertical</option>
+                    <option value="horizontal" ${bayLayout === 'horizontal' ? 'selected' : ''}>Horizontal</option>
+                </select>
+
+                <label>Drive Sequence</label>
+                <select class="text-input" data-key="bay.drive_sequence">
+                    <option value="vertical" ${driveSequence === 'vertical' ? 'selected' : ''}>Vertical</option>
+                    <option value="horizontal" ${driveSequence === 'horizontal' ? 'selected' : ''}>Horizontal</option>
+                </select>
+
+                <div class="help-text">Vertical layout fits up to 16 drives per row. Horizontal layout uses 4 drives per row.</div>
+            </div>
+
             <div class="panel-section">
                 <h3>Bay Appearance</h3>
 
@@ -807,8 +863,7 @@ export class MenuSystem {
                         if (dropdown.classList.contains('active')) {
                             btn.classList.add('selected');
                             const rect = btn.getBoundingClientRect();
-                            dropdown.style.top = (rect.bottom + 4) + 'px';
-                            dropdown.style.left = rect.left + 'px';
+                            this.positionDropdownWithinViewport(dropdown, rect.left, rect.bottom + 4);
                         } else {
                             btn.classList.remove('selected');
                         }
@@ -823,9 +878,13 @@ export class MenuSystem {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                
+
                 const submenuItem = btn.closest('.submenu-item');
-                const dropdownType = submenuItem.dataset.dropdown;
+                const targetDevice = btn.dataset.deviceTarget;
+                let dropdownType = submenuItem.dataset.dropdown;
+                if (targetDevice) {
+                    dropdownType = this.getBayPanelId(targetDevice);
+                }
                 const dropdown = document.querySelector(`[data-dropdown-content="${dropdownType}"]`);
                 
                 // Update selected state on submenu buttons
@@ -834,6 +893,10 @@ export class MenuSystem {
                 if (dropdown) {
                     // Close all other main dropdowns but keep parent disk-storage open
                     document.querySelectorAll('[data-dropdown-content]').forEach(d => {
+                        const keepBayDeviceListOpen = targetDevice && d.dataset.dropdownContent === 'bay-device-list';
+                        if (keepBayDeviceListOpen) {
+                            return;
+                        }
                         if (d !== dropdown) {
                             d.classList.remove('active');
                         }
@@ -841,17 +904,23 @@ export class MenuSystem {
                     // Show this dropdown
                     dropdown.classList.add('active');
                     btn.classList.add('selected');
+
+                    // Keep bay panel edits scoped to the clicked chassis.
+                    if (targetDevice) {
+                        this.activeBayDevice = targetDevice;
+                        this.selectedDevice = targetDevice;
+                        this.updateInputFieldValues();
+                    }
                     
-                    // Position the dropdown to the right of the parent submenu (75% offset)
-                    const parentSubmenu = btn.closest('.disk-storage-submenu');
+                    // Position submenu dropdowns to the right of their parent menu block.
+                    const parentSubmenu = btn.closest('.disk-storage-submenu, .bay-device-submenu-panel');
                     const parentRect = parentSubmenu.getBoundingClientRect();
                     const btnRect = btn.getBoundingClientRect();
                     
-                    // Shift 75% of parent width to the right
-                    const offsetX = parentRect.width * 0.75;
+                    // Shift near full parent width to avoid overlap of sibling buttons.
+                    const offsetX = Math.max(parentRect.width * 0.9, 240);
                     
-                    dropdown.style.top = btnRect.top + 'px';
-                    dropdown.style.left = (parentRect.left + offsetX) + 'px';
+                    this.positionDropdownWithinViewport(dropdown, parentRect.left + offsetX, btnRect.top);
                 }
             });
         });
@@ -878,24 +947,6 @@ export class MenuSystem {
             }
         });
 
-        // Device selector
-        document.querySelectorAll('.device-selector').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const newDevice = e.target.dataset.device;
-                if (this.isDirty) {
-                    const choice = confirm('You have unsaved changes. Save before switching devices?');
-                    if (choice) {
-                        this.save();
-                    } else {
-                        this.revert();
-                    }
-                }
-                this.selectedDevice = newDevice;
-                this.render();
-            });
-        });
-
         // Color pickers - use 'input' for real-time preview
         const colorPickers = document.querySelectorAll('.color-picker');
         colorPickers.forEach(input => {
@@ -911,6 +962,18 @@ export class MenuSystem {
                 this.handleInputChange(e);
             });
         });
+
+        // Bay panel chassis selector - switches which chassis bay config is edited.
+        const bayDeviceSelect = document.querySelector('.bay-device-select');
+        if (bayDeviceSelect) {
+            bayDeviceSelect.addEventListener('change', (e) => {
+                const newDevice = e.target.value;
+                this.activeBayDevice = newDevice;
+                this.selectedDevice = newDevice;
+                this.updateInputFieldValues();
+                this.applyChangesToUI(false);
+            });
+        }
 
         // Text inputs - use 'input' for real-time preview
         const textInputs = document.querySelectorAll('.text-input');
@@ -1143,11 +1206,15 @@ export class MenuSystem {
     }
 
     normalizeDeviceKey(device) {
-        // Convert hyphens to colons for config.json lookup
-        // e.g., "0000-00-10-0" -> "0000:00:10.0"
+        // Preserve enclosure/direct-attach suffixes so each chassis can store distinct settings.
+        // e.g., "0000-00-10-0-e2" -> "0000:00:10.0-e2"
         if (device.includes('-')) {
             const parts = device.split('-');
-            return `${parts[0]}:${parts[1]}:${parts[2]}.${parts[3]}`;
+            if (parts.length >= 4) {
+                const pci = `${parts[0]}:${parts[1]}:${parts[2]}.${parts[3]}`;
+                const suffix = parts.length > 4 ? `-${parts.slice(4).join('-')}` : '';
+                return `${pci}${suffix}`;
+            }
         }
         return device;
     }
@@ -1329,10 +1396,23 @@ export class MenuSystem {
         });
     }
 
+    stripLegacyLayoutConfig() {
+        if (!this.currentConfig || !this.currentConfig.devices) return;
+
+        Object.values(this.currentConfig.devices).forEach(deviceCfg => {
+            if (!deviceCfg || !deviceCfg.chassis) return;
+            delete deviceCfg.chassis.rows;
+            delete deviceCfg.chassis.bays_per_row;
+        });
+    }
+
     async save() {
         try {
             console.log('=== SAVE START ===');
             console.log('Current config before save:', JSON.stringify(this.currentConfig, null, 2));
+
+            // Layout is now hardware-driven; remove deprecated per-device layout overrides.
+            this.stripLegacyLayoutConfig();
             
             // Check if port has changed
             const oldPort = this.originalConfig.network?.port || 8010;
@@ -1582,6 +1662,64 @@ export class MenuSystem {
             // Apply bayMap to root
             applyConfigMap(root, bayMap);
 
+            // Live-preview bay layout + drive sequencing for the currently edited chassis.
+            const maxBays = this.getMaxBaysForDevice(this.selectedDevice);
+            const bayLayout = String(bay.layout || 'vertical').toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
+            const driveSequence = String(bay.drive_sequence || bayLayout).toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
+            const chassisRackUnitsValue = Number(deviceConfig.chassis?.rack_units ?? bay.rack_units ?? 2);
+            const chassisRackUnits = Number.isFinite(chassisRackUnitsValue) ? Math.max(1, chassisRackUnitsValue) : 2;
+            const baysPerRow = bayLayout === 'horizontal'
+                ? Math.max(1, Math.min(4, maxBays))
+                : Math.max(1, Math.min(16, maxBays));
+            const rows = Math.max(1, Math.ceil(maxBays / baysPerRow));
+
+            const slotContainer = document.getElementById(`slots-${this.selectedDevice}`);
+            if (slotContainer) {
+                slotContainer.style.gridTemplateColumns = `repeat(${baysPerRow}, minmax(0, 1fr))`;
+                slotContainer.style.gridAutoFlow = driveSequence === 'vertical' ? 'column' : 'row';
+                slotContainer.style.gridTemplateRows = driveSequence === 'vertical' ? `repeat(${rows}, auto)` : '';
+
+                const storageUnit = document.getElementById(`unit-${this.selectedDevice}`);
+                if (storageUnit) {
+                    const renderedWidth = storageUnit.getBoundingClientRect().width;
+                    if (renderedWidth > 0) {
+                        const targetBayAreaHeight = renderedWidth * ((chassisRackUnits * 1.75) / 19);
+
+                        const storageUnitStyles = window.getComputedStyle(storageUnit);
+                        const slotStyles = window.getComputedStyle(slotContainer);
+                        const headerHeight = storageUnit.querySelector('.chassis-header')?.getBoundingClientRect().height || 0;
+                        const warningEl = storageUnit.querySelector('.capacity-warning');
+                        const warningHeight = warningEl && window.getComputedStyle(warningEl).display !== 'none'
+                            ? warningEl.getBoundingClientRect().height
+                            : 0;
+                        const unitVerticalPadding = (parseFloat(storageUnitStyles.paddingTop) || 0) + (parseFloat(storageUnitStyles.paddingBottom) || 0);
+                        const slotVerticalPadding = (parseFloat(slotStyles.paddingTop) || 0) + (parseFloat(slotStyles.paddingBottom) || 0);
+                        const slotHorizontalPadding = (parseFloat(slotStyles.paddingLeft) || 0) + (parseFloat(slotStyles.paddingRight) || 0);
+                        const targetChassisHeight = headerHeight + warningHeight + unitVerticalPadding + targetBayAreaHeight;
+                        storageUnit.style.height = `${targetChassisHeight}px`;
+
+                        if (bayLayout === 'vertical') {
+                            const rowGap = parseFloat(slotStyles.rowGap || slotStyles.gap || '0') || 0;
+                            const columnGap = parseFloat(slotStyles.columnGap || slotStyles.gap || '0') || 0;
+                            const slotContentHeight = Math.max(1, targetBayAreaHeight - slotVerticalPadding);
+                            const slotContentWidth = Math.max(1, slotContainer.clientWidth - slotHorizontalPadding);
+                            const rowHeight = Math.max(1, (slotContentHeight - (rowGap * Math.max(0, rows - 1))) / rows);
+                            const slotWidth = Math.max(1, (slotContentWidth - (columnGap * Math.max(0, baysPerRow - 1))) / baysPerRow);
+                            const verticalBayAspectRatio = slotWidth / rowHeight;
+
+                            slotContainer.style.height = `${targetBayAreaHeight}px`;
+                            slotContainer.style.gridTemplateRows = `repeat(${rows}, minmax(0, ${rowHeight}px))`;
+                            slotContainer.style.setProperty('--vertical-bay-aspect-ratio', `${verticalBayAspectRatio}`);
+                        } else {
+                            slotContainer.style.height = `${targetBayAreaHeight}px`;
+                            slotContainer.style.removeProperty('--vertical-bay-aspect-ratio');
+                        }
+                    }
+                }
+                slotContainer.dataset.bayLayout = bayLayout;
+                slotContainer.dataset.driveSequence = driveSequence;
+            }
+
             // Bay height
             if (bay.height !== undefined) {
                 const heightValue = Number(bay.height);
@@ -1604,7 +1742,7 @@ export class MenuSystem {
                     console.log(`[applyChangesToUI] Found ${slotContainers.length} .slots containers`);
                     slotContainers.forEach(container => {
                         console.log(`[applyChangesToUI] Setting gridAutoRows on container:`, container.id);
-                        container.style.gridAutoRows = `${safeHeight}vh`;
+                        container.style.gridAutoRows = 'auto';
                     });
                 }
             } else {

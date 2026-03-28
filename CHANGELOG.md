@@ -1,5 +1,30 @@
 # Storage Dashboard - Change Log
 
+## Version 22.1:
+* **Bay Layout Control & Live Preview Enhancements**
+    * Reworked Bay Settings into a single panel with inline chassis target selection, bay orientation, and drive-sequence controls
+    * Fixed live preview behavior so unsaved menu changes are rendered immediately without being overwritten by backend refresh data
+    * Added robust per-device key normalization for topology/config mapping consistency across enclosure keys
+* **Horizontal Bay Rendering Improvements**
+    * Updated horizontal bay rendering to rotate caddies from the vertical base drawing model
+    * Added orientation-specific text handling so bay labels and disk metadata remain left-to-right readable
+    * Improved horizontal bay spacing and alignment behavior for mixed chassis layouts
+* **Physical Chassis/Bay Sizing Refinements**
+    * Introduced rack-unit based chassis sizing logic that derives pixel geometry from chassis width scale
+    * Separated header area from bay-area sizing so drive area can be controlled independently
+    * Updated bay-area sizing math for vertical layouts to better fill the available chassis bay field
+* **Header/Legend Layout Overhaul**
+    * Converted chassis header layout to explicit column split logic for stable title/legend placement
+    * Reduced legend footprint and tuned legend alignment/padding to prevent title collisions
+    * Added configurable alignment improvements for better left/right balance across chassis widths
+* **Bay Spacing and Edge Padding Normalization**
+    * Unified inter-bay gap and bay-field edge padding via shared gap variable usage
+    * Removed conflicting legacy `.slots` rules from chassis styling to eliminate spacing overrides
+    * Standardized spacing behavior across vertical and horizontal bay orientations
+* **LED Visual Tuning**
+    * Reduced bay LED size to 80% of prior size for better fit inside dense bay layouts
+    * Preserved existing status/activity color behavior while improving visual proportionality
+
 ## Version 22.0:
 * **SAS HBA Backplane & Direct-Attach Support (sas2ircu / sas3ircu)**
     * **Per-Enclosure Chassis Rendering:** Each physical SAS backplane expander now renders as its own chassis; direct-attach drives (SFF-8087 to SATA breakout) render as a separate chassis alongside it - no hard-coded bay counts

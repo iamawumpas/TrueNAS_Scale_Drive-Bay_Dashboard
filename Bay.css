@@ -2,9 +2,12 @@
 
 .slots { 
     display: grid; 
-    gap: 0.4vw; 
-    width: fit-content;
+    gap: var(--bay-gap, 6px); 
+    padding: var(--bay-gap, 6px);
+    width: 100%;
     justify-content: start;
+    align-content: start;
+    box-sizing: border-box;
 }
 
 .caddy { 
@@ -16,13 +19,38 @@
     flex-direction: column; 
     align-items: center; 
     position: relative; 
-    width: 4.5vw; 
-    min-width: 4.5vw;
-    height: var(--bay-height, 35vh); 
-    padding-top: 1.5vh; 
+    width: 100%;
+    min-width: 0;
+    aspect-ratio: var(--bay-aspect-ratio, 1 / 3.5);
+    height: auto;
+    padding-top: 6%;
     border-top: 4px solid var(--bay-top-border); 
     box-sizing: border-box; 
     overflow: hidden;
+}
+
+.bay-slot {
+    min-width: 0;
+}
+
+.slots[data-bay-layout="vertical"] .caddy {
+    --bay-aspect-ratio: var(--vertical-bay-aspect-ratio, 1 / 3.5);
+}
+
+.slots[data-bay-layout="horizontal"] .bay-slot {
+    aspect-ratio: 3.5 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.slots[data-bay-layout="horizontal"] .caddy {
+    flex-shrink: 0;
+    width: calc(100% / 3.5);
+    aspect-ratio: 1 / 3.5;
+    height: auto;
+    transform: rotate(-90deg);
 }
 
 /* The "Grill" texture */
@@ -45,9 +73,14 @@
     color: var(--bay-id-color); 
     font-family: var(--bay-id-font);
     text-transform: var(--bay-id-transform); 
-    margin-bottom: 1vh; 
+    margin-bottom: 4%;
     position: relative; 
     z-index: 5; 
+}
+
+.slots[data-bay-layout="horizontal"] .bay-id {
+    transform: rotate(90deg);
+    transform-origin: center;
 }
 
 .info-container { 
@@ -60,8 +93,8 @@
     z-index: 5;
     
     /* New constraints to prevent overlap */
-    margin-top: 1vh;     /* Creates space below the Bay Number */
-    margin-bottom: 6vh;  /* Matches the height of the .latch to stop exactly at its top edge */
+    margin-top: 6%;      /* Creates space below the Bay Number */
+    margin-bottom: 16%;  /* Matches the height of the .latch to stop exactly at its top edge */
     height: auto;        /* Allows flex-grow to manage the remaining height within these margins */
 }
 
@@ -70,12 +103,17 @@
     display: grid; 
     grid-template-columns: 1fr 1fr; 
     grid-gap: 1em; 
-    width: 45vh; 
+    width: 240%;
     font-size: var(--disk-size-size); 
     font-weight: var(--disk-size-weight); 
     font-style: var(--disk-size-style);
     white-space: nowrap; 
     line-height: 1.4;
+}
+
+.slots[data-bay-layout="horizontal"] .info-grid {
+    transform: rotate(90deg);
+    transform-origin: center;
 }
 
 .sn-cell { 
@@ -119,7 +157,7 @@
     position: absolute; 
     bottom: 0; 
     width: 100%; 
-    height: 6vh;
+    height: 14%;
     background: linear-gradient(to bottom, var(--bay-border) 0%, #222 50%, #111 100%);
     border-top: 2px solid var(--bay-top-border); 
     z-index: 10; 
@@ -134,3 +172,4 @@
     background: rgba(0, 0, 0, 0.6); 
     border-radius: 4px; 
 }
+

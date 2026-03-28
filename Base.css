@@ -1,6 +1,11 @@
 /* Base.css */
 
 :root {
+    /* Rack/Chassis dimensions - hard-wired to standard 19-inch rack spec.
+     * Metal enclosure body = 17.5 in (44.45 cm); full rack width with flanges = 19 in. */
+    --rack-chassis-width: 46vw;
+    --bay-gap: 6px;
+
     /* Font families - set from config.json */
     --font-default: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
     --font-monospace: "Courier New", monospace;

@@ -14,6 +14,21 @@ let forceRedraw = false;
 const unitsMap = new Map(); // pci -> unit element
 const slotContainersMap = new Map(); // pci -> slot container element
 
+function normalizeTopologyDeviceKey(topologyKey, pciRaw) {
+    if (!topologyKey) return pciRaw;
+
+    if (topologyKey.includes('-')) {
+        const parts = topologyKey.split('-');
+        if (parts.length >= 4) {
+            const pci = `${parts[0]}:${parts[1]}:${parts[2]}.${parts[3]}`;
+            const suffix = parts.length > 4 ? `-${parts.slice(4).join('-')}` : '';
+            return `${pci}${suffix}`;
+        }
+    }
+
+    return pciRaw || topologyKey;
+}
+
 // Listen for menu save/revert events
 window.addEventListener('configSaved', (e) => {
     if (window.UI_DEBUG) console.log('configSaved event received:', e);
@@ -273,6 +288,10 @@ async function update() {
         applyUIConfig(data.config);
         
         requestAnimationFrame(() => {
+            const effectiveConfig = (menuSystem && menuSystem.isDirty)
+                ? menuSystem.currentConfig
+                : data.config;
+
             Object.keys(data.topology).forEach(pci => {
                 const chassisData = data.topology[pci];
                 let unit = unitsMap.get(pci) || document.getElementById(`unit-${pci}`);
@@ -294,17 +313,18 @@ async function update() {
                     // Apply device-specific per-unit CSS overrides immediately so new elements inherit them
                     try {
                         const pciRawLocal = chassisData.settings.pci_raw || pci;
-                        const deviceCfgLocal = data.config?.devices?.[pciRawLocal] || {};
+                        const deviceKeyLocal = normalizeTopologyDeviceKey(pci, pciRawLocal);
+                        const deviceCfgLocal = effectiveConfig?.devices?.[deviceKeyLocal] || effectiveConfig?.devices?.[pciRawLocal] || {};
                         const unitMap = {};
                         // Bay height (per-device override)
-                        const bh = deviceCfgLocal.bay?.height || bayHeight || 35;
+                        const bh = deviceCfgLocal.bay?.height || 35;
                         unitMap['--bay-height'] = `${bh}vh`;
                         // Apply any bay background override if present
                         if (deviceCfgLocal.bay?.background_base) unitMap['--bay-bg-base'] = deviceCfgLocal.bay.background_base;
                         applyConfigMap(unit, unitMap);
                         // If slots container exists immediately, set its grid rows
                         const sc = document.getElementById(`slots-${pci}`);
-                        if (sc) sc.style.gridAutoRows = `${bh}vh`;
+                        if (sc) sc.style.gridAutoRows = 'auto';
                     } catch (e) { /* non-fatal */ }
                     if (window.UI_DEBUG) console.log(`Created new unit-${pci}`);
                 }
@@ -315,13 +335,24 @@ async function update() {
                     if (slotContainer) slotContainersMap.set(pci, slotContainer);
                 }
                 const maxBays = chassisData.settings.max_bays;
-                const rows = chassisData.settings.rows || 1;
-                const baysPerRow = chassisData.settings.bays_per_row || maxBays;
                 
-                // Get device-specific bay height from config
+                // Get device-specific bay config using per-chassis key first, then legacy pci_raw key.
                 const pciRaw = chassisData.settings.pci_raw || pci;
-                const deviceConfig = data.config?.devices?.[pciRaw] || {};
+                const deviceKey = normalizeTopologyDeviceKey(pci, pciRaw);
+                const deviceConfig = effectiveConfig?.devices?.[deviceKey] || effectiveConfig?.devices?.[pciRaw] || {};
                 const bayHeight = deviceConfig.bay?.height || 35;
+                const bayLayout = String(deviceConfig.bay?.layout || 'vertical').toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
+                const driveSequence = String(deviceConfig.bay?.drive_sequence || bayLayout).toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
+                const chassisRackUnitsValue = Number(deviceConfig.chassis?.rack_units ?? deviceConfig.bay?.rack_units ?? 2);
+                const chassisRackUnits = Number.isFinite(chassisRackUnitsValue) ? Math.max(1, chassisRackUnitsValue) : 2;
+
+                // Layout policy:
+                // - Vertical orientation: fit up to 16 drives/row in chassis width.
+                // - Horizontal orientation: fixed 4 drives/row.
+                const baysPerRow = bayLayout === 'horizontal'
+                    ? Math.max(1, Math.min(4, maxBays))
+                    : Math.max(1, Math.min(16, maxBays));
+                const rows = Math.max(1, Math.ceil(maxBays / baysPerRow));
                 
                 // Apply bay height only if not in preview mode (menuSystem not dirty)
                 // This prevents overwriting live preview changes every 100ms
@@ -333,20 +364,63 @@ async function update() {
                         if (current !== desired) applyConfigMap(storageUnit, {'--bay-height': desired});
                     }
                     if (slotContainer) {
-                        const desiredRows = `${bayHeight}vh`;
-                        if (slotContainer.style.gridAutoRows !== desiredRows) slotContainer.style.gridAutoRows = desiredRows;
+                        if (slotContainer.style.gridAutoRows !== 'auto') slotContainer.style.gridAutoRows = 'auto';
                     }
                 }
                 
-                // Set grid layout with proper row and column configuration
-                if (slotContainer) slotContainer.style.gridTemplateColumns = `repeat(${baysPerRow}, 4.5vw)`;
+                // Set grid layout, bay orientation, and drive sequencing.
+                if (slotContainer) {
+                    slotContainer.style.gridTemplateColumns = `repeat(${baysPerRow}, minmax(0, 1fr))`;
+                    slotContainer.style.gridAutoFlow = driveSequence === 'vertical' ? 'column' : 'row';
+                    slotContainer.style.gridTemplateRows = driveSequence === 'vertical' ? `repeat(${rows}, auto)` : '';
+
+                    const storageUnit = unitsMap.get(pci) || document.getElementById(`unit-${pci}`);
+                    if (storageUnit) {
+                        const renderedWidth = storageUnit.getBoundingClientRect().width;
+                        if (renderedWidth > 0) {
+                            const targetBayAreaHeight = renderedWidth * ((chassisRackUnits * 1.75) / 19);
+
+                            const storageUnitStyles = window.getComputedStyle(storageUnit);
+                            const slotStyles = window.getComputedStyle(slotContainer);
+                            const headerHeight = storageUnit.querySelector('.chassis-header')?.getBoundingClientRect().height || 0;
+                            const warningEl = storageUnit.querySelector('.capacity-warning');
+                            const warningHeight = warningEl && window.getComputedStyle(warningEl).display !== 'none'
+                                ? warningEl.getBoundingClientRect().height
+                                : 0;
+                            const unitVerticalPadding = (parseFloat(storageUnitStyles.paddingTop) || 0) + (parseFloat(storageUnitStyles.paddingBottom) || 0);
+                            const slotVerticalPadding = (parseFloat(slotStyles.paddingTop) || 0) + (parseFloat(slotStyles.paddingBottom) || 0);
+                            const slotHorizontalPadding = (parseFloat(slotStyles.paddingLeft) || 0) + (parseFloat(slotStyles.paddingRight) || 0);
+                            const targetChassisHeight = headerHeight + warningHeight + unitVerticalPadding + targetBayAreaHeight;
+                            storageUnit.style.height = `${targetChassisHeight}px`;
+
+                            if (bayLayout === 'vertical') {
+                                const rowGap = parseFloat(slotStyles.rowGap || slotStyles.gap || '0') || 0;
+                                const columnGap = parseFloat(slotStyles.columnGap || slotStyles.gap || '0') || 0;
+                                const slotContentHeight = Math.max(1, targetBayAreaHeight - slotVerticalPadding);
+                                const slotContentWidth = Math.max(1, slotContainer.clientWidth - slotHorizontalPadding);
+                                const rowHeight = Math.max(1, (slotContentHeight - (rowGap * Math.max(0, rows - 1))) / rows);
+                                const slotWidth = Math.max(1, (slotContentWidth - (columnGap * Math.max(0, baysPerRow - 1))) / baysPerRow);
+                                const verticalBayAspectRatio = slotWidth / rowHeight;
+
+                                slotContainer.style.height = `${targetBayAreaHeight}px`;
+                                slotContainer.style.gridTemplateRows = `repeat(${rows}, minmax(0, ${rowHeight}px))`;
+                                slotContainer.style.setProperty('--vertical-bay-aspect-ratio', `${verticalBayAspectRatio}`);
+                            } else {
+                                slotContainer.style.height = `${targetBayAreaHeight}px`;
+                                slotContainer.style.removeProperty('--vertical-bay-aspect-ratio');
+                            }
+                        }
+                    }
+                    slotContainer.dataset.bayLayout = bayLayout;
+                    slotContainer.dataset.driveSequence = driveSequence;
+                }
 
                 const warning = document.getElementById(`capacity-warning-${pci}`);
                 if (warning) {
                     warning.style.display = chassisData.settings.capacity_unknown ? 'block' : 'none';
                 }
 
-                // Pad disks array with empty slots if user configured grid larger than actual bays
+                // Pad disks array with empty slots so full computed grid renders.
                 const targetCapacity = Math.max(rows * baysPerRow, maxBays);
                 while (chassisData.disks.length < targetCapacity) {
                     chassisData.disks.push({ status: 'EMPTY' });
@@ -355,11 +429,14 @@ async function update() {
                 chassisData.disks.forEach((disk, idx) => {
                     let el = document.getElementById(`disk-${pci}-${idx}`);
                     if (!el) {
+                        const slot = document.createElement('div');
+                        slot.className = 'bay-slot';
                         el = document.createElement('div'); 
                         el.className = 'caddy';
                         el.id = `disk-${pci}-${idx}`;
-                        el.innerHTML = createBayHTML(idx); 
-                        if (slotContainer) slotContainer.appendChild(el);
+                        el.innerHTML = createBayHTML(idx);
+                        slot.appendChild(el);
+                        if (slotContainer) slotContainer.appendChild(slot);
                     }
                     
                     const info = getDiskData(disk);

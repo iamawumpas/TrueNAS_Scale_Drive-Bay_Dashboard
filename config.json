@@ -230,8 +230,6 @@
                 "font_size_scale": 50,
                 "font_color": "#ffffff",
                 "style": [],
-                "rows": "2",
-                "bays_per_row": "16",
                 "flare_angle": "30deg",
                 "flare_offset_x": "-50%",
                 "flare_offset_y": "-50%",
@@ -270,6 +268,17 @@
                 "flare_size": "58",
                 "flare_shape": "100",
                 "scale": "86"
+            }
+        },
+        "0000:00:10.0-e2": {
+            "chassis": {},
+            "bay": {
+                "pool_size_scale": "32",
+                "idx_size_scale": "30",
+                "sn_size_scale": "30",
+                "size_size_scale": "32",
+                "layout": "horizontal",
+                "drive_sequence": "horizontal"
             }
         }
     }

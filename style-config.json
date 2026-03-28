@@ -30,8 +30,6 @@
     "diskSerial": "#ffff00",
     "diskSize": "#ff00ff",
     "diskPool": "#ffffff",
-    "diskIndex": "#00ffff",
-    "chassisBgBase": "#1a1a1a",
     "chassisBorder": "#333333",
     "chassisShadow": "rgba(0,0,0,0.8)",
     "bayBgBase": "#121212",

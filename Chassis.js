@@ -1,5 +1,8 @@
 export function createChassisHTML(pci, data) {
-    const pciRaw = data.topology[pci].settings.pci_raw || pci;
+    const settings = data.topology[pci].settings || {};
+    const pciRaw = settings.pci_raw || pci;
+    const arrayAddr = settings.array_address || settings.array_id || "";
+    const chassisIdentifier = arrayAddr ? `${pciRaw} / ${arrayAddr}` : pciRaw;
     const hostname = data.hostname;
 
     return `
@@ -8,7 +11,7 @@ export function createChassisHTML(pci, data) {
                 <div class="header-left">
                     <div class="hostname">${hostname}</div>
                     <div class="pci-container">
-                        <span class="pci-address-grey">${pciRaw}</span>
+                        <span class="pci-address-grey">${chassisIdentifier}</span>
                     </div>
                 </div>
 
