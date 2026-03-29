@@ -1145,11 +1145,13 @@
 		saveButton?.addEventListener('click', saveConfig);
 		revertButton?.addEventListener('click', revertConfig);
 		legendButton?.addEventListener('click', toggleLegendOverlay);
-		directResetBtn?.addEventListener('click', (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-			resetConfigToDefaults();
-		});
+		// Deactivated redundant direct reset binding.
+		// Reset is already bound through bindPanelEvents(dashPanel).
+		// directResetBtn?.addEventListener('click', (e) => {
+		// 	e.preventDefault();
+		// 	e.stopPropagation();
+		// 	resetConfigToDefaults();
+		// });
 
 		// Dashboard dropdown
 		const dashBtn = document.getElementById('dashboard-menu-btn');

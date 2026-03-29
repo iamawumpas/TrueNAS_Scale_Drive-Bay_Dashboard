@@ -1,5 +1,14 @@
 # Storage Dashboard - Change Log
 
+## Version 23.5:
+* **Codebase Cleanup and Redundancy Reduction**
+    * Deactivated a redundant legacy `Disk Arrays` CSS block to keep the active style path singular and easier to maintain.
+    * Deactivated an overlapping direct reset-button event binding so reset handling flows through one canonical panel-event path.
+    * Removed obsolete `.old` backup source files from the repository to reduce maintenance noise and accidental drift.
+* **Repository Hygiene**
+    * Removed redundant editor metadata artifacts that were no longer required by runtime behavior.
+    * Performed post-cleanup validation to ensure frontend/backend behavior remains intact after the cleanup pass.
+
 ## Version 23.4:
 * **Activity Monitor Styling Controls Expansion**
     * Added Activity Monitor `Server Name` controls for font family, style combinations, and color with live preview support.
