@@ -42,8 +42,18 @@ body {
 .chassis-card {
     box-sizing: border-box;
     border: 1px solid var(--chassis-card-border, var(--chassis-border, #2f3d52));
-    background: var(--chassis-card-bg, #14181f);
+    background-color: var(--enc-chassis-bg, var(--chassis-card-bg, #14181f));
+    background-image:
+        var(--enc-chassis-scratches, none),
+        linear-gradient(115deg,
+            var(--enc-chassis-gradient-start, var(--enc-chassis-bg, var(--chassis-card-bg, #14181f))) 0%,
+            var(--enc-chassis-gradient-mid-a, var(--enc-chassis-bg, var(--chassis-card-bg, #14181f))) 30%,
+            var(--enc-chassis-gradient-mid-b, var(--enc-chassis-bg, var(--chassis-card-bg, #14181f))) 45%,
+            var(--enc-chassis-gradient-mid-a, var(--enc-chassis-bg, var(--chassis-card-bg, #14181f))) 60%,
+            var(--enc-chassis-gradient-end, var(--enc-chassis-bg, var(--chassis-card-bg, #14181f))) 100%
+        );
     border-radius: 10px;
+    box-shadow: inset 0 0 20px #000000, 0 10px 30px var(--chassis-shadow, rgba(0,0,0,0.8));
     padding: 10px 10px 12px;
     display: flex;
     flex-direction: column;
@@ -119,7 +129,7 @@ body {
 .chassis-body {
     padding: 5px;
     border-radius: 8px;
-    background: var(--chassis-body-bg, var(--chassis-bg-base, #0d121a));
+    background: var(--enc-chassis-bg-body, var(--chassis-body-bg, var(--chassis-bg-base, #0d121a)));
     height: var(--chassis-body-height, 120px);
     box-sizing: border-box;
     overflow: visible;
@@ -137,7 +147,7 @@ body {
 
 .bay-shell {
     border: 1px solid var(--bay-border, #2b3340);
-    background: linear-gradient(145deg, var(--bay-bg-gradient-start, #111621), var(--bay-bg-gradient-end, #0a0f18));
+    background: linear-gradient(145deg, var(--enc-bay-bg-start, var(--bay-bg-gradient-start, #111621)), var(--enc-bay-bg-end, var(--bay-bg-gradient-end, #0a0f18)));
     border-radius: 7px;
     overflow: hidden;
     width: var(--bay-width, 40px);
@@ -151,12 +161,20 @@ body {
     content: "";
     position: absolute;
     inset: 0;
-    opacity: 0.85;
+    opacity: var(--enc-grill-opacity, 0.85);
     z-index: 1;
     pointer-events: none;
-    background-image: radial-gradient(circle, var(--bay-grill-hole-color, #000000) 42%, transparent 45%), radial-gradient(circle, var(--bay-grill-hole-color, #000000) 42%, transparent 45%);
-    background-size: var(--bay-grill-size, 18px) var(--bay-grill-size, 18px);
-    background-position: 0 0, calc(var(--bay-grill-size, 18px) / 2) calc(var(--bay-grill-size, 18px) / 2);
+    background-image: var(--enc-grill-image,
+        radial-gradient(circle, var(--bay-grill-hole-color, #000000) 42%, transparent 45%),
+        radial-gradient(circle, var(--bay-grill-hole-color, #000000) 42%, transparent 45%)
+    );
+    background-size:
+        var(--enc-grill-size, var(--bay-grill-size, 18px))
+        var(--enc-grill-size, var(--bay-grill-size, 18px));
+    background-position: 0 0, var(--enc-grill-pos2,
+        calc(var(--enc-grill-size, var(--bay-grill-size, 18px)) / 2)
+        calc(var(--enc-grill-size, var(--bay-grill-size, 18px)) / 2)
+    );
 }
 
 .bay-shell.bay-vertical {
@@ -295,7 +313,7 @@ body {
 }
 
 .latch {
-    background: linear-gradient(to bottom, var(--latch-gradient-start, #333333) 0%, var(--latch-gradient-mid, #222222) 50%, var(--latch-gradient-end, #111111) 100%);
+    background: linear-gradient(to bottom, var(--enc-latch-start, var(--latch-gradient-start, #333333)) 0%, var(--enc-latch-mid, var(--latch-gradient-mid, #222222)) 50%, var(--enc-latch-end, var(--latch-gradient-end, #111111)) 100%);
     display: flex;
     justify-content: center;
     align-items: center;

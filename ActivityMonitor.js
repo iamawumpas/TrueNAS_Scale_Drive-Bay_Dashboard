@@ -124,6 +124,8 @@ class ActivityMonitor {
         const lineWidth = parseInt(style.getPropertyValue('--chart-line-width').trim() || '2');
         const yAxisLabelColor = style.getPropertyValue('--chart-y-axis-label-color').trim() || '#888888';
         const yAxisGridColor = style.getPropertyValue('--chart-y-axis-grid-color').trim() || 'rgba(255, 255, 255, 0.3)';
+        const yAxisFontSizeStr = style.getPropertyValue('--chart-y-axis-label-font-size').trim();
+        const yAxisLabelFontSize = yAxisFontSizeStr ? (parseInt(yAxisFontSizeStr) || 9) : 9;
         
         return {
             readColor,
@@ -135,7 +137,8 @@ class ActivityMonitor {
             lineTension,
             lineWidth,
             yAxisLabelColor,
-            yAxisGridColor
+            yAxisGridColor,
+            yAxisLabelFontSize
         };
     }
 
@@ -229,7 +232,7 @@ class ActivityMonitor {
                         grid: { color: config.yAxisGridColor },
                         ticks: {
                             color: config.yAxisLabelColor,
-                            font: { size: 9 },
+                            font: { size: config.yAxisLabelFontSize || 9 },
                             maxTicksLimit: 3,
                             callback: (v) => this.formatUnits(v)
                         }

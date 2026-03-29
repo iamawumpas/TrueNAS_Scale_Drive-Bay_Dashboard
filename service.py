@@ -983,6 +983,7 @@ DEFAULT_CONFIG = {
             "dropdown_background": "#1a1a1a",
             "dropdown_border": "#555555",
             "dropdown_shadow": "rgba(0, 0, 0, 0.8)",
+            "dropdown_opacity": 100,
             "controls": {
                 "background": "#2a2a2a",
                 "border": "#555555",
@@ -1490,7 +1491,40 @@ def topology_scanner_thread():
 class FastHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         # Handle POST requests for saving configuration
+        global CONFIG_MTIME, CONFIG_CACHE
         path = self.path.split('?')[0]
+
+        if path == '/reset-config':
+            try:
+                # Ensure the config file directory exists
+                os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+
+                # Rewrite config.json from hardcoded defaults
+                with open(CONFIG_FILE, 'w') as f:
+                    json.dump(DEFAULT_CONFIG_JSON, f, indent=4)
+
+                # Invalidate cache and reload config
+                CONFIG_MTIME = 0
+                CONFIG_CACHE = None
+                GLOBAL_DATA["config"] = load_config()
+
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Cache-Control', 'no-cache')
+                self.end_headers()
+                response = json.dumps({"status": "success", "message": "Configuration reset to defaults"})
+                self.wfile.write(response.encode())
+            except IOError as e:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "error", "message": f"File error: {str(e)}"}).encode())
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode())
+            return
         
         if path == '/save-config':
             content_length = int(self.headers.get('Content-Length', 0))
@@ -1514,7 +1548,6 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
                 print(f"[SAVE-CONFIG] Written to file: {CONFIG_FILE}")
                 
                 # Invalidate the cache so it reloads on next request
-                global CONFIG_MTIME, CONFIG_CACHE
                 CONFIG_MTIME = 0
                 CONFIG_CACHE = None
                 

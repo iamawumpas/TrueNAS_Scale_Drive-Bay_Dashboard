@@ -1,5 +1,29 @@
 # Storage Dashboard - Change Log
 
+## Version 23.4:
+* **Activity Monitor Styling Controls Expansion**
+    * Added Activity Monitor `Server Name` controls for font family, style combinations, and color with live preview support.
+    * Added random scratch controls (level, density, intensity) for the Activity Monitor chassis finish.
+    * Added graph typography controls for title, legend text, and y-axis label sizing.
+    * Added derived subheading color behavior so the Activity Monitor subtitle tracks as a darker shade of server-name color.
+* **Dashboard Menu Rebuild and Dropdown Behavior**
+    * Reworked top menu into structured dropdown panels for Dashboard, Activity Monitor, and Disk Arrays.
+    * Added menu dropdown transparency slider (0-100 mapped to 0.5-1.0 opacity).
+    * Added robust live-preview synchronization across menu controls and chart recreation triggers.
+* **Disk Arrays Dynamic Per-Enclosure Controls (Phase 1/2/Chassis Wiring)**
+    * Added dynamic `Disk Arrays` menu generation based on discovered enclosures.
+    * Added per-enclosure `Chassis` settings (color, scratch controls, server-name typography/color, enclosure ID subtitle color).
+    * Added per-enclosure `Drive Bay` controls including door color plus grill shape and size scaling.
+    * Wired per-enclosure settings to `config.json` under `devices.<enclosure-key>.*` with live preview and render-path support.
+* **Reset-to-Defaults Workflow and Kiosk-Safe UX**
+    * Added backend `/reset-config` endpoint to rewrite `config.json` from service defaults and reload in-memory config.
+    * Added Dashboard `RESET ALL` action that triggers reset and hard refresh after 3 seconds.
+    * Replaced browser popup messaging with an in-app modal flow (confirm/success/error) suitable for kiosk-mode browsers.
+* **Rendering and Styling Refinements**
+    * Added per-enclosure CSS variable overrides for chassis shell, bay shell, latch gradients, and grill rendering.
+    * Added shape-driven grill rendering support (solid, round, square, triangle, hexagonal) with scalable pattern sizing.
+    * Added Activity Monitor chart y-axis font-size variable plumbing in frontend chart configuration.
+
 ## Version 23.3:
 * **2U Bay Scaling and Fit Rework**
     * Reworked chassis bay sizing so horizontal and vertical 12-bay 2U layouts are calculated from explicit long-side and short-side geometry.

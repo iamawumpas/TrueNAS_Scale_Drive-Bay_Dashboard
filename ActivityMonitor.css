@@ -5,10 +5,10 @@
     flex-direction: column;
     background-color: var(--activity-chassis-bg, #1a1a1a);
     background-image: 
-        repeating-linear-gradient(var(--activity-chassis-stripe, rgba(255,255,255,0.03)) 0px, var(--activity-chassis-stripe, rgba(255,255,255,0.03)) 1px, transparent 1px, transparent 2px),
+        var(--activity-random-scratches, none),
         linear-gradient(115deg, var(--activity-chassis-gradient-start, #111111) 0%, var(--activity-chassis-gradient-mid-a, #222222) 30%, var(--activity-chassis-gradient-mid-b, #333333) 45%, var(--activity-chassis-gradient-mid-a, #222222) 60%, var(--activity-chassis-gradient-end, #111111) 100%);
     border: 1px solid var(--activity-chassis-border, #333333);
-    padding: var(--chart-chassis-padding);
+    padding: 10px 10px 12px;
     border-radius: 12px;
     box-shadow: inset 0 0 20px #000000, 0 10px 30px var(--activity-chassis-shadow, rgba(0,0,0,0.8));
     max-width: 95vw;
@@ -18,18 +18,23 @@
 }
 
 #activity-header {
-    color: var(--activity-header-color, #ffffff);
+    color: var(--activity-server-name-color, var(--activity-header-color, #ffffff));
+    font-family: var(--activity-server-name-font, var(--font-default, Calibri, Candara, Segoe UI, Optima, Arial, sans-serif));
     font-size: 2.5em;
-    font-weight: bold;
-    font-variant: small-caps;
-    margin-bottom: 20px;
+    font-weight: var(--activity-server-name-weight, 700);
+    font-style: var(--activity-server-name-style, normal);
+    text-transform: var(--activity-server-name-transform, none);
+    font-variant: var(--activity-server-name-variant, small-caps);
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--chassis-header-divider, rgba(255, 255, 255, 0.08));
     text-align: left;
     white-space: nowrap;
 }
 
 .activity-sub-text {
     font-size: 50%;
-    color: var(--activity-subtext-color, #888888);
+    color: var(--activity-subtext-color-derived, var(--activity-subtext-color, #888888));
     margin-left: 15px;
     vertical-align: middle;
     font-weight: normal;
@@ -97,7 +102,7 @@
     color: var(--activity-title-color, #f28a02);
     font-weight: bold;
     font-variant: small-caps;
-    font-size: 0.85em;
+    font-size: calc(0.85em * var(--chart-graph-title-scale, 1.0));
     letter-spacing: 1px;
 }
 
@@ -105,7 +110,7 @@
     display: flex;
     gap: 8px;
     font-variant: small-caps;
-    font-size: 0.7em;
+    font-size: calc(0.7em * var(--chart-legend-text-scale, 1.0));
     color: var(--activity-legend-color, #ffffff);
 }
 

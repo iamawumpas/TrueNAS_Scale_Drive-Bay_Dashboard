@@ -108,67 +108,79 @@
             "border": "#333333",
             "shadow": "rgba(0,0,0,0.8)",
             "header_divider": "rgba(255,255,255,0.1)",
-              "font_color": "#ffffff",
-              "meta_color": "#98a7bd",
-              "subtitle_color": "#7f8b9b",
-              "stripe": "rgba(255, 255, 255, 0.03)",
-              "gradient_start": "#111111",
-              "gradient_mid_a": "#222222",
-              "gradient_mid_b": "#333333",
-              "gradient_end": "#111111"
+            "font_color": "#ffffff",
+            "meta_color": "#98a7bd",
+            "subtitle_color": "#7f8b9b",
+            "stripe": "rgba(255, 255, 255, 0.03)",
+            "gradient_start": "#111111",
+            "gradient_mid_a": "#222222",
+            "gradient_mid_b": "#333333",
+            "gradient_end": "#111111"
         },
         "__REMARK_BAY": "Drive bay shell styling.",
         "bay": {
             "background_base": "#121212",
             "border": "#333333",
             "top_border": "#444444",
-                "grill_size_scale": 50,
-                "text_color": "#ced9ea",
-                "empty_text_color": "#6e7d91",
-                "led_panel_bg": "rgba(0, 0, 0, 0.2)",
-                "grill_hole_color": "#000000",
-                "bg_gradient_start": "#111621",
-                "bg_gradient_end": "#0a0f18"
+            "grill_size_scale": 50,
+            "text_color": "#ced9ea",
+            "empty_text_color": "#6e7d91",
+            "led_panel_bg": "rgba(0, 0, 0, 0.2)",
+            "grill_hole_color": "#000000",
+            "bg_gradient_start": "#111621",
+            "bg_gradient_end": "#0a0f18"
         },
-            "__REMARK_LATCH": "Drive latch/handle styling.",
-            "latch": {
-                "gradient_start": "#333333",
-                "gradient_mid": "#222222",
-                "gradient_end": "#111111",
-                "border_color": "rgba(255, 255, 255, 0.22)"
-            },
-            "__REMARK_LED_SHELL": "LED shell and dark-state colors.",
-            "led_shell": {
-                "dark_core": "#111111",
-                "dark_highlight": "#222222",
-                "border": "rgba(255, 255, 255, 0.05)",
-                "shadow": "rgba(0, 0, 0, 0.9)"
-            },
-            "__REMARK_ACTIVITY": "Activity monitor card styling.",
-            "activity": {
-                "card_bg": "#0c0c0e",
-                "card_border_top": "rgba(255, 255, 255, 0.15)",
-                "card_border_left": "rgba(255, 255, 255, 0.1)",
-                "card_border_right": "rgba(0, 0, 0, 0.5)",
-                "card_border_bottom": "rgba(0, 0, 0, 0.6)",
-                "card_shadow_inner": "rgba(0, 0, 0, 0.9)",
-                "card_shadow_outer": "rgba(255, 255, 255, 0.05)",
-                "card_glare": "rgba(255, 255, 255, 0.03)",
-                "title_color": "#f28a02",
-                "legend_color": "#ffffff"
-            },
-            "__REMARK_POOL": "Pool state indicator styling.",
-            "pool": {
-                "faulted_gradient_start": "#cc0000",
-                "faulted_gradient_end": "#ff0000",
-                "faulted_border": "#ffffff",
-                "faulted_shadow": "rgba(255, 0, 0, 0.6)",
-                "degraded_bg": "rgba(255, 165, 0, 0.3)",
-                "degraded_border": "#ffa500",
-                "state_text_color": "#ffffff",
-                "state_text_bg": "rgba(0, 0, 0, 0.3)",
-                "state_text_shadow": "rgba(0, 0, 0, 0.8)"
-            },
+        "__REMARK_LATCH": "Drive latch/handle styling.",
+        "latch": {
+            "gradient_start": "#333333",
+            "gradient_mid": "#222222",
+            "gradient_end": "#111111",
+            "border_color": "rgba(255, 255, 255, 0.22)"
+        },
+        "__REMARK_LED_SHELL": "LED shell and dark-state colors.",
+        "led_shell": {
+            "dark_core": "#111111",
+            "dark_highlight": "#222222",
+            "border": "rgba(255, 255, 255, 0.05)",
+            "shadow": "rgba(0, 0, 0, 0.9)"
+        },
+        "__REMARK_ACTIVITY": "Activity monitor card styling.",
+        "activity": {
+            "card_bg": "#0c0c0e",
+            "card_border_top": "rgba(255, 255, 255, 0.15)",
+            "card_border_left": "rgba(255, 255, 255, 0.1)",
+            "card_border_right": "rgba(0, 0, 0, 0.5)",
+            "card_border_bottom": "rgba(0, 0, 0, 0.6)",
+            "card_shadow_inner": "rgba(0, 0, 0, 0.9)",
+            "card_shadow_outer": "rgba(255, 255, 255, 0.05)",
+            "card_glare": "rgba(255, 255, 255, 0.03)",
+            "title_color": "#f28a02",
+            "legend_color": "#ffffff",
+            "chassis_color": "#3f1818",
+            "scratch_level": 16,
+            "scratch_density": 18,
+            "scratch_intensity": 14,
+            "server_name": {
+                "color": "#ffffff",
+                "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+                "style": [
+                    "bold",
+                    "smallcaps"
+                ]
+            }
+        },
+        "__REMARK_POOL": "Pool state indicator styling.",
+        "pool": {
+            "faulted_gradient_start": "#cc0000",
+            "faulted_gradient_end": "#ff0000",
+            "faulted_border": "#ffffff",
+            "faulted_shadow": "rgba(255, 0, 0, 0.6)",
+            "degraded_bg": "rgba(255, 165, 0, 0.3)",
+            "degraded_border": "#ffa500",
+            "state_text_color": "#ffffff",
+            "state_text_bg": "rgba(0, 0, 0, 0.3)",
+            "state_text_shadow": "rgba(0, 0, 0, 0.8)"
+        },
         "__REMARK_LEDS": "LED and legend dot colors.",
         "led_colors": {
             "allocated_healthy": "#00ff00",
@@ -183,23 +195,23 @@
         },
         "__REMARK_ENVIRONMENT": "Page background settings.",
         "environment": {
-              "page_bg_color": "#0a0a0a",
-              "body_text_color": "#ffffff",
-              "rebuild_border": "#2f3d52",
-              "rebuild_bg": "#151a22",
-              "rebuild_color": "#a4b4c8"
+            "page_bg_color": "#373434",
+            "body_text_color": "#ffffff",
+            "rebuild_border": "#2f3d52",
+            "rebuild_bg": "#151a22",
+            "rebuild_color": "#a4b4c8"
         },
         "__REMARK_LAYOUT": "Physical rack and bay spacing model.",
         "layout": {
             "rack_width_in": 19,
             "u_height_in": 1.75,
+            "bay_gap_px": 6,
+            "dashboard_max_width": "98vw",
+            "dashboard_gap": "16px",
+            "dashboard_top_gap": "14px",
             "ru_height_in_overrides": {
-                "2": 4.0
-            },
-              "bay_gap_px": 6,
-              "dashboard_max_width": "98vw",
-              "dashboard_gap": "16px",
-              "dashboard_top_gap": "14px"
+                "2": 4
+            }
         },
         "__REMARK_MENU": "Menu bar and form control styling for the rebuilt menu shell.",
         "menu": {
@@ -215,6 +227,7 @@
             "dropdown_background": "#1a1a1a",
             "dropdown_border": "#555555",
             "dropdown_shadow": "rgba(0, 0, 0, 0.8)",
+            "dropdown_opacity": 100,
             "controls": {
                 "background": "#2a2a2a",
                 "border": "#555555",
@@ -249,8 +262,9 @@
             "readGradientBottom": "rgba(42, 0, 214, 0)",
             "writeGradientTop": "rgba(255, 159, 0, 0.5)",
             "writeGradientBottom": "rgba(255, 159, 0, 0)",
-              "yAxisLabelColor": "#ffffff",
-              "yAxisGridColor": "rgba(255, 255, 255, 0.3)"
+            "yAxisLabelColor": "#ffffff",
+            "yAxisGridColor": "rgba(255, 255, 255, 0.3)",
+            "graphTitleColor": "#aaaaaa"
         },
         "__REMARK_DIMENSIONS": "Chart sizing and line styling parameters.",
         "dimensions": {
@@ -258,8 +272,14 @@
             "cardWidth": "360px",
             "containerGap": "25px",
             "lineTension": "0.7",
-              "lineWidth": "2",
-              "cardMarginRight": "20px"
+            "lineWidth": "2",
+            "cardMarginRight": "20px"
+        },
+        "__REMARK_TYPOGRAPHY": "Font size scale for activity monitor elements (0-100; 50 = current size; 0 = -1.5\u00d7; 100 = +1.5\u00d7).",
+        "typography": {
+            "graph_title_size_scale": 50,
+            "y_axis_label_size_scale": 50,
+            "legend_text_size_scale": 50
         }
     },
     "fonts": {
