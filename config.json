@@ -193,6 +193,9 @@
         "layout": {
             "rack_width_in": 19,
             "u_height_in": 1.75,
+            "ru_height_in_overrides": {
+                "2": 4.0
+            },
               "bay_gap_px": 6,
               "dashboard_max_width": "98vw",
               "dashboard_gap": "16px",

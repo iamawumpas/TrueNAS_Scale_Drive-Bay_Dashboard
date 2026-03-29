@@ -194,14 +194,10 @@ function computeBayDimensions({
     const maxBayWidthByWidth = (safeBodyWidth - (safeCols - 1) * safeGap) / safeCols;
     const maxBayHeightByHeight = (safeBodyHeight - (safeRows - 1) * safeGap) / safeRows;
 
-    if (layout === 'vertical') {
-        // Strict fit: preserve aspect ratio and satisfy both width and height constraints.
-        bayHeight = Math.min(maxBayHeightByHeight, maxBayWidthByWidth * ratio);
-        bayWidth = bayHeight / ratio;
-    } else {
-        bayWidth = Math.min(maxBayWidthByWidth, maxBayHeightByHeight * ratio);
-        bayHeight = bayWidth / ratio;
-    }
+    // All bays are portrait (tall/narrow). layout only governs grid arrangement, not bay orientation.
+    // Height fills the available row cell; width derives from the aspect ratio.
+    bayHeight = maxBayHeightByHeight;
+    bayWidth = bayHeight / ratio;
 
     return {
         bayWidthPx: Math.max(20, bayWidth),
@@ -230,23 +226,45 @@ function buildEnclosureModel(topologyKey, chassisData, data, layoutContext = {})
     const uHeightIn = Number(uiLayout.u_height_in);
     const safeRackWidthIn = Number.isFinite(rackWidthIn) && rackWidthIn > 0 ? rackWidthIn : GEOMETRY_DEFAULTS.RACK_WIDTH_MM / 25.4;
     const safeUHeightIn = Number.isFinite(uHeightIn) && uHeightIn > 0 ? uHeightIn : GEOMETRY_DEFAULTS.RACK_UNIT_HEIGHT_MM / 25.4;
+    const ruHeightOverrides = uiLayout?.ru_height_in_overrides;
+    const ruOverrideIn = Number(ruHeightOverrides?.[String(chassisUnits)]);
+    const chassisHeightIn = Number.isFinite(ruOverrideIn) && ruOverrideIn > 0
+        ? ruOverrideIn
+        : chassisUnits * safeUHeightIn;
 
-    // 19-inch rack width model: same rack_units means same body height.
+    // Rack-unit model: same rack_units always means same chassis body height.
     const bodyHeightPx = Math.max(
         40,
-        (chassisWidthPx * chassisUnits * safeUHeightIn) / safeRackWidthIn
+        (chassisWidthPx * chassisHeightIn) / safeRackWidthIn
     );
     const bodyWidthPx = Math.max(120, chassisWidthPx - 32);
-    const ratio = GEOMETRY_DEFAULTS.HDD_LONG_MM / GEOMETRY_DEFAULTS.HDD_SHORT_MM;
-    const bayDims = computeBayDimensions({
-        layout: grid.layout,
-        cols: grid.cols,
-        rows: grid.rows,
-        gapPx: bayGap,
-        bodyWidthPx,
-        bodyHeightPx,
-        longToShortRatio: ratio
-    });
+
+    const BODY_PADDING_PX = 5; // matches .chassis-body padding
+    const innerHeightPx = Math.max(1, bodyHeightPx - (2 * BODY_PADDING_PX));
+    const shortMm = GEOMETRY_DEFAULTS.HDD_SHORT_MM;
+    const longMm = GEOMETRY_DEFAULTS.HDD_LONG_MM;
+
+    // Per-layout scale: each chassis fills its own grid independently.
+    // Both chassis share the same bodyHeightPx; bay sizes differ by layout.
+    // horizontal: bay renders as long_side(W) × short_side(H)
+    // vertical:   bay renders as short_side(W) × long_side(H)
+    const nominalPxPerMm = bodyWidthPx / GEOMETRY_DEFAULTS.RACK_WIDTH_MM;
+    let pxPerMm;
+    if (grid.layout === 'horizontal') {
+        const scaleByWidth  = (bodyWidthPx  - (grid.cols - 1) * bayGap) / (grid.cols * longMm);
+        const scaleByHeight = (innerHeightPx - (grid.rows - 1) * bayGap) / (grid.rows * shortMm);
+        pxPerMm = Math.max(0.1, Math.min(nominalPxPerMm, scaleByWidth, scaleByHeight) * 1.1);
+    } else {
+        const scaleByWidth  = (bodyWidthPx  - (grid.cols - 1) * bayGap) / (grid.cols * shortMm);
+        const scaleByHeight = (innerHeightPx - (grid.rows - 1) * bayGap) / (grid.rows * longMm);
+        pxPerMm = Math.max(0.1, Math.min(nominalPxPerMm, scaleByWidth, scaleByHeight));
+    }
+
+    const bayShortSidePx = Math.max(20, shortMm * pxPerMm);
+    const bayLongSidePx  = Math.max(24, longMm  * pxPerMm);
+
+    const bayWidthPx  = grid.layout === 'horizontal' ? bayLongSidePx  : bayShortSidePx * 1.21;
+    const bayHeightPx = grid.layout === 'horizontal' ? bayShortSidePx : bayLongSidePx;
 
     const disks = Array.isArray(chassisData?.disks) ? chassisData.disks.slice(0, grid.targetSlots) : [];
     while (disks.length < grid.targetSlots) disks.push({ status: 'EMPTY' });
@@ -274,8 +292,10 @@ function buildEnclosureModel(topologyKey, chassisData, data, layoutContext = {})
         chassisUnits,
         chassisWidthPx,
         bodyHeightPx,
-        bayWidthPx: bayDims.bayWidthPx,
-        bayHeightPx: bayDims.bayHeightPx,
+        bayShortSidePx,
+        bayLongSidePx,
+        bayWidthPx,
+        bayHeightPx,
         disksByVisualIndex,
         latchNumberByVisualIndex
     };
@@ -554,4 +574,4 @@ async function update() {
 }
 
 update();
-setInterval(update, 2000);
+setInterval(update, 200);

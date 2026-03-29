@@ -4,6 +4,9 @@
     background: var(--menu-bg-color, linear-gradient(180deg, #222222 0%, #1a1a1a 100%));
     border-bottom: 2px solid var(--menu-border-color, #444444);
     padding: 8px 16px;
+    width: min(100%, var(--dashboard-max-width, 98vw));
+    box-sizing: border-box;
+    margin: 0 auto;
     display: flex;
     align-items: center;
     position: sticky;

@@ -11,13 +11,14 @@ body {
 #dashboard-wrapper {
     width: 100%;
     max-width: var(--dashboard-max-width, 1600px);
-    margin: 0 auto;
+    margin: 20px auto 0;
 }
 
 #top-row {
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
+    justify-content: center;
     gap: var(--dashboard-gap, 16px);
 }
 
@@ -119,17 +120,18 @@ body {
     padding: 5px;
     border-radius: 8px;
     background: var(--chassis-body-bg, var(--chassis-bg-base, #0d121a));
-    height: auto;
-    min-height: var(--chassis-body-height, 120px);
+    height: var(--chassis-body-height, 120px);
     box-sizing: border-box;
     overflow: visible;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .bays-grid {
     display: grid;
     gap: var(--bay-gap, 6px);
-    height: 100%;
-    justify-content: start;
+    justify-content: center;
     align-content: center;
 }
 
@@ -200,6 +202,7 @@ body {
     width: auto;
     height: 16px;
     padding: 0 3px;
+    margin-top: 6px;
 }
 
 .led-panel-horizontal {
@@ -220,9 +223,9 @@ body {
 .info-panel-vertical {
     position: absolute;
     left: 50%;
-    top: calc(18px + ((var(--bay-height, 100px) - 44px) / 2));
-    width: calc(var(--bay-height, 100px) - 44px);
-    height: calc(var(--bay-width, 40px) - 6px);
+    top: calc(24px + ((var(--bay-height, 100px) - 44px) / 2) - (var(--bay-width, 40px) * 0.1));
+    width: calc(var(--bay-height, 100px) - 44px - (var(--bay-height, 100px) * 0.1));
+    height: calc(var(--bay-width, 40px) - 12px);
     padding: 2px;
     gap: 1px;
     transform: translate(-50%, -50%) rotate(-90deg);

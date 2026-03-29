@@ -1,5 +1,19 @@
 # Storage Dashboard - Change Log
 
+## Version 23.3:
+* **2U Bay Scaling and Fit Rework**
+    * Reworked chassis bay sizing so horizontal and vertical 12-bay 2U layouts are calculated from explicit long-side and short-side geometry.
+    * Added rack-unit height override support so 2U chassis can be tuned to better fill available width without distorting the bay aspect ratio.
+    * Refined horizontal bay scaling to better consume chassis width while preserving the rendered drive proportions.
+* **Vertical Bay Face Layout Refinement**
+    * Increased vertical bay width slightly while keeping the bay height unchanged for better visual balance.
+    * Repositioned the vertical LED strip and rotated info block to match horizontal inset spacing more closely.
+    * Reduced the rotated info container footprint and increased latch- and LED-side clearance to improve readability inside narrow bays.
+* **Chassis Layout and Polling Updates**
+    * Centered bay grids and chassis content more consistently inside the enclosure body to reduce uneven dead space.
+    * Tightened chassis body sizing so the bay field uses the configured body height directly instead of relying on auto-height behavior.
+    * Increased frontend `/data` refresh frequency from 2000 ms to 200 ms so activity LEDs respond much closer to live disk activity.
+
 ## Version 23.2:
 * **Chassis Proportion Alignment Fix**
     * Rolled back parts of the v22-era bay scaling heuristics that were inflating one enclosure relative to the other.
