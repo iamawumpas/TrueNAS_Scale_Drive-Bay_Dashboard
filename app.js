@@ -191,23 +191,15 @@ function computeBayDimensions({
     let bayWidth;
     let bayHeight;
 
+    const maxBayWidthByWidth = (safeBodyWidth - (safeCols - 1) * safeGap) / safeCols;
+    const maxBayHeightByHeight = (safeBodyHeight - (safeRows - 1) * safeGap) / safeRows;
+
     if (layout === 'vertical') {
-        // Long axis is vertical: height fills available space, width = height / ratio
-        bayHeight = (safeBodyHeight - (safeRows - 1) * safeGap) / safeRows;
-        bayHeight *= 1.12;
-        const ratioWidth = bayHeight / ratio;
-        bayWidth = ratioWidth;
-        // For multi-column vertical arrays, scale width toward available column width
-        // so vertical caddies visually match horizontal short-edge sizing better.
-        const maxWidthPerCol = (safeBodyWidth - (safeCols - 1) * safeGap) / safeCols;
-        if (safeCols > 1) {
-            const scaledWidth = Math.max(ratioWidth, maxWidthPerCol * 0.8);
-            bayWidth = Math.min(maxWidthPerCol, scaledWidth);
-        } else if (bayWidth > maxWidthPerCol) {
-            bayWidth = maxWidthPerCol;
-        }
+        // Strict fit: preserve aspect ratio and satisfy both width and height constraints.
+        bayHeight = Math.min(maxBayHeightByHeight, maxBayWidthByWidth * ratio);
+        bayWidth = bayHeight / ratio;
     } else {
-        bayWidth = (safeBodyWidth - (safeCols - 1) * safeGap) / safeCols;
+        bayWidth = Math.min(maxBayWidthByWidth, maxBayHeightByHeight * ratio);
         bayHeight = bayWidth / ratio;
     }
 

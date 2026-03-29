@@ -1,5 +1,15 @@
 # Storage Dashboard - Change Log
 
+## Version 23.2:
+* **Chassis Proportion Alignment Fix**
+    * Rolled back parts of the v22-era bay scaling heuristics that were inflating one enclosure relative to the other.
+    * Removed vertical-layout boost logic that over-expanded bay height and width in mixed chassis scenarios.
+    * Restored strict aspect-ratio-constrained bay fitting so width and height limits are respected consistently.
+* **Side-by-Side Chassis Consistency**
+    * Corrected enclosure rendering so left and right chassis stay visually aligned under the same viewport constraints.
+    * Reduced unintended stretch bias in the right-hand direct-attach enclosure.
+    * Preserved physical drive ratio while bringing bay fields back into line across both chassis.
+
 ## Version 23.1:
 * **Menu System Rebuild - Phase 1 Baseline**
     * Reintroduced a clean top menu bar shell from scratch while keeping SAVE/REVERT workflow behavior.
