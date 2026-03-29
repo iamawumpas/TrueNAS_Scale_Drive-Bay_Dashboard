@@ -1,36 +1,16 @@
 /* ActivityMonitor.css - Pool Activity Graphs with Beveled Glass Effect */
 
-:root {
-    --chart-read-color: #2a00d6;
-    --chart-write-color: #ff9f00;
-    --chart-read-dot-color: #2a00d6;
-    --chart-write-dot-color: #ff9f00;
-    --chart-read-gradient-top: rgba(42, 0, 214, 0.5);
-    --chart-read-gradient-bottom: rgba(42, 0, 214, 0);
-    --chart-write-gradient-top: rgba(255, 159, 0, 0.5);
-    --chart-write-gradient-bottom: rgba(255, 159, 0, 0);
-    --chart-line-tension: 0.7;
-    --chart-line-width: 2;
-    --chart-height: 75px;
-    --chart-card-width: 250px;
-    --chart-card-margin-right: 20px;
-    --chart-container-gap: 20px;
-    --chart-chassis-padding: 20px;
-    --chart-y-axis-label-color: #888888;
-    --chart-y-axis-grid-color: rgba(255, 255, 255, 0.3);
-}
-
 #activity-chassis {
     display: flex;
     flex-direction: column;
-    background-color: #1a1a1a;
+    background-color: var(--activity-chassis-bg, #1a1a1a);
     background-image: 
-        repeating-linear-gradient(rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 2px),
-        linear-gradient(115deg, #111 0%, #222 30%, #333 45%, #222 60%, #111 100%);
-    border: 1px solid #333;
+        repeating-linear-gradient(var(--activity-chassis-stripe, rgba(255,255,255,0.03)) 0px, var(--activity-chassis-stripe, rgba(255,255,255,0.03)) 1px, transparent 1px, transparent 2px),
+        linear-gradient(115deg, var(--activity-chassis-gradient-start, #111111) 0%, var(--activity-chassis-gradient-mid-a, #222222) 30%, var(--activity-chassis-gradient-mid-b, #333333) 45%, var(--activity-chassis-gradient-mid-a, #222222) 60%, var(--activity-chassis-gradient-end, #111111) 100%);
+    border: 1px solid var(--activity-chassis-border, #333333);
     padding: var(--chart-chassis-padding);
     border-radius: 12px;
-    box-shadow: inset 0 0 20px #000, 0 10px 30px rgba(0,0,0,0.8);
+    box-shadow: inset 0 0 20px #000000, 0 10px 30px var(--activity-chassis-shadow, rgba(0,0,0,0.8));
     max-width: 95vw;
     margin: 0;
     overflow: hidden;
@@ -38,7 +18,7 @@
 }
 
 #activity-header {
-    color: #ffffff;
+    color: var(--activity-header-color, #ffffff);
     font-size: 2.5em;
     font-weight: bold;
     font-variant: small-caps;
@@ -49,7 +29,7 @@
 
 .activity-sub-text {
     font-size: 50%;
-    color: #888;
+    color: var(--activity-subtext-color, #888888);
     margin-left: 15px;
     vertical-align: middle;
     font-weight: normal;
@@ -66,7 +46,7 @@
 
 /* Beveled Glass Card Effect */
 .activity-card {
-    background: #0c0c0e;
+    background: var(--activity-card-bg, #0c0c0e);
     border-radius: 10px;
     padding: 12px;
     box-sizing: border-box;
@@ -78,15 +58,15 @@
     overflow: hidden;
 
     /* Bevel & Edge Light highlights */
-    border-top: 2px solid rgba(255, 255, 255, 0.15);
-    border-left: 2px solid rgba(255, 255, 255, 0.1);
-    border-right: 2px solid rgba(0, 0, 0, 0.5);
-    border-bottom: 2px solid rgba(0, 0, 0, 0.6);
+    border-top: 2px solid var(--activity-card-border-top, rgba(255, 255, 255, 0.15));
+    border-left: 2px solid var(--activity-card-border-left, rgba(255, 255, 255, 0.1));
+    border-right: 2px solid var(--activity-card-border-right, rgba(0, 0, 0, 0.5));
+    border-bottom: 2px solid var(--activity-card-border-bottom, rgba(0, 0, 0, 0.6));
 
     /* Inner Shadow for depth + Outer Glow for edge light */
     box-shadow: 
-        inset 0 0 15px rgba(0,0,0,0.9), 
-        0 0 5px rgba(255,255,255,0.05);
+        inset 0 0 15px var(--activity-card-shadow-inner, rgba(0,0,0,0.9)), 
+        0 0 5px var(--activity-card-shadow-outer, rgba(255,255,255,0.05));
 }
 
 .activity-card:last-child {
@@ -101,7 +81,7 @@
     left: 0;
     right: 0;
     height: 50%;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.03) 0%, transparent 100%);
+    background: linear-gradient(to bottom, var(--activity-card-glare, rgba(255,255,255,0.03)) 0%, transparent 100%);
     pointer-events: none;
 }
 
@@ -114,7 +94,7 @@
 }
 
 .activity-title {
-    color: #f28a02;
+    color: var(--activity-title-color, #f28a02);
     font-weight: bold;
     font-variant: small-caps;
     font-size: 0.85em;
@@ -126,7 +106,7 @@
     gap: 8px;
     font-variant: small-caps;
     font-size: 0.7em;
-    color: #fff;
+    color: var(--activity-legend-color, #ffffff);
 }
 
 .activity-legend-item {
@@ -142,13 +122,13 @@
 }
 
 .activity-dot-r {
-    background-color: var(--chart-read-color);
-    box-shadow: 0 0 8px var(--chart-read-color);
+    background-color: var(--chart-read-dot-color, var(--chart-read-color));
+    box-shadow: 0 0 8px var(--chart-read-dot-color, var(--chart-read-color));
 }
 
 .activity-dot-w {
-    background-color: var(--chart-write-color);
-    box-shadow: 0 0 8px var(--chart-write-color);
+    background-color: var(--chart-write-dot-color, var(--chart-write-color));
+    box-shadow: 0 0 8px var(--chart-write-dot-color, var(--chart-write-color));
 }
 
 .activity-chart-wrap {
@@ -173,28 +153,28 @@
 }
 
 .pool-state-overlay.pool-faulted {
-    background: linear-gradient(135deg, #cc0000 0%, #ff0000 100%);
-    border: 2px solid #ffffff;
+    background: linear-gradient(135deg, var(--pool-faulted-gradient-start, #cc0000) 0%, var(--pool-faulted-gradient-end, #ff0000) 100%);
+    border: 2px solid var(--pool-faulted-border, #ffffff);
     box-shadow: 
         inset 0 0 20px rgba(0, 0, 0, 0.5),
-        0 0 15px rgba(255, 0, 0, 0.6);
+        0 0 15px var(--pool-faulted-shadow, rgba(255, 0, 0, 0.6));
 }
 
 .pool-state-overlay.pool-degraded {
-    background: rgba(255, 165, 0, 0.3);
-    border: 2px solid #ffa500;
+    background: var(--pool-degraded-bg, rgba(255, 165, 0, 0.3));
+    border: 2px solid var(--pool-degraded-border, #ffa500);
     backdrop-filter: blur(2px);
 }
 
 .pool-state-text {
-    color: #ffffff;
+    color: var(--pool-state-text-color, #ffffff);
     font-weight: bold;
     font-size: 1.4em;
     font-variant: small-caps;
     letter-spacing: 2px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
     padding: 8px 16px;
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--pool-state-text-bg, rgba(0, 0, 0, 0.3));
     border-radius: 4px;
 }
 

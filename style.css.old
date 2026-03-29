@@ -1,0 +1,35 @@
+@import 'Base.css';
+@import 'Chassis.css';
+@import 'Bay.css';
+@import 'LEDs.css';
+
+body {
+    background-color: var(--page-bg-color);
+    color: #ffffff;
+    margin: 0;
+    padding: 10px;
+    font-family: "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif;
+    overflow: visible;
+}
+#dashboard-wrapper {
+    width: min(100%, fit-content);
+    max-width: 100%;
+    margin: 0 auto;
+}
+#top-row {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 20px;
+    margin-bottom: 20px;
+    max-width: 100%;
+}
+#canvas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 20px;
+    max-width: 100%;
+    overflow: visible;
+}
+

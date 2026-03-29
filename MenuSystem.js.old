@@ -1,6 +1,6 @@
 // MenuSystem.js - Dynamic menu for customizing dashboard settings
 import { applyConfigMap } from './ui/utils.js';
-import { resolveLayoutSettings, applyPhysicalLayout } from './ui/layoutGeometry.js';
+import { resolveLayoutSettings, applyPhysicalLayout } from './layoutGeometry.js';
 
 export class MenuSystem {
     constructor(topology, currentConfig) {

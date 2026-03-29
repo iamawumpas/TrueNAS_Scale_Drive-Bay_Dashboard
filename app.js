@@ -1,23 +1,35 @@
-import { getLEDClass } from './LEDManager.js';
-import { getDiskData } from './DiskInfo.js';
-import { createChassisHTML } from './Chassis.js';
-import { createBayHTML } from './Bay.js';
-import { MenuSystem } from './MenuSystem.js';
-import { applyConfigMap, updateTextIfChanged, setClassIfChanged, debugLog } from './ui/utils.js';
-import { resolveLayoutSettings, applyPhysicalLayout } from './ui/layoutGeometry.js';
+import { GEOMETRY_DEFAULTS } from './geometry.js';
 
-let lastUIConfigSignature = '';
-let lastStyleConfigSignature = '';
-let menuSystem = null;
 let activityMonitor = null;
-let forceRedraw = false;
-// DOM caches to reduce repeated queries
-const unitsMap = new Map(); // pci -> unit element
-const slotContainersMap = new Map(); // pci -> slot container element
 
-function normalizeTopologyDeviceKey(topologyKey, pciRaw) {
+function applyConfigMap(rootStyle, mapping) {
+    Object.entries(mapping).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            rootStyle.setProperty(key, String(value));
+        }
+    });
+}
+
+function applyStyleConfig(rootStyle, prefix, configBlock) {
+    if (!configBlock || typeof configBlock !== 'object') return;
+
+    const styles = Array.isArray(configBlock.style)
+        ? configBlock.style.map(value => String(value).toLowerCase())
+        : [];
+
+    applyConfigMap(rootStyle, {
+        [`--${prefix}-color`]: configBlock.color,
+        [`--${prefix}-font`]: configBlock.font,
+        [`--${prefix}-size`]: configBlock.size,
+        [`--${prefix}-weight`]: styles.includes('bold') ? '700' : '400',
+        [`--${prefix}-style`]: styles.includes('italic') ? 'italic' : 'normal',
+        [`--${prefix}-transform`]: styles.includes('allcaps') ? 'uppercase' : 'none',
+        [`--${prefix}-variant`]: styles.includes('smallcaps') ? 'small-caps' : 'normal'
+    });
+}
+
+function normalizeTopologyKey(topologyKey, pciRaw) {
     if (!topologyKey) return pciRaw;
-
     if (topologyKey.includes('-')) {
         const parts = topologyKey.split('-');
         if (parts.length >= 4) {
@@ -26,463 +38,523 @@ function normalizeTopologyDeviceKey(topologyKey, pciRaw) {
             return `${pci}${suffix}`;
         }
     }
-
     return pciRaw || topologyKey;
 }
 
-// Listen for menu save/revert events
-window.addEventListener('configSaved', (e) => {
-    if (window.UI_DEBUG) console.log('configSaved event received:', e);
-    forceRedraw = true;
-    if (window.UI_DEBUG) console.log('Set forceRedraw to true, calling update');
-    update();
-}, true);
+function clampInt(value, fallback, min = 1, max = 999) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.min(max, Math.max(min, Math.floor(n)));
+}
 
-window.addEventListener('configReverted', (e) => {
-    if (window.UI_DEBUG) console.log('configReverted event received:', e);
-    forceRedraw = true;
-    if (window.UI_DEBUG) console.log('Set forceRedraw to true, calling update');
-    update();
-}, true);
+function normalizeLayout(value) {
+    return String(value || '').toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
+}
 
-function applyStyleConfigFromJSON(styleConfig) {
-    if (!styleConfig) return;
-    
-    const signature = JSON.stringify(styleConfig);
-    if (signature === lastStyleConfigSignature) return;
-    lastStyleConfigSignature = signature;
-
-    const root = document.documentElement;
-    
-    // Apply fonts via mapping
-    if (styleConfig.fonts) {
-        const fontMap = {};
-        if (styleConfig.fonts.default) {
-            fontMap['--font-default'] = styleConfig.fonts.default;
-            fontMap['--server-name-font'] = styleConfig.fonts.default;
-            fontMap['--legend-font'] = styleConfig.fonts.default;
-            fontMap['--bay-id-font'] = styleConfig.fonts.default;
-            fontMap['--disk-serial-font'] = styleConfig.fonts.default;
-            fontMap['--disk-size-font'] = styleConfig.fonts.default;
-            fontMap['--disk-pool-font'] = styleConfig.fonts.default;
-            fontMap['--disk-index-font'] = styleConfig.fonts.default;
-        }
-        if (styleConfig.fonts.monospace) {
-            fontMap['--font-monospace'] = styleConfig.fonts.monospace;
-            fontMap['--pci-address-font'] = styleConfig.fonts.monospace;
-        }
-        applyConfigMap(root, fontMap);
+function normalizeFillOrder(rawValue, legacyValue) {
+    const value = String(rawValue || '').toLowerCase();
+    if (value === 'column_major_ttb' || value === 'ttb' || value === 'top_to_bottom') {
+        return 'column_major_ttb';
     }
-    
-    // Apply colors via mapping
-    if (styleConfig.colors) {
-        const colorMap = {
-            'serverName': '--server-name-color',
-            'pciAddress': '--pci-address-color',
-            'legend': '--legend-color',
-            'legendTitle': '--legend-title-color',
-            'bayId': '--bay-id-color',
-            'diskSerial': '--disk-serial-color',
-            'diskSize': '--disk-size-color',
-            'diskPool': '--disk-pool-color',
-            'diskIndex': '--disk-index-color',
-            'chassisBgBase': '--chassis-bg-base',
-            'chassisBorder': '--chassis-border',
-            'chassisShadow': '--chassis-shadow',
-            'bayBgBase': '--bay-bg-base',
-            'bayBorder': '--bay-border',
-            'bayTopBorder': '--bay-top-border',
-            'ledAllocatedHealthy': '--led-allocated-healthy',
-            'ledAllocatedOffline': '--led-allocated-offline',
-            'ledError': '--led-error',
-            'ledFaulted': '--led-faulted',
-            'ledResilvering': '--led-resilvering',
-            'ledUnallocated': '--led-unallocated',
-            'ledUnallocError': '--led-unalloc-error',
-            'ledUnallocFault': '--led-unalloc-fault',
-            'ledActivity': '--led-activity'
+    if (value === 'row_major_ltr' || value === 'ltr' || value === 'left_to_right') {
+        return 'row_major_ltr';
+    }
+
+    const legacy = String(legacyValue || '').toLowerCase();
+    if (legacy === 'vertical') {
+        return 'column_major_ttb';
+    }
+    return 'row_major_ltr';
+}
+
+function statusClassForDisk(disk) {
+    // Non-present/empty bays: no class → dark LED (matches old: status !== 'PRESENT' → '')
+    if (!disk || disk.status !== 'PRESENT') return '';
+
+    const state = String(disk.state || '');
+    const isAllocated = Boolean(disk.pool_name && disk.pool_name !== '');
+
+    // Priority 1: Resilvering (white) regardless of allocation
+    if (state === 'RESILVERING') return 'resilvering';
+
+    if (isAllocated) {
+        if (state === 'OFFLINE')   return 'allocated-offline'; // blinks green/gray
+        if (state === 'ONLINE')    return 'allocated-healthy'; // solid green
+        if (state === 'DEGRADED')  return 'error';             // solid orange
+        if (state === 'FAULTED')   return 'faulted';           // solid red
+        if (state === 'UNAVAIL')   return 'faulted';           // solid red
+        if (state === 'REMOVED')   return 'faulted';           // solid red
+    } else {
+        if (state === 'ONLINE' || state === 'UNALLOCATED') return 'unallocated'; // solid purple
+        if (state === 'DEGRADED')  return 'unalloc-error';     // blinks purple/orange
+        if (state === 'FAULTED')   return 'unalloc-fault';     // blinks purple/red
+        if (state === 'UNAVAIL')   return 'unalloc-fault';     // blinks purple/red
+        if (state === 'REMOVED')   return 'unalloc-fault';     // blinks purple/red
+    }
+    return '';
+}
+
+function formatDiskInfo(disk) {
+    if (!disk || disk.status === 'EMPTY') {
+        return {
+            serial: '-',
+            size: '-',
+            pool: '\u00A0',
+            index: '\u00A0'
         };
-        const map = {};
-        Object.entries(colorMap).forEach(([key, cssVar]) => {
-            if (styleConfig.colors[key]) map[cssVar] = styleConfig.colors[key];
-        });
-        applyConfigMap(root, map);
     }
-    
-    // Apply font sizes via mapping
-    if (styleConfig.fontSizes) {
-        const sizeMap = {
-            'legendTitle': '--legend-title-size',
-            'legend': '--legend-size',
-            'serverName': '--server-name-size',
-            'pciAddress': '--pci-address-size',
-            'bayId': '--bay-id-size',
-            'diskSerial': '--disk-serial-size',
-            'diskSize': '--disk-size-size',
-            'diskPool': '--disk-pool-size',
-            'diskIndex': '--disk-index-size'
-        };
-        const map = {};
-        Object.entries(sizeMap).forEach(([key, cssVar]) => {
-            if (styleConfig.fontSizes[key]) map[cssVar] = styleConfig.fontSizes[key];
-        });
-        applyConfigMap(root, map);
-    }
-    
-    console.log('Style config applied from config.json');
+
+    const serialRaw = String(disk.sn || disk.serial || disk.serial_short || disk.dev_name || 'present');
+    const serial = serialRaw.length > 3 ? serialRaw.slice(-3) : serialRaw;
+    const sizeBytes = Number(disk.size_bytes || 0);
+    const size = sizeBytes > 0
+        ? `${(sizeBytes / (1024 ** 4)).toFixed(2)} TB`
+        : '-';
+    const poolName = String(disk.pool_name ?? '').trim();
+    const rawIndex = String(disk.pool_idx ?? '').trim();
+    const normalizedIndex = rawIndex.replace(/^#/, '');
+
+    return {
+        serial,
+        size,
+        pool: poolName || '\u00A0',
+        index: normalizedIndex ? `#${normalizedIndex}` : '\u00A0'
+    };
 }
 
-
-function applyStyleConfig(prefix, cfg) {
-    if (!cfg || typeof cfg !== 'object') return;
-    const root = document.documentElement;
-    const map = {};
-    if (cfg.color) map[`--${prefix}-color`] = cfg.color;
-    if (cfg.font) map[`--${prefix}-font`] = cfg.font;
-    if (cfg.size) map[`--${prefix}-size`] = cfg.size;
-
-    const styles = Array.isArray(cfg.style) ? cfg.style.map(s => String(s).toLowerCase()) : [];
-    const isBold = styles.includes('bold');
-    const isItalic = styles.includes('italic');
-    const isAllCaps = styles.includes('allcaps');
-
-    map[`--${prefix}-weight`] = isBold ? '700' : '400';
-    map[`--${prefix}-style`] = isItalic ? 'italic' : 'normal';
-    map[`--${prefix}-transform`] = isAllCaps ? 'uppercase' : 'none';
-
-    applyConfigMap(root, map);
-}
-
-function applyUIConfig(config) {
-    const ui = config?.ui;
-    if (!ui || typeof ui !== 'object') return;
-    const signature = JSON.stringify(ui);
-    if (signature === lastUIConfigSignature) return;
-    lastUIConfigSignature = signature;
-
-    applyStyleConfig('server-name', ui.server_name);
-    applyStyleConfig('pci-address', ui.pci_address);
-    applyStyleConfig('legend', ui.legend);
-    applyStyleConfig('bay-id', ui.bay_id);
-    applyStyleConfig('disk-serial', ui.disk_serial);
-    applyStyleConfig('disk-size', ui.disk_size);
-    applyStyleConfig('disk-pool', ui.disk_pool);
-    applyStyleConfig('disk-index', ui.disk_index);
-
-    const root = document.documentElement;
-    const map = {};
-    if (ui.chassis) {
-        if (ui.chassis.background_base) map['--chassis-bg-base'] = ui.chassis.background_base;
-        if (ui.chassis.border) map['--chassis-border'] = ui.chassis.border;
-        if (ui.chassis.shadow) map['--chassis-shadow'] = ui.chassis.shadow;
-        if (ui.chassis.header_divider) map['--chassis-header-divider'] = ui.chassis.header_divider;
-    }
-    if (ui.bay) {
-        if (ui.bay.background_base) map['--bay-bg-base'] = ui.bay.background_base;
-        if (ui.bay.border) map['--bay-border'] = ui.bay.border;
-        if (ui.bay.top_border) map['--bay-top-border'] = ui.bay.top_border;
-    }
-    if (ui.legend?.flare) {
-        const flare = ui.legend.flare;
-        if (flare.angle) map['--flare-angle'] = flare.angle;
-        if (flare.offset_x) map['--flare-offset-x'] = flare.offset_x;
-        if (flare.offset_y) map['--flare-offset-y'] = flare.offset_y;
-    }
-    if (ui.legend) {
-        if (ui.legend.title_color) map['--legend-title-color'] = ui.legend.title_color;
-        if (ui.legend.title_size) map['--legend-title-size'] = ui.legend.title_size;
-        if (ui.legend.title_weight) map['--legend-title-weight'] = ui.legend.title_weight;
-    }
-    if (ui.layout) {
-        const rackWidthIn = Number(ui.layout.rack_width_in);
-        const uHeightIn = Number(ui.layout.u_height_in);
-        const bayGapPx = Number(ui.layout.bay_gap_px);
-        if (Number.isFinite(rackWidthIn) && rackWidthIn > 0) map['--rack-width-in'] = String(rackWidthIn);
-        if (Number.isFinite(uHeightIn) && uHeightIn > 0) map['--rack-u-height-in'] = String(uHeightIn);
-        if (Number.isFinite(bayGapPx) && bayGapPx >= 0) map['--bay-gap'] = `${bayGapPx}px`;
-    }
-    if (ui.led_colors) {
-        const led = ui.led_colors;
-        if (led.allocated_healthy) map['--led-allocated-healthy'] = led.allocated_healthy;
-        if (led.allocated_offline) map['--led-allocated-offline'] = led.allocated_offline;
-        if (led.error) map['--led-error'] = led.error;
-        if (led.faulted) map['--led-faulted'] = led.faulted;
-        if (led.resilvering) map['--led-resilvering'] = led.resilvering;
-        if (led.unallocated) map['--led-unallocated'] = led.unallocated;
-        if (led.unalloc_error) map['--led-unalloc-error'] = led.unalloc_error;
-        if (led.unalloc_fault) map['--led-unalloc-fault'] = led.unalloc_fault;
-        if (led.activity) map['--led-activity'] = led.activity;
-    }
-    applyConfigMap(root, map);
-}
-
-function updateAPIWarning(apiStatus) {
-    let warningBar = document.getElementById('api-warning-bar');
-    
-    if (!apiStatus.available) {
-        // Create warning bar if it doesn't exist
-        if (!warningBar) {
-            warningBar = document.createElement('div');
-            warningBar.id = 'api-warning-bar';
-            warningBar.className = 'api-warning-bar';
-            document.body.insertBefore(warningBar, document.body.firstChild);
+function buildOrderIndices(totalSlots, cols, rows, fillOrder) {
+    const indices = [];
+    if (fillOrder === 'column_major_ttb') {
+        for (let col = 0; col < cols; col += 1) {
+            for (let row = 0; row < rows; row += 1) {
+                const index = row * cols + col;
+                if (index < totalSlots) indices.push(index);
+            }
         }
-        
-        // Update warning message
-        warningBar.innerHTML = `
-            <div class="api-warning-content">
-                <span class="api-warning-icon">⚠️</span>
-                <span class="api-warning-text">TrueNAS Scale API has changed or is unavailable - ${apiStatus.error_message}</span>
-                <span class="api-warning-fallback">(Using fallback mode)</span>
-            </div>
-        `;
-        warningBar.style.display = 'flex';
-        
-        // Also change menu bar to red
-        const menuBar = document.getElementById('menu-bar');
-        if (menuBar) {
-            menuBar.classList.add('api-error');
+        return indices;
+    }
+
+    for (let row = 0; row < rows; row += 1) {
+        for (let col = 0; col < cols; col += 1) {
+            const index = row * cols + col;
+            if (index < totalSlots) indices.push(index);
+        }
+    }
+    return indices;
+}
+
+function resolveGrid(chassisData, bayConfig) {
+    const settings = chassisData?.settings || {};
+    const maxBays = clampInt(settings.max_bays || 0, 1, 1, 999);
+    const incomingDisks = Array.isArray(chassisData?.disks) ? chassisData.disks : [];
+    const layout = normalizeLayout(bayConfig.layout);
+
+    const defaultCols = layout === 'horizontal'
+        ? Math.max(1, Math.min(4, maxBays || incomingDisks.length || 1))
+        : Math.max(1, Math.min(16, maxBays || incomingDisks.length || 1));
+
+    const configuredCols = bayConfig.grid_cols ?? bayConfig.bays_per_row;
+    const configuredRows = bayConfig.grid_rows ?? chassisData?.settings?.rows;
+    let cols = clampInt(configuredCols, defaultCols, 1, 64);
+    let rows = clampInt(configuredRows, Math.ceil(maxBays / cols), 1, 64);
+
+    const targetSlots = Math.max(maxBays, incomingDisks.length, cols * rows);
+    if (cols * rows < targetSlots) {
+        rows = Math.ceil(targetSlots / cols);
+    }
+
+    return {
+        maxBays,
+        layout,
+        cols,
+        rows,
+        targetSlots: Math.max(targetSlots, 1)
+    };
+}
+
+function computeBayDimensions({
+    layout,
+    cols,
+    rows,
+    gapPx,
+    bodyWidthPx,
+    bodyHeightPx,
+    longToShortRatio
+}) {
+    const safeCols = Math.max(1, cols);
+    const safeRows = Math.max(1, rows);
+    const safeGap = Math.max(0, gapPx);
+    const safeBodyWidth = Math.max(120, bodyWidthPx);
+    const safeBodyHeight = Math.max(40, bodyHeightPx);
+    const ratio = Number.isFinite(longToShortRatio) && longToShortRatio > 1 ? longToShortRatio : 3.5;
+
+    let bayWidth;
+    let bayHeight;
+
+    if (layout === 'vertical') {
+        // Long axis is vertical: height fills available space, width = height / ratio
+        bayHeight = (safeBodyHeight - (safeRows - 1) * safeGap) / safeRows;
+        bayHeight *= 1.12;
+        const ratioWidth = bayHeight / ratio;
+        bayWidth = ratioWidth;
+        // For multi-column vertical arrays, scale width toward available column width
+        // so vertical caddies visually match horizontal short-edge sizing better.
+        const maxWidthPerCol = (safeBodyWidth - (safeCols - 1) * safeGap) / safeCols;
+        if (safeCols > 1) {
+            const scaledWidth = Math.max(ratioWidth, maxWidthPerCol * 0.8);
+            bayWidth = Math.min(maxWidthPerCol, scaledWidth);
+        } else if (bayWidth > maxWidthPerCol) {
+            bayWidth = maxWidthPerCol;
         }
     } else {
-        // Remove warning if API is back online
-        if (warningBar) {
-            warningBar.style.display = 'none';
+        bayWidth = (safeBodyWidth - (safeCols - 1) * safeGap) / safeCols;
+        bayHeight = bayWidth / ratio;
+    }
+
+    return {
+        bayWidthPx: Math.max(20, bayWidth),
+        bayHeightPx: Math.max(24, bayHeight)
+    };
+}
+
+function buildEnclosureModel(topologyKey, chassisData, data, layoutContext = {}) {
+    const settings = chassisData?.settings || {};
+    const pciRaw = settings.pci_raw || topologyKey;
+    const key = normalizeTopologyKey(topologyKey, pciRaw);
+    const deviceConfig = data?.config?.devices?.[key] || data?.config?.devices?.[pciRaw] || {};
+    const bayConfig = deviceConfig.bay || {};
+    const chassisConfig = deviceConfig.chassis || {};
+    const grid = resolveGrid(chassisData, bayConfig);
+    const fillOrder = normalizeFillOrder(bayConfig.fill_order, bayConfig.drive_sequence);
+    const orderIndices = buildOrderIndices(grid.targetSlots, grid.cols, grid.rows, fillOrder);
+    const uiLayout = data?.config?.ui?.layout || {};
+    const bayGapDefault = clampInt(uiLayout.bay_gap_px, GEOMETRY_DEFAULTS.BAY_GAP_PX, 1, 64);
+    const bayGap = clampInt(bayConfig.gap_px, bayGapDefault, 1, 64);
+    const chassisUnits = clampInt(chassisConfig.rack_units || 2, 2, 1, 12);
+    const configuredWidthPx = clampInt(chassisConfig.width_px, 620, 320, 2600);
+    const viewportWidthPx = clampInt(layoutContext.preferredWidthPx, configuredWidthPx, 320, 2600);
+    const chassisWidthPx = viewportWidthPx;
+    const rackWidthIn = Number(uiLayout.rack_width_in);
+    const uHeightIn = Number(uiLayout.u_height_in);
+    const safeRackWidthIn = Number.isFinite(rackWidthIn) && rackWidthIn > 0 ? rackWidthIn : GEOMETRY_DEFAULTS.RACK_WIDTH_MM / 25.4;
+    const safeUHeightIn = Number.isFinite(uHeightIn) && uHeightIn > 0 ? uHeightIn : GEOMETRY_DEFAULTS.RACK_UNIT_HEIGHT_MM / 25.4;
+
+    // 19-inch rack width model: same rack_units means same body height.
+    const bodyHeightPx = Math.max(
+        40,
+        (chassisWidthPx * chassisUnits * safeUHeightIn) / safeRackWidthIn
+    );
+    const bodyWidthPx = Math.max(120, chassisWidthPx - 32);
+    const ratio = GEOMETRY_DEFAULTS.HDD_LONG_MM / GEOMETRY_DEFAULTS.HDD_SHORT_MM;
+    const bayDims = computeBayDimensions({
+        layout: grid.layout,
+        cols: grid.cols,
+        rows: grid.rows,
+        gapPx: bayGap,
+        bodyWidthPx,
+        bodyHeightPx,
+        longToShortRatio: ratio
+    });
+
+    const disks = Array.isArray(chassisData?.disks) ? chassisData.disks.slice(0, grid.targetSlots) : [];
+    while (disks.length < grid.targetSlots) disks.push({ status: 'EMPTY' });
+
+    const disksByVisualIndex = new Array(grid.targetSlots).fill({ status: 'EMPTY' });
+    const latchNumberByVisualIndex = new Array(grid.targetSlots).fill(0);
+
+    orderIndices.forEach((visualIndex, logicalIndex) => {
+        disksByVisualIndex[visualIndex] = disks[logicalIndex] || { status: 'EMPTY' };
+        latchNumberByVisualIndex[visualIndex] = logicalIndex + 1;
+    });
+
+    return {
+        topologyKey,
+        key,
+        pciRaw,
+        arrayAddress: settings.array_address || settings.array_id || '',
+        hasBackplane: Boolean(settings.has_backplane),
+        layout: grid.layout,
+        fillOrder,
+        cols: grid.cols,
+        rows: grid.rows,
+        targetSlots: grid.targetSlots,
+        bayGap,
+        chassisUnits,
+        chassisWidthPx,
+        bodyHeightPx,
+        bayWidthPx: bayDims.bayWidthPx,
+        bayHeightPx: bayDims.bayHeightPx,
+        disksByVisualIndex,
+        latchNumberByVisualIndex
+    };
+}
+
+function applyUiVariables(config, hostname) {
+    const rootStyle = document.documentElement.style;
+    const ui = config?.ui || {};
+    const leds = config?.ui?.led_colors;
+
+    applyConfigMap(rootStyle, {
+        '--font-default': config?.fonts?.default,
+        '--font-monospace': config?.fonts?.monospace,
+        '--page-bg-color': ui.environment?.page_bg_color,
+        '--body-text-color': ui.environment?.body_text_color ?? ui.chassis?.font_color,
+        '--rebuild-note-border': ui.environment?.rebuild_border,
+        '--rebuild-note-bg': ui.environment?.rebuild_bg,
+        '--rebuild-note-color': ui.environment?.rebuild_color,
+        '--dashboard-max-width': ui.layout?.dashboard_max_width,
+        '--dashboard-gap': ui.layout?.dashboard_gap,
+        '--dashboard-top-gap': ui.layout?.dashboard_top_gap,
+        '--chassis-bg-base': ui.chassis?.background_base,
+        '--chassis-card-bg': ui.chassis?.background_base,
+        '--chassis-body-bg': ui.chassis?.background_base,
+        '--chassis-card-border': ui.chassis?.border,
+        '--chassis-border': ui.chassis?.border,
+        '--chassis-shadow': ui.chassis?.shadow,
+        '--chassis-header-divider': ui.chassis?.header_divider,
+        '--chassis-font-color': ui.chassis?.font_color,
+        '--chassis-meta-color': ui.chassis?.meta_color,
+        '--chassis-subtitle-color': ui.chassis?.subtitle_color,
+        '--legend-chassis-stripe': ui.chassis?.stripe,
+        '--legend-chassis-gradient-start': ui.chassis?.gradient_start,
+        '--legend-chassis-gradient-mid-a': ui.chassis?.gradient_mid_a,
+        '--legend-chassis-gradient-mid-b': ui.chassis?.gradient_mid_b,
+        '--legend-chassis-gradient-end': ui.chassis?.gradient_end,
+        '--activity-chassis-stripe': ui.chassis?.stripe,
+        '--activity-chassis-gradient-start': ui.chassis?.gradient_start,
+        '--activity-chassis-gradient-mid-a': ui.chassis?.gradient_mid_a,
+        '--activity-chassis-gradient-mid-b': ui.chassis?.gradient_mid_b,
+        '--activity-chassis-gradient-end': ui.chassis?.gradient_end,
+        '--bay-bg-base': ui.bay?.background_base,
+        '--bay-bg-gradient-start': ui.bay?.bg_gradient_start ?? ui.bay?.background_base,
+        '--bay-bg-gradient-end': ui.bay?.bg_gradient_end,
+        '--bay-border': ui.bay?.border,
+        '--bay-top-border': ui.bay?.top_border,
+        '--bay-text-color': ui.bay?.text_color,
+        '--bay-empty-text-color': ui.bay?.empty_text_color,
+        '--bay-led-panel-bg': ui.bay?.led_panel_bg,
+        '--bay-grill-hole-color': ui.bay?.grill_hole_color,
+        '--latch-gradient-start': ui.latch?.gradient_start,
+        '--latch-gradient-mid': ui.latch?.gradient_mid,
+        '--latch-gradient-end': ui.latch?.gradient_end,
+        '--latch-border-color': ui.latch?.border_color,
+        '--led-dark-core': ui.led_shell?.dark_core,
+        '--led-dark-highlight': ui.led_shell?.dark_highlight,
+        '--led-shell-border': ui.led_shell?.border,
+        '--led-shell-shadow': ui.led_shell?.shadow,
+        '--activity-card-bg': ui.activity?.card_bg,
+        '--activity-card-border-top': ui.activity?.card_border_top,
+        '--activity-card-border-left': ui.activity?.card_border_left,
+        '--activity-card-border-right': ui.activity?.card_border_right,
+        '--activity-card-border-bottom': ui.activity?.card_border_bottom,
+        '--activity-card-shadow-inner': ui.activity?.card_shadow_inner,
+        '--activity-card-shadow-outer': ui.activity?.card_shadow_outer,
+        '--activity-card-glare': ui.activity?.card_glare,
+        '--activity-title-color': ui.activity?.title_color,
+        '--activity-legend-color': ui.activity?.legend_color,
+        '--pool-faulted-gradient-start': ui.pool?.faulted_gradient_start,
+        '--pool-faulted-gradient-end': ui.pool?.faulted_gradient_end,
+        '--pool-faulted-border': ui.pool?.faulted_border,
+        '--pool-faulted-shadow': ui.pool?.faulted_shadow,
+        '--pool-degraded-bg': ui.pool?.degraded_bg,
+        '--pool-degraded-border': ui.pool?.degraded_border,
+        '--pool-state-text-color': ui.pool?.state_text_color,
+        '--pool-state-text-bg': ui.pool?.state_text_bg,
+        '--pool-state-text-shadow': ui.pool?.state_text_shadow
+    });
+
+    applyStyleConfig(rootStyle, 'server-name', ui.server_name);
+    applyStyleConfig(rootStyle, 'pci-address', ui.pci_address);
+    applyStyleConfig(rootStyle, 'legend', ui.legend);
+    applyStyleConfig(rootStyle, 'enclosure-label', ui.enclosure_label);
+    applyStyleConfig(rootStyle, 'bay-id', ui.bay_id);
+    applyStyleConfig(rootStyle, 'disk-serial', ui.disk_serial);
+    applyStyleConfig(rootStyle, 'disk-size', ui.disk_size);
+    applyStyleConfig(rootStyle, 'disk-pool', ui.disk_pool);
+    applyStyleConfig(rootStyle, 'disk-index', ui.disk_index);
+
+    applyConfigMap(rootStyle, {
+        '--legend-title-color': ui.legend?.title_color,
+        '--legend-title-size': ui.legend?.title_size,
+        '--legend-title-weight': ui.legend?.title_weight,
+        '--legend-chassis-bg': ui.chassis?.background_base,
+        '--legend-chassis-border': ui.chassis?.border,
+        '--legend-chassis-shadow': ui.chassis?.shadow,
+        '--activity-chassis-bg': ui.chassis?.background_base,
+        '--activity-chassis-border': ui.chassis?.border,
+        '--activity-chassis-shadow': ui.chassis?.shadow,
+        '--activity-header-color': ui.chassis?.font_color,
+        '--activity-subtext-color': ui.pci_address?.color
+    });
+
+    const enclosureLabelScale = Number(ui.enclosure_label?.size_scale);
+    if (Number.isFinite(enclosureLabelScale) && enclosureLabelScale > 0) {
+        rootStyle.setProperty('--enclosure-label-scale', String(enclosureLabelScale / 100));
+    }
+
+    if (leds && typeof leds === 'object') {
+        const mapping = {
+            allocated_healthy: '--led-allocated-healthy',
+            allocated_offline: '--led-allocated-offline',
+            error: '--led-error',
+            faulted: '--led-faulted',
+            resilvering: '--led-resilvering',
+            unallocated: '--led-unallocated',
+            unalloc_error: '--led-unalloc-error',
+            unalloc_fault: '--led-unalloc-fault',
+            activity: '--led-activity'
+        };
+        applyConfigMap(rootStyle, Object.fromEntries(
+            Object.entries(mapping).map(([key, cssVar]) => [cssVar, leds[key]])
+        ));
+    }
+
+    const bay = config?.ui?.bay;
+    if (bay) {
+        if (bay.grill_size) {
+            rootStyle.setProperty('--bay-grill-size', String(bay.grill_size));
+        } else if (bay.grill_size_scale !== undefined) {
+            const safeScale = Math.min(100, Math.max(0, Number(bay.grill_size_scale) || 50));
+            const grillSize = 10 + (safeScale / 100) * 10;
+            rootStyle.setProperty('--bay-grill-size', `${grillSize}px`);
         }
-        const menuBar = document.getElementById('menu-bar');
-        if (menuBar) {
-            menuBar.classList.remove('api-error');
-        }
+    }
+
+    const chart = config?.chart || {};
+    const chartColors = chart.colors || {};
+    const chartDimensions = chart.dimensions || {};
+
+    if (chartColors.readColor) {
+        rootStyle.setProperty('--chart-read-color', String(chartColors.readColor));
+        rootStyle.setProperty('--chart-read-dot-color', String(chartColors.readDotColor || chartColors.readColor));
+    }
+    if (chartColors.writeColor) {
+        rootStyle.setProperty('--chart-write-color', String(chartColors.writeColor));
+        rootStyle.setProperty('--chart-write-dot-color', String(chartColors.writeDotColor || chartColors.writeColor));
+    }
+    if (chartColors.readGradientTop) rootStyle.setProperty('--chart-read-gradient-top', String(chartColors.readGradientTop));
+    if (chartColors.readGradientBottom) rootStyle.setProperty('--chart-read-gradient-bottom', String(chartColors.readGradientBottom));
+    if (chartColors.writeGradientTop) rootStyle.setProperty('--chart-write-gradient-top', String(chartColors.writeGradientTop));
+    if (chartColors.writeGradientBottom) rootStyle.setProperty('--chart-write-gradient-bottom', String(chartColors.writeGradientBottom));
+    if (chartColors.yAxisLabelColor) rootStyle.setProperty('--chart-y-axis-label-color', String(chartColors.yAxisLabelColor));
+    if (chartColors.yAxisGridColor) rootStyle.setProperty('--chart-y-axis-grid-color', String(chartColors.yAxisGridColor));
+
+    if (chartDimensions.chartHeight) rootStyle.setProperty('--chart-height', String(chartDimensions.chartHeight));
+    if (chartDimensions.cardWidth) rootStyle.setProperty('--chart-card-width', String(chartDimensions.cardWidth));
+    if (chartDimensions.containerGap) rootStyle.setProperty('--chart-container-gap', String(chartDimensions.containerGap));
+    if (chartDimensions.chassisPadding) rootStyle.setProperty('--chart-chassis-padding', String(chartDimensions.chassisPadding));
+    if (chartDimensions.lineTension !== undefined) rootStyle.setProperty('--chart-line-tension', String(chartDimensions.lineTension));
+    if (chartDimensions.lineWidth !== undefined) rootStyle.setProperty('--chart-line-width', String(chartDimensions.lineWidth));
+    if (chartDimensions.cardMarginRight) rootStyle.setProperty('--chart-card-margin-right', String(chartDimensions.cardMarginRight));
+
+    const activityHostname = document.getElementById('activity-hostname');
+    if (activityHostname) {
+        activityHostname.textContent = hostname || 'Pool Activity';
+    }
+}
+
+function bayMarkup(disk, latchNumber, layout) {
+    const info = formatDiskInfo(disk);
+    const emptyClass = !disk || disk.status === 'EMPTY' ? 'empty' : 'present';
+    const statusClass = statusClassForDisk(disk);
+    const activityClass = disk && disk.active === true ? 'active' : '';
+
+    return `
+        <div class="bay-shell bay-${layout} ${emptyClass}">
+            <div class="bay-content">
+                <div class="led-panel led-panel-${layout}">
+                    <span class="led status-led ${statusClass}"></span>
+                    <span class="led activity-led ${activityClass}"></span>
+                </div>
+                <div class="info-panel${layout === 'vertical' ? ' info-panel-vertical' : ''}">
+                    <div class="info-line">
+                        <span class="info-serial">${info.serial}</span>
+                        <span class="info-size">${info.size}</span>
+                    </div>
+                    <div class="info-line">
+                        <span class="info-pool">${info.pool}</span>
+                        <span class="info-idx">${info.index}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="latch latch-${layout}"><span class="latch-num">${latchNumber}</span></div>
+        </div>
+    `;
+}
+
+function enclosureMarkup(model, hostname) {
+    const bays = model.disksByVisualIndex.map((disk, index) => bayMarkup(
+        disk,
+        model.latchNumberByVisualIndex[index] || index + 1,
+        model.layout
+    )).join('');
+
+    const enclosureId = model.arrayAddress ? `${model.pciRaw} / ${model.arrayAddress}` : model.pciRaw;
+    const caption = model.hasBackplane ? 'Backplane Enclosure' : 'Direct-Attach Enclosure';
+
+    return `
+        <section class="chassis-card" style="--bay-gap:${model.bayGap}px; --chassis-width:${model.chassisWidthPx}px; --chassis-body-height:${model.bodyHeightPx}px; --bay-width:${model.bayWidthPx}px; --bay-height:${model.bayHeightPx}px;">
+            <header class="chassis-head">
+                <div class="title-group">
+                    <h2 class="chassis-title">${hostname}<span class="chassis-caption">${caption}</span></h2>
+                    <p class="chassis-subtitle">${enclosureId}</p>
+                </div>
+            </header>
+            <div class="chassis-body">
+                <div class="bays-grid" style="grid-template-columns: repeat(${model.cols}, var(--bay-width)); grid-template-rows: repeat(${model.rows}, var(--bay-height));">
+                    ${bays}
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function render(data) {
+    const canvas = document.getElementById('canvas');
+    if (!canvas) return;
+
+    const topology = data?.topology || {};
+    const hostname = data?.hostname || 'Storage';
+    applyUiVariables(data?.config, hostname);
+
+    const chassisEntries = Object.entries(topology);
+    const chassisCount = Math.max(1, chassisEntries.length);
+    const canvasStyle = window.getComputedStyle(canvas);
+    const gapPx = parseFloat(canvasStyle.columnGap || canvasStyle.gap || '16') || 16;
+    const availableWidthPx = Math.max(320, canvas.clientWidth || Math.floor(window.innerWidth * 0.98));
+    const perChassisWidthPx = Math.max(320, Math.floor((availableWidthPx - (gapPx * (chassisCount - 1))) / chassisCount));
+
+    const models = chassisEntries.map(([topologyKey, chassisData]) =>
+        buildEnclosureModel(topologyKey, chassisData, data, { preferredWidthPx: perChassisWidthPx })
+    );
+
+    if (models.length === 0) {
+        canvas.innerHTML = '<div class="rebuild-note">No enclosure data returned from /data.</div>';
+        return;
+    }
+
+    canvas.innerHTML = models.map(model => enclosureMarkup(model, hostname)).join('');
+
+    if (!activityMonitor && window.ActivityMonitor) {
+        activityMonitor = new window.ActivityMonitor();
+        activityMonitor.initialize();
+    } else if (activityMonitor && typeof activityMonitor.reflowLayout === 'function') {
+        activityMonitor.reflowLayout();
     }
 }
 
 async function update() {
     try {
-        // Ensure flare variables are set with defaults immediately
-        const root = document.documentElement;
-        if (!root.style.getPropertyValue('--flare-opacity')) {
-            const flareDefaults = {
-                '--flare-opacity': '0.225',
-                '--flare-spread': '20%',
-                '--flare-offset-x': '50%',
-                '--flare-offset-y': '50%',
-                '--flare-angle': '45deg',
-                '--flare-size': '1'
-            };
-            applyConfigMap(root, flareDefaults);
-        }
-        
-        // Load style configuration from config.json with cache busting
-        try {
-            const styleRes = await fetch('/style-config?' + Date.now());
-            if (styleRes.ok) {
-                const styleConfig = await styleRes.json();
-                applyStyleConfigFromJSON(styleConfig);
-            } else {
-                console.warn('Failed to fetch style-config:', styleRes.status);
-            }
-        } catch (styleErr) {
-            console.warn('Style config fetch error:', styleErr);
-        }
-        
-        const res = await fetch('/data?' + Date.now());
-        const data = await res.json();
-        
-        // Check API status and show warning if API has changed/failed
-        updateAPIWarning(data.api_status || { available: true, error_message: "" });
-        
-        // Set UI debug flag from config (so debugLog can be gated)
-        try { window.UI_DEBUG = !!(data.config && data.config.ui && data.config.ui.debug); } catch (e) { window.UI_DEBUG = false; }
+        const response = await fetch('/data?t=' + Date.now());
+        const data = await response.json();
+        render(data);
+    } catch (error) {
         const canvas = document.getElementById('canvas');
-
-        applyUIConfig(data.config);
-        
-        requestAnimationFrame(() => {
-            const effectiveConfig = (menuSystem && menuSystem.isDirty)
-                ? menuSystem.currentConfig
-                : data.config;
-            const allHeaderHeights = Array.from(document.querySelectorAll('.chassis-header'))
-                .map(el => el.getBoundingClientRect().height)
-                .filter(h => Number.isFinite(h) && h > 0);
-            const sharedHeaderHeight = allHeaderHeights.length > 0 ? Math.max(...allHeaderHeights) : 0;
-
-            Object.keys(data.topology).forEach(pci => {
-                const chassisData = data.topology[pci];
-                let unit = unitsMap.get(pci) || document.getElementById(`unit-${pci}`);
-
-                if (!unit || forceRedraw) {
-                    if (window.UI_DEBUG) console.log(`${forceRedraw ? 'Force redraw' : 'First draw'} for unit-${pci}`);
-                    if (unit) {
-                        if (window.UI_DEBUG) console.log(`Removing existing unit-${pci}`);
-                        unit.remove();
-                        unitsMap.delete(pci);
-                        slotContainersMap.delete(pci);
-                    }
-                    unit = document.createElement('div');
-                    unit.id = `unit-${pci}`;
-                    unit.className = 'storage-unit';
-                    unit.innerHTML = createChassisHTML(pci, data);
-                    canvas.appendChild(unit);
-                    unitsMap.set(pci, unit);
-                    // Apply device-specific per-unit CSS overrides immediately so new elements inherit them
-                    try {
-                        const pciRawLocal = chassisData.settings.pci_raw || pci;
-                        const deviceKeyLocal = normalizeTopologyDeviceKey(pci, pciRawLocal);
-                        const deviceCfgLocal = effectiveConfig?.devices?.[deviceKeyLocal] || effectiveConfig?.devices?.[pciRawLocal] || {};
-                        const unitMap = {};
-                        // Bay height (per-device override)
-                        const bh = deviceCfgLocal.bay?.height || 35;
-                        unitMap['--bay-height'] = `${bh}vh`;
-                        // Apply any bay background override if present
-                        if (deviceCfgLocal.bay?.background_base) unitMap['--bay-bg-base'] = deviceCfgLocal.bay.background_base;
-                        applyConfigMap(unit, unitMap);
-                        // If slots container exists immediately, set its grid rows
-                        const sc = document.getElementById(`slots-${pci}`);
-                        if (sc) sc.style.gridAutoRows = 'auto';
-                    } catch (e) { /* non-fatal */ }
-                    if (window.UI_DEBUG) console.log(`Created new unit-${pci}`);
-                }
-
-                let slotContainer = slotContainersMap.get(pci) || document.getElementById(`slots-${pci}`);
-                if (!slotContainer && unit) {
-                    slotContainer = document.getElementById(`slots-${pci}`);
-                    if (slotContainer) slotContainersMap.set(pci, slotContainer);
-                }
-                const maxBays = chassisData.settings.max_bays;
-                
-                // Get device-specific bay config using per-chassis key first, then legacy pci_raw key.
-                const pciRaw = chassisData.settings.pci_raw || pci;
-                const deviceKey = normalizeTopologyDeviceKey(pci, pciRaw);
-                const deviceConfig = effectiveConfig?.devices?.[deviceKey] || effectiveConfig?.devices?.[pciRaw] || {};
-                const bayHeight = deviceConfig.bay?.height || 35;
-                const bayLayout = String(deviceConfig.bay?.layout || 'vertical').toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
-                const driveSequence = String(deviceConfig.bay?.drive_sequence || bayLayout).toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
-                const layoutSettings = resolveLayoutSettings(effectiveConfig, deviceConfig);
-
-                if (unit) {
-                    const hostScaleRaw = Number(deviceConfig?.chassis?.hostname_size_scale ?? 100);
-                    const idScaleRaw = Number(deviceConfig?.chassis?.device_id_size_scale ?? 100);
-                    const hostScale = Number.isFinite(hostScaleRaw) ? Math.min(200, Math.max(50, hostScaleRaw)) / 100 : 1;
-                    const idScale = Number.isFinite(idScaleRaw) ? Math.min(200, Math.max(50, idScaleRaw)) / 100 : 1;
-                    unit.style.setProperty('--server-name-scale', `${hostScale}`);
-                    unit.style.setProperty('--pci-address-scale', `${idScale}`);
-                }
-
-                // Layout policy:
-                // - Vertical orientation: fit up to 16 drives/row in chassis width.
-                // - Horizontal orientation: fixed 4 drives/row.
-                const baysPerRow = bayLayout === 'horizontal'
-                    ? Math.max(1, Math.min(4, maxBays))
-                    : Math.max(1, Math.min(16, maxBays));
-                const rows = Math.max(1, Math.ceil(maxBays / baysPerRow));
-                
-                // Apply bay height only if not in preview mode (menuSystem not dirty)
-                // This prevents overwriting live preview changes every 100ms
-                if (!menuSystem || !menuSystem.isDirty) {
-                    const storageUnit = unitsMap.get(pci) || document.getElementById(`unit-${pci}`);
-                    if (storageUnit) {
-                        const desired = `${bayHeight}vh`;
-                        const current = storageUnit.style.getPropertyValue('--bay-height');
-                        if (current !== desired) applyConfigMap(storageUnit, {'--bay-height': desired});
-                    }
-                    if (slotContainer) {
-                        if (slotContainer.style.gridAutoRows !== 'auto') slotContainer.style.gridAutoRows = 'auto';
-                    }
-                }
-                
-                // Set grid layout, bay orientation, and drive sequencing.
-                if (slotContainer) {
-                    slotContainer.style.gridTemplateColumns = `repeat(${baysPerRow}, minmax(0, 1fr))`;
-                    slotContainer.style.gridAutoFlow = driveSequence === 'vertical' ? 'column' : 'row';
-                    slotContainer.style.gridTemplateRows = driveSequence === 'vertical' ? `repeat(${rows}, auto)` : '';
-
-                    const storageUnit = unitsMap.get(pci) || document.getElementById(`unit-${pci}`);
-                    applyPhysicalLayout({
-                        storageUnit,
-                        slotContainer,
-                        baysPerRow,
-                        rows,
-                        maxBays,
-                        bayLayout,
-                        settings: {
-                            ...layoutSettings,
-                            headerHeightPx: Math.max(layoutSettings.headerHeightPx || 0, sharedHeaderHeight)
-                        }
-                    });
-                    slotContainer.dataset.bayLayout = bayLayout;
-                    slotContainer.dataset.driveSequence = driveSequence;
-                }
-
-                const warning = document.getElementById(`capacity-warning-${pci}`);
-                if (warning) {
-                    warning.style.display = chassisData.settings.capacity_unknown ? 'block' : 'none';
-                }
-
-                // Pad disks array with empty slots so full computed grid renders.
-                const targetCapacity = Math.max(rows * baysPerRow, maxBays);
-                while (chassisData.disks.length < targetCapacity) {
-                    chassisData.disks.push({ status: 'EMPTY' });
-                }
-
-                chassisData.disks.forEach((disk, idx) => {
-                    let el = document.getElementById(`disk-${pci}-${idx}`);
-                    if (!el) {
-                        const slot = document.createElement('div');
-                        slot.className = 'bay-slot';
-                        el = document.createElement('div'); 
-                        el.className = 'caddy';
-                        el.id = `disk-${pci}-${idx}`;
-                        el.innerHTML = createBayHTML(idx);
-                        slot.appendChild(el);
-                        if (slotContainer) slotContainer.appendChild(slot);
-                    }
-                    
-                    const info = getDiskData(disk);
-                    const statusLed = el.querySelector('.status-led');
-                    if (statusLed) setClassIfChanged(statusLed, `led status-led ${getLEDClass(disk)}`);
-                    const activityLed = el.querySelector('.activity-led');
-                    if (activityLed) activityLed.classList.toggle('active', disk.active === true);
-
-                    const cells = {
-                        '.sn-cell': info.sn,
-                        '.size-cell': info.size,
-                        '.pool-cell': info.pool,
-                        '.idx-cell': info.idx
-                    };
-
-                    Object.entries(cells).forEach(([selector, val]) => {
-                        const cell = el.querySelector(selector);
-                        if (!cell) return;
-                        if (!val || val === '&nbsp;' || (typeof val === 'string' && val.includes('&nbsp;'))) {
-                            updateTextIfChanged(cell, '\u00A0');
-                        } else {
-                            updateTextIfChanged(cell, val);
-                        }
-                    });
-                });
-            });
-            // Initialize menu system on first update (after DOM elements were created)
-            if (!menuSystem) {
-                menuSystem = new MenuSystem(data.topology, data.config);
-            } else if (forceRedraw) {
-                // After redraw, reapply CSS variables from menu system
-                console.log('Reapplying CSS variables after redraw');
-                menuSystem.applyChangesToUI();
-            }
-
-            // Initialize activity monitor on first update (after DOM available)
-            if (!activityMonitor && window.ActivityMonitor) {
-                activityMonitor = new window.ActivityMonitor();
-                activityMonitor.initialize();
-            }
-        });
-        
-        // Reset force redraw flag
-        if (forceRedraw) {
-            console.log('Resetting forceRedraw flag to false');
+        if (canvas) {
+            canvas.innerHTML = '<div class="rebuild-note">Unable to fetch /data while in rebuild mode.</div>';
         }
-        forceRedraw = false;
-    } catch (e) { console.error("Update failed", e); }
+    }
 }
 
-setInterval(update, 100); 
 update();
+setInterval(update, 2000);

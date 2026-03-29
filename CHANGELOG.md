@@ -1,5 +1,28 @@
 # Storage Dashboard - Change Log
 
+## Version 23.0:
+* **Chassis Display Logic Rebuild (Primary Release Focus)**
+    * Rebuilt chassis and bay rendering around a physical 19-inch rack model so bay proportions stay correct while scaling.
+    * Refactored enclosure model generation to support per-chassis layout context and viewport-aware sizing.
+    * Reworked width allocation so side-by-side chassis are computed from available dashboard width and inter-chassis gap.
+    * Updated chassis card sizing behavior to prevent unintended wrapping and preserve inline two-chassis layouts.
+* **Temporary Menu System Removal**
+    * Removed legacy menu system from active runtime to stabilize the rebuilt dashboard surface.
+    * Removed menu stylesheet/script loading from the live page while preserving legacy menu files as `.old` references.
+    * Established a clean baseline for a future menu rewrite without legacy coupling to render/layout paths.
+* **Config-Driven Styling Consolidation**
+    * Expanded `config.json` to centralize dashboard colors, typography, shell styling, activity card styling, and layout variables.
+    * Updated runtime CSS-variable application to map the expanded UI/chart style schema.
+    * Aligned `service.py` default config rebuild payload with the current config schema to avoid style drift.
+* **Header and Information Layout Updates**
+    * Updated hostname presentation to small-caps styling and moved enclosure type label inline with title.
+    * Removed obsolete header metadata labels from the live chassis header output.
+    * Tuned PCI/device text sizing defaults for denser, cleaner bay-face readability.
+* **Activity Monitor Integration and Theming**
+    * Restored activity monitor bootstrap lifecycle after render and synchronized it with dashboard reflow.
+    * Migrated activity monitor styling to the shared CSS-variable theme model for config-level control.
+    * Standardized chart color/dimension variable wiring with runtime updates.
+
 ## Version 22.2:
 * **Physical Bay Geometry Refactor**
     * Introduced shared geometry engine for chassis and bay sizing in `ui/layoutGeometry.js`

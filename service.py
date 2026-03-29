@@ -807,21 +807,28 @@ DEFAULT_CONFIG = {
     },
     "__REMARK_UI": "Dashboard UI configuration. All values are applied live without restart.\nUse style arrays to combine: [\"bold\", \"italic\", \"allcaps\"]",
     "ui": {
-        "__REMARK_SERVER_NAME": "Server Name display (top-left).",
+        "__REMARK_SERVER_NAME": "Server name display (top-left of each chassis).",
         "server_name": {
             "color": "#ffffff",
             "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
             "size": "2.8rem",
-            "style": ["bold", "allcaps"]
+            "style": ["bold", "smallcaps"]
         },
-        "__REMARK_PCI_ADDRESS": "PCI address line under server name.",
+        "__REMARK_ENCLOSURE_LABEL": "Inline Backplane/Direct-Attach label shown beside hostname.",
+        "enclosure_label": {
+            "color": "#ffffff",
+            "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+            "size_scale": 40,
+            "style": ["allcaps"]
+        },
+        "__REMARK_PCI_ADDRESS": "PCI / enclosure identifier line under server name.",
         "pci_address": {
             "color": "#666666",
             "font": "Courier New, monospace",
-            "size": "1.1rem",
+            "size": "0.66rem",
             "style": ["bold"]
         },
-        "__REMARK_LEGEND": "Legend label box in the header.",
+        "__REMARK_LEGEND": "Legend chassis typography.",
         "legend": {
             "title_color": "rgba(255, 255, 255, 0.9)",
             "title_size": "1.25rem",
@@ -829,14 +836,9 @@ DEFAULT_CONFIG = {
             "item_color": "#cccccc",
             "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
             "size": "0.75rem",
-            "style": ["bold", "allcaps"],
-            "flare": {
-                "angle": "30deg",
-                "offset_x": "-50%",
-                "offset_y": "-50%"
-            }
+            "style": ["bold", "allcaps"]
         },
-        "__REMARK_BAY_ID": "Bay label (e.g., BAY 1).",
+        "__REMARK_BAY_ID": "Latch number styling.",
         "bay_id": {
             "color": "#ffaa00",
             "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
@@ -864,25 +866,79 @@ DEFAULT_CONFIG = {
             "size": "1.1vw",
             "style": ["bold"]
         },
-        "__REMARK_DISK_INDEX": "Pool index text (e.g., #2).",
+        "__REMARK_DISK_INDEX": "Pool index text.",
         "disk_index": {
             "color": "#00ffff",
             "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
             "size": "1.1vw",
             "style": ["bold"]
         },
-        "__REMARK_CHASSIS": "Chassis enclosure body styling.",
+        "__REMARK_CHASSIS": "Chassis/legend/activity shell styling.",
         "chassis": {
             "background_base": "#1a1a1a",
             "border": "#333333",
             "shadow": "rgba(0,0,0,0.8)",
-            "header_divider": "rgba(255,255,255,0.1)"
+            "header_divider": "rgba(255,255,255,0.1)",
+            "font_color": "#ffffff",
+            "meta_color": "#98a7bd",
+            "subtitle_color": "#7f8b9b",
+            "stripe": "rgba(255, 255, 255, 0.03)",
+            "gradient_start": "#111111",
+            "gradient_mid_a": "#222222",
+            "gradient_mid_b": "#333333",
+            "gradient_end": "#111111"
         },
-        "__REMARK_BAY": "Drive bay card styling.",
+        "__REMARK_BAY": "Drive bay shell styling.",
         "bay": {
             "background_base": "#121212",
             "border": "#333333",
-            "top_border": "#444444"
+            "top_border": "#444444",
+            "grill_size_scale": 50,
+            "text_color": "#ced9ea",
+            "empty_text_color": "#6e7d91",
+            "led_panel_bg": "rgba(0, 0, 0, 0.2)",
+            "grill_hole_color": "#000000",
+            "bg_gradient_start": "#111621",
+            "bg_gradient_end": "#0a0f18"
+        },
+        "__REMARK_LATCH": "Drive latch/handle styling.",
+        "latch": {
+            "gradient_start": "#333333",
+            "gradient_mid": "#222222",
+            "gradient_end": "#111111",
+            "border_color": "rgba(255, 255, 255, 0.22)"
+        },
+        "__REMARK_LED_SHELL": "LED shell and dark-state colors.",
+        "led_shell": {
+            "dark_core": "#111111",
+            "dark_highlight": "#222222",
+            "border": "rgba(255, 255, 255, 0.05)",
+            "shadow": "rgba(0, 0, 0, 0.9)"
+        },
+        "__REMARK_ACTIVITY": "Activity monitor card styling.",
+        "activity": {
+            "card_bg": "#0c0c0e",
+            "card_border_top": "rgba(255, 255, 255, 0.15)",
+            "card_border_left": "rgba(255, 255, 255, 0.1)",
+            "card_border_right": "rgba(0, 0, 0, 0.5)",
+            "card_border_bottom": "rgba(0, 0, 0, 0.6)",
+            "card_shadow_inner": "rgba(0, 0, 0, 0.9)",
+            "card_shadow_outer": "rgba(255, 255, 255, 0.05)",
+            "card_glare": "rgba(255, 255, 255, 0.03)",
+            "title_color": "#f28a02",
+            "legend_color": "#ffffff"
+        },
+        "__REMARK_POOL": "Pool state indicator styling.",
+        "pool": {
+            "faulted_gradient_start": "#cc0000",
+            "faulted_gradient_end": "#ff0000",
+            "faulted_border": "#ffffff",
+            "faulted_shadow": "rgba(255, 0, 0, 0.6)",
+            "degraded_bg": "rgba(255, 165, 0, 0.3)",
+            "degraded_border": "#ffa500",
+            "state_text_color": "#ffffff",
+            "state_text_bg": "rgba(0, 0, 0, 0.3)",
+            "state_text_shadow": "rgba(0, 0, 0, 0.8)"
         },
         "__REMARK_LEDS": "LED and legend dot colors.",
         "led_colors": {
@@ -895,25 +951,26 @@ DEFAULT_CONFIG = {
             "unalloc_error": "#ffaa00",
             "unalloc_fault": "#ff0000",
             "activity": "#008cff"
-        }
-        ,
-        "__REMARK_ENVIRONMENT": "Environment settings for page background, menu styling, and flare effects.",
+        },
+        "__REMARK_ENVIRONMENT": "Page background settings.",
         "environment": {
             "page_bg_color": "#0a0a0a",
-            "menu_bg_color": "#2a2a2a",
-            "menu_text_color": "#ffffff",
-            "menu_opacity": 100,
-            "flare_color": "#ffffff",
-            "flare_angle": 45,
-            "flare_offset_x": 50,
-            "flare_offset_y": 50,
-            "flare_opacity": 0.225,
-            "flare_size": 50,
-            "flare_shape": 100,
-            "scale": 100
+            "body_text_color": "#ffffff",
+            "rebuild_border": "#2f3d52",
+            "rebuild_bg": "#151a22",
+            "rebuild_color": "#a4b4c8"
+        },
+        "__REMARK_LAYOUT": "Physical rack and bay spacing model.",
+        "layout": {
+            "rack_width_in": 19,
+            "u_height_in": 1.75,
+            "bay_gap_px": 6,
+            "dashboard_max_width": "98vw",
+            "dashboard_gap": "16px",
+            "dashboard_top_gap": "14px"
         }
     },
-    "__REMARK_CHART": "Activity Monitor chart colors, gradients, and dimensions.",
+    "__REMARK_CHART": "Activity monitor colors and dimensions.",
     "chart": {
         "__REMARK_COLORS": "Line and gradient colors for pool activity charts.",
         "colors": {
@@ -924,16 +981,46 @@ DEFAULT_CONFIG = {
             "readGradientTop": "rgba(42, 0, 214, 0.5)",
             "readGradientBottom": "rgba(42, 0, 214, 0)",
             "writeGradientTop": "rgba(255, 159, 0, 0.5)",
-            "writeGradientBottom": "rgba(255, 159, 0, 0)"
+            "writeGradientBottom": "rgba(255, 159, 0, 0)",
+            "yAxisLabelColor": "#ffffff",
+            "yAxisGridColor": "rgba(255, 255, 255, 0.3)"
         },
         "__REMARK_DIMENSIONS": "Chart sizing and line styling parameters.",
         "dimensions": {
-            "chartHeight": "75px",
-            "cardWidth": "250px",
-            "cardMarginRight": "20px",
-            "containerGap": "20px",
+            "chartHeight": "50px",
+            "cardWidth": "360px",
+            "containerGap": "25px",
             "lineTension": "0.7",
-            "lineWidth": "2"
+            "lineWidth": "2",
+            "cardMarginRight": "20px"
+        }
+    },
+    "fonts": {
+        "default": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+        "monospace": "Courier New, monospace"
+    },
+    "__REMARK_DEVICES": "Per-device geometry/layout overrides. Keys are PCI addresses.",
+    "devices": {
+        "0000:00:10.0": {
+            "chassis": {
+                "rack_units": 2
+            },
+            "bay": {
+                "gap_px": 6
+            }
+        },
+        "0000:00:10.0-e2": {
+            "chassis": {
+                "rack_units": 2
+            },
+            "bay": {
+                "gap_px": 6,
+                "layout": "horizontal",
+                "grid_cols": 4,
+                "grid_rows": 3,
+                "fill_order": "row_major_ltr",
+                "drive_sequence": "horizontal"
+            }
         }
     }
 }
@@ -991,8 +1078,8 @@ def load_config():
         merged = _deep_merge_dict(DEFAULT_CONFIG, data)
         merged = _strip_legacy_layout_overrides(merged)
 
-        # If new defaults were added (e.g., UI config), rewrite config.json
-        # so users can see and edit the new options directly.
+        # If new defaults were added, rewrite config.json so users
+        # can see and edit the new options directly.
         if merged != data:
             try:
                 with open(CONFIG_FILE, 'w') as f:
