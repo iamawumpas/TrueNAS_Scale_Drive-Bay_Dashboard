@@ -7,10 +7,23 @@
     <meta http-equiv="Expires" content="0">
     <title>Storage Dashboard v13</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="Menu.css">
     <link rel="stylesheet" href="ActivityMonitor.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
+    <div id="menu-bar">
+        <div class="menu-container">
+            <div class="menu-right-group">
+                <button class="menu-button legend-menu-btn" id="legend-menu-btn" type="button">Legend</button>
+                <div class="menu-buttons">
+                    <button class="save-btn" id="menu-save-btn" disabled>SAVE</button>
+                    <button class="revert-btn" id="menu-revert-btn" disabled>REVERT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Dashboard wrapper: activity monitor + drive bay chassis will be scaled together -->
     <div id="dashboard-wrapper">
         <!-- Top row: Activity Monitor + Legend side by side -->

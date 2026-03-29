@@ -197,6 +197,41 @@
               "dashboard_max_width": "98vw",
               "dashboard_gap": "16px",
               "dashboard_top_gap": "14px"
+        },
+        "__REMARK_MENU": "Menu bar and form control styling for the rebuilt menu shell.",
+        "menu": {
+            "background": "linear-gradient(180deg, #222222 0%, #1a1a1a 100%)",
+            "border": "#444444",
+            "text": "#ffffff",
+            "button_text": "#ffffff",
+            "opacity": "1",
+            "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+            "size": "12pt",
+            "label_color": "#cccccc",
+            "section_title_color": "#64c8ff",
+            "dropdown_background": "#1a1a1a",
+            "dropdown_border": "#555555",
+            "dropdown_shadow": "rgba(0, 0, 0, 0.8)",
+            "controls": {
+                "background": "#2a2a2a",
+                "border": "#555555",
+                "text": "#ffffff",
+                "focus_border": "#64c8ff",
+                "focus_glow": "rgba(100, 200, 255, 0.4)"
+            },
+            "buttons": {
+                "save_bg": "#00cc00",
+                "save_hover_bg": "#00ff00",
+                "save_glow": "rgba(0, 255, 0, 0.5)",
+                "revert_bg": "#cc0000",
+                "revert_hover_bg": "#ff0000",
+                "revert_glow": "rgba(255, 0, 0, 0.5)"
+            },
+            "warning": {
+                "background": "#aa0000",
+                "border": "#ffffff",
+                "text": "#ffb3b3"
+            }
         }
     },
     "__REMARK_CHART": "Activity monitor colors and dimensions.",

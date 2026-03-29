@@ -1,5 +1,25 @@
 # Storage Dashboard - Change Log
 
+## Version 23.1:
+* **Menu System Rebuild - Phase 1 Baseline**
+    * Reintroduced a clean top menu bar shell from scratch while keeping SAVE/REVERT workflow behavior.
+    * Removed all legacy dropdown menus and submenus to establish a minimal, stable foundation for the next rebuild phase.
+    * Preserved dirty-page handling: SAVE/REVERT activate only when pending changes exist.
+    * Preserved live-preview plumbing so unsaved menu-driven config changes can be previewed immediately.
+* **Legend Overlay Menu Item**
+    * Added right-aligned `Legend` menu item in the top bar.
+    * Converted legend display to overlay mode with click-to-open and backdrop click-to-close behavior.
+    * Removed inline legend rendering from the top row so legend visibility is now user-invoked from the menu bar.
+* **Menu and Overlay Visual Refinement**
+    * Styled legend overlay as a menu panel instead of a chassis card (removed flare/striped chassis treatment).
+    * Reduced legend overlay footprint to package LED/state labels more compactly.
+    * Updated `ALLOCATED-OFFLINE` legend dot to green/black split styling for stronger visual consistency.
+    * Updated menu-item hover behavior to text bolding only, removing button-style hover effects.
+* **Config-Driven Menu Styling Expansion**
+    * Added `ui.menu` style schema in `config.json` for menu bar, controls, buttons, and warning palette values.
+    * Added matching `DEFAULT_CONFIG` menu defaults in `service.py` so rebuild/regeneration retains menu styling keys.
+    * Kept control-class styling hooks (`spinner`, `fields`, `checkbox`, `radio`, `dropdown`) in CSS, now driven by config variables.
+
 ## Version 23.0:
 * **Chassis Display Logic Rebuild (Primary Release Focus)**
     * Rebuilt chassis and bay rendering around a physical 19-inch rack model so bay proportions stay correct while scaling.

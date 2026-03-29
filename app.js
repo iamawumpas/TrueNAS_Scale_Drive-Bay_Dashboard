@@ -517,6 +517,11 @@ function render(data) {
     const hostname = data?.hostname || 'Storage';
     applyUiVariables(data?.config, hostname);
 
+    const previewConfig = window.__previewConfig__;
+    if (previewConfig && typeof previewConfig === 'object') {
+        applyUiVariables(previewConfig, hostname);
+    }
+
     const chassisEntries = Object.entries(topology);
     const chassisCount = Math.max(1, chassisEntries.length);
     const canvasStyle = window.getComputedStyle(canvas);
