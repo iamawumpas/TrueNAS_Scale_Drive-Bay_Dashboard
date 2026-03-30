@@ -1,5 +1,18 @@
 # Storage Dashboard - Change Log
 
+## Version 23.7:
+* **Menu Section Header Customization**
+    * Added new `Dashboard > Menu > Section Name` controls for section header `Colour`, `Font Size`, and `Font Style`.
+    * Wired section header style settings through `ui.menu.section_name` in `config.json` with live preview support.
+    * Added matching `ui.menu.section_name` defaults in `service.py` so reset-to-default regenerates the same keys.
+* **Menu Control Color Customization**
+    * Added `Control Background Colour` and `Control Highlight Colour` pickers under `Dashboard > Menu`.
+    * Wired control background color to non-button menu controls (inputs/select/slider track areas) without changing SAVE/REVERT/RESET button themes.
+    * Wired highlight color to slider thumbs, focus accents, and hover/focus control highlights across all dropdown menus.
+* **Dropdown Panel Height Constraint**
+    * Limited menu dropdown panels to a max height of `500px`.
+    * Added vertical scrolling so long panels remain usable without overflowing the viewport.
+
 ## Version 23.6:
 * **Drive Temperature Collection and Display Enhancements**
     * Replaced middleware-only temperature dependence with `smartctl`-based collection from `/dev/disk/by-id/ata-*`.

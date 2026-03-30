@@ -50,6 +50,8 @@
     top: calc(100% + 6px);
     left: 0;
     min-width: 260px;
+    max-height: 500px;
+    overflow-y: auto;
     background: var(--menu-dropdown-bg, #1a1a1a);
     border: 1px solid var(--menu-dropdown-border, #555555);
     box-shadow: 0 8px 24px var(--menu-dropdown-shadow, rgba(0,0,0,0.8));
@@ -84,10 +86,12 @@
 }
 
 .panel-section-title {
-    font-size: 10pt;
-    font-weight: 700;
+    font-size: var(--menu-section-title-size, 10pt);
+    font-weight: var(--menu-section-title-weight, 700);
+    font-style: var(--menu-section-title-style, normal);
+    text-transform: var(--menu-section-title-transform, uppercase);
+    font-variant: var(--menu-section-title-variant, normal);
     color: var(--menu-section-title-color, #64c8ff);
-    text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 8px;
 }
@@ -279,7 +283,8 @@
     width: 110px;
     height: 4px;
     border-radius: 2px;
-    background: var(--menu-control-border, #555555);
+    background: var(--menu-control-bg, #2a2a2a);
+    border: 1px solid var(--menu-control-border, #555555);
     outline: none;
     cursor: pointer;
 }
@@ -353,12 +358,15 @@
 }
 
 .panel-subsection-title {
-    font-size: 9.5pt;
-    font-weight: 600;
-    color: rgba(100, 200, 255, 0.7);
-    text-transform: uppercase;
+    font-size: var(--menu-section-title-size, 10pt);
+    font-weight: var(--menu-section-title-weight, 700);
+    font-style: var(--menu-section-title-style, normal);
+    color: var(--menu-section-title-color, #64c8ff);
+    text-transform: var(--menu-section-title-transform, uppercase);
+    font-variant: var(--menu-section-title-variant, normal);
     letter-spacing: 0.06em;
     margin-bottom: 6px;
+    opacity: 0.85;
 }
 
 /* ── Activity Monitor panel width override ────────────────── */

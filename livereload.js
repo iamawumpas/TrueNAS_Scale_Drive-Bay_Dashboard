@@ -269,6 +269,11 @@
 
 	function applyMenuVariables(config) {
 		const menu = config?.ui?.menu || {};
+		const sectionName = menu.section_name || {};
+		const hasSectionNameStyle = Array.isArray(sectionName.style);
+		const sectionNameStyles = Array.isArray(sectionName.style)
+			? sectionName.style.map(v => String(v).toLowerCase())
+			: [];
 		const controls = menu.controls || {};
 		const buttons = menu.buttons || {};
 		const warning = menu.warning || {};
@@ -289,7 +294,12 @@
 			'--menu-font-family': menu.font,
 			'--menu-font-size': menu.size,
 			'--menu-label-color': menu.label_color,
-			'--menu-section-title-color': menu.section_title_color,
+			'--menu-section-title-color': sectionName.color || menu.section_title_color,
+			'--menu-section-title-size': sectionName.size,
+			'--menu-section-title-weight': hasSectionNameStyle ? (sectionNameStyles.includes('bold') ? '700' : '400') : undefined,
+			'--menu-section-title-style': hasSectionNameStyle ? (sectionNameStyles.includes('italic') ? 'italic' : 'normal') : undefined,
+			'--menu-section-title-transform': hasSectionNameStyle ? (sectionNameStyles.includes('allcaps') ? 'uppercase' : 'none') : undefined,
+			'--menu-section-title-variant': hasSectionNameStyle ? (sectionNameStyles.includes('smallcaps') ? 'small-caps' : 'normal') : undefined,
 			'--menu-dropdown-bg': menu.dropdown_background,
 			'--menu-dropdown-border': menu.dropdown_border,
 			'--menu-dropdown-shadow': menu.dropdown_shadow,
@@ -297,7 +307,15 @@
 			'--menu-control-border': controls.border,
 			'--menu-control-text': controls.text,
 			'--menu-control-focus-border': controls.focus_border,
-			'--menu-control-focus-glow': controls.focus_glow,
+			'--menu-control-focus-glow': (() => {
+				if (controls.focus_glow) return controls.focus_glow;
+				const hex = String(controls.focus_border || '').trim();
+				if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+					const rgb = hexToRgbComponents(hex);
+					if (rgb) return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.4)`;
+				}
+				return undefined;
+			})(),
 			'--menu-save-bg': buttons.save_bg,
 			'--menu-save-hover-bg': buttons.save_hover_bg,
 			'--menu-save-glow': buttons.save_glow,
@@ -799,6 +817,14 @@
 					${buildColorRow('Text Color', ['ui', 'menu', 'text'])}
 					${buildFontRow('Font', ['ui', 'menu', 'font'])}
 					${buildSliderRow('Dropdown Transparency', ['ui', 'menu', 'dropdown_opacity'])}
+					${buildColorRow('Control Background Colour', ['ui', 'menu', 'controls', 'background'])}
+					${buildColorRow('Control Highlight Colour', ['ui', 'menu', 'controls', 'focus_border'])}
+					<div class="panel-subsection">
+						<div class="panel-subsection-title">Section Name</div>
+						${buildColorRow('Colour', ['ui', 'menu', 'section_name', 'color'])}
+						${buildPxSliderRow('Font Size', ['ui', 'menu', 'section_name', 'size'], 8, 24, 1)}
+						${buildStyleCheckboxRow('Font Style', ['ui', 'menu', 'section_name', 'style'])}
+					</div>
 				</div>
 				<div class="panel-section">
 					<div class="panel-section-title">Reset</div>

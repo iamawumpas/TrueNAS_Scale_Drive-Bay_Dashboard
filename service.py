@@ -1030,6 +1030,11 @@ DEFAULT_CONFIG = {
             "size": "12pt",
             "label_color": "#cccccc",
             "section_title_color": "#64c8ff",
+            "section_name": {
+                "color": "#64c8ff",
+                "size": "10pt",
+                "style": ["bold", "allcaps"]
+            },
             "dropdown_background": "#1a1a1a",
             "dropdown_border": "#555555",
             "dropdown_shadow": "rgba(0, 0, 0, 0.8)",
