@@ -11,6 +11,7 @@
 	let legendBackdrop = null;
 	let lastTopology = null;
 	let lastHostname = null;
+	let lastDiskArraysMenuSignature = '';
 	let isResetInProgress = false;
 	let menuModalBackdrop = null;
 	let menuModalTitle = null;
@@ -628,6 +629,20 @@
 		return pciRaw || topologyKey;
 	}
 
+	function getDiskArraysMenuSignature(topology, hostname) {
+		const entries = Object.entries(topology || {}).map(([topologyKey, chassisData]) => {
+			const settings = chassisData?.settings || {};
+			return {
+				topologyKey,
+				pciRaw: settings.pci_raw || topologyKey,
+				arrayAddress: settings.array_address || settings.array_id || '',
+				hasBackplane: Boolean(settings.has_backplane),
+				maxBays: settings.max_bays || 0
+			};
+		});
+		return JSON.stringify({ hostname: hostname || '', entries });
+	}
+
 	function buildColorRow(labelText, configPath) {
 		const id = 'mc-' + toSafeId(configPath.join('-'));
 		return `
@@ -664,6 +679,18 @@
 			</div>`;
 	}
 
+	function buildPxSliderRow(labelText, configPath, min = 6, max = 24, step = 1) {
+		const id = 'mc-' + toSafeId(configPath.join('-'));
+		return `
+			<div class="menu-control-row">
+				<label class="menu-ctrl-label" for="${id}">${labelText}</label>
+				<div class="menu-ctrl-right menu-slider-wrap">
+					<input type="range" class="menu-slider" id="${id}" data-path="${configPath.join('|')}" data-value-format="px" min="${min}" max="${max}" step="${step}">
+					<span class="menu-slider-value" id="${id}-val">10px</span>
+				</div>
+			</div>`;
+	}
+
 	function buildStyleCheckboxRow(labelText, configPath) {
 		const id = 'mc-' + toSafeId(configPath.join('-'));
 		const options = [
@@ -682,6 +709,52 @@
 			<div class="menu-control-row menu-style-row">
 				<div class="menu-ctrl-label">${labelText}</div>
 				<div class="menu-ctrl-right menu-style-options">${boxes}
+				</div>
+			</div>`;
+	}
+
+	function buildTempStyleCheckboxRow(labelText, configPath) {
+		const id = 'mc-' + toSafeId(configPath.join('-'));
+		return `
+			<div class="menu-control-row menu-style-row">
+				<div class="menu-ctrl-label">${labelText}</div>
+				<div class="menu-ctrl-right menu-style-options">
+					<label class="menu-style-option">
+						<input type="checkbox" class="menu-style-checkbox" data-temp-style-path="${configPath.join('|')}" data-temp-style-value="normal" id="${id}-normal">
+						<span>Normal</span>
+					</label>
+					<label class="menu-style-option">
+						<input type="checkbox" class="menu-style-checkbox" data-temp-style-path="${configPath.join('|')}" data-temp-style-value="bold" id="${id}-bold">
+						<span>Bold</span>
+					</label>
+					<label class="menu-style-option">
+						<input type="checkbox" class="menu-style-checkbox" data-temp-style-path="${configPath.join('|')}" data-temp-style-value="italic" id="${id}-italic">
+						<span>Italic</span>
+					</label>
+				</div>
+			</div>`;
+	}
+
+	function buildUnitRadioRow(labelText, configPath) {
+		const id = 'mc-' + toSafeId(configPath.join('-'));
+		const options = [
+			['C', '\u00B0C'],
+			['F', '\u00B0F']
+		];
+		const radios = options.map(([value, text]) => `
+			<label class="menu-shape-option">
+				<input type="radio" class="menu-shape-radio"
+					name="${id}"
+					data-path="${configPath.join('|')}"
+					data-radio-value="${value}"
+					${value === 'C' ? 'data-radio-default="true"' : ''}
+					id="${id}-${value}">
+				<span>${text}</span>
+			</label>`).join('');
+		return `
+			<div class="menu-control-row menu-shape-row">
+				<div class="menu-ctrl-label">${labelText}</div>
+				<div class="menu-ctrl-right menu-shape-options">${radios}
 				</div>
 			</div>`;
 	}
@@ -791,10 +864,13 @@
 				const hex = val ? (val.match(/#[0-9a-fA-F]{3,8}/) || [])[0] || '#000000' : '#000000';
 				el.value = hex;
 			} else if (el.type === 'range') {
-				const num = val !== undefined ? Number(val) : 50;
+				const isPx = String(el.dataset.valueFormat || '').toLowerCase() === 'px';
+				const num = val !== undefined
+					? (isPx ? Number(String(val).replace('px', '')) : Number(val))
+					: (isPx ? 10 : 50);
 				el.value = num;
 				const valEl = panel.querySelector(`#${el.id}-val`);
-				if (valEl) valEl.textContent = num;
+				if (valEl) valEl.textContent = isPx ? `${num}px` : num;
 			} else if (el.tagName === 'SELECT') {
 				if (val) el.value = val;
 			}
@@ -805,6 +881,13 @@
 			const styles = getNestedValue(workingConfig, path);
 			const active = Array.isArray(styles) ? styles.map(v => String(v).toLowerCase()) : [];
 			input.checked = active.includes(String(input.dataset.styleValue).toLowerCase());
+		});
+
+		panel.querySelectorAll('input[data-temp-style-path]').forEach(input => {
+			const path = input.dataset.tempStylePath.split('|');
+			const styles = getNestedValue(workingConfig, path);
+			const active = Array.isArray(styles) ? styles.map(v => String(v).toLowerCase()) : [];
+			input.checked = active.includes(String(input.dataset.tempStyleValue).toLowerCase());
 		});
 
 		panel.querySelectorAll('input[type="radio"][data-path]').forEach(input => {
@@ -848,8 +931,9 @@
 			const valEl = document.getElementById(input.id + '-val');
 			input.addEventListener('input', () => {
 				const num = Number(input.value);
-				if (valEl) valEl.textContent = num;
-				setConfigValue(path, num);
+				const isPx = String(input.dataset.valueFormat || '').toLowerCase() === 'px';
+				if (valEl) valEl.textContent = isPx ? `${num}px` : num;
+				setConfigValue(path, isPx ? `${num}px` : num);
 			});
 		});
 
@@ -868,6 +952,28 @@
 					if (!next.includes(value)) next.push(value);
 				} else {
 					next = next.filter(v => v !== value);
+				}
+
+				setConfigValue(path, next);
+				syncPanelValues(panel);
+			});
+		});
+
+		panel.querySelectorAll('input[data-temp-style-path]').forEach(input => {
+			input.addEventListener('change', () => {
+				const path = input.dataset.tempStylePath.split('|');
+				const value = String(input.dataset.tempStyleValue).toLowerCase();
+				const current = getNestedValue(workingConfig, path);
+				let next = Array.isArray(current) ? current.map(v => String(v).toLowerCase()) : [];
+
+				if (value === 'normal') {
+					next = input.checked ? ['normal'] : [];
+				} else if (input.checked) {
+					next = next.filter(v => v !== 'normal');
+					if (!next.includes(value)) next.push(value);
+				} else {
+					next = next.filter(v => v !== value);
+					if (next.length === 0) next = ['normal'];
 				}
 
 				setConfigValue(path, next);
@@ -1013,9 +1119,11 @@
 
 		lastTopology = topology || {};
 		lastHostname = hostname || '';
+		const nextSignature = getDiskArraysMenuSignature(lastTopology, lastHostname);
+		const existing = document.getElementById('disk-arrays-panel');
+		if (existing && nextSignature === lastDiskArraysMenuSignature) return;
 
 		// Remove any existing Disk Arrays panel wrapper to avoid duplicates
-		const existing = document.getElementById('disk-arrays-panel');
 		if (existing) existing.closest('.menu-dropdown-wrapper')?.remove();
 
 		const entries = Object.entries(lastTopology);
@@ -1076,12 +1184,21 @@
 		wrapper.innerHTML = `
 			<button class="menu-button" id="disk-arrays-menu-btn" type="button">Disk Arrays</button>
 			<div class="dropdown-panel disk-arrays-panel" id="disk-arrays-panel">
+				<div class="panel-section">
+					<div class="panel-section-title">Drive Temperature</div>
+					${buildUnitRadioRow('Unit', ['ui', 'drive_temperature', 'unit'])}
+					${buildFontRow('Font', ['ui', 'drive_temperature', 'font'])}
+					${buildPxSliderRow('Font Size', ['ui', 'drive_temperature', 'size'])}
+					${buildTempStyleCheckboxRow('Font Style', ['ui', 'drive_temperature', 'style'])}
+					${buildColorRow('Font Colour', ['ui', 'drive_temperature', 'color'])}
+				</div>
 				${panelSections}
 			</div>`;
 
 		const leftGroup = host.querySelector('.menu-left-group');
 		if (!leftGroup) return;
 		leftGroup.appendChild(wrapper);
+		lastDiskArraysMenuSignature = nextSignature;
 
 		const daBtn = document.getElementById('disk-arrays-menu-btn');
 		const daPanel = document.getElementById('disk-arrays-panel');
@@ -1219,10 +1336,44 @@
 		openLegendOverlay();
 	}
 
+	function handleDashboardDataUpdate(event) {
+		const payload = event?.detail?.data;
+		if (!payload || typeof payload !== 'object') return;
+
+		const topology = payload.topology;
+		if (topology && typeof topology === 'object' && Object.keys(topology).length > 0) {
+			lastTopology = topology;
+			lastHostname = payload.hostname || lastHostname || '';
+			buildDiskArraysMenu(lastTopology, lastHostname);
+		}
+
+		if (!originalConfig && payload.config) {
+			originalConfig = payload.config;
+			workingConfig = deepClone(originalConfig);
+			applyMenuVariables(workingConfig);
+			applyActivityVariables(workingConfig);
+			setPreviewConfig(workingConfig);
+			updateDirtyUI();
+			if (statusEl) statusEl.textContent = '';
+			return;
+		}
+
+		if (!isDirty && payload.config) {
+			originalConfig = deepClone(payload.config);
+			workingConfig = deepClone(payload.config);
+			applyMenuVariables(workingConfig);
+			applyActivityVariables(workingConfig);
+			setPreviewConfig(workingConfig);
+			updateDirtyUI();
+			if (statusEl) statusEl.textContent = '';
+		}
+	}
+
 	async function init() {
 		buildMenuBar();
 		ensureLegendOverlayShell();
 		ensureMenuModalShell();
+		window.addEventListener('dashboard-data-updated', handleDashboardDataUpdate);
 		try {
 			const payload = await fetchPayload();
 			originalConfig = payload?.config || {};

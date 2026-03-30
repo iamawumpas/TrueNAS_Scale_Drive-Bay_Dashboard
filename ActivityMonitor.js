@@ -7,6 +7,8 @@ class ActivityMonitor {
         this.chassis = null;
         this.updateInterval = null;
         this.poolStates = {};  // Track pool states from API
+        this.lastPoolStateFetchAt = 0;
+        this.poolStateFetchPromise = null;
     }
 
     initialize() {
@@ -25,6 +27,14 @@ class ActivityMonitor {
         // Handle window resize for responsive layout
         window.addEventListener('resize', () => this.reflowLayout());
         
+        window.addEventListener('dashboard-data-updated', (event) => {
+            const payload = event?.detail?.data;
+            if (payload?.pool_states && typeof payload.pool_states === 'object') {
+                this.poolStates = payload.pool_states;
+                this.lastPoolStateFetchAt = Date.now();
+            }
+        });
+        
         // Store reference globally for menu system to trigger updates
         window.activityMonitor = this;
     }
@@ -34,6 +44,46 @@ class ActivityMonitor {
         if (value >= 1048576) return (value / 1048576).toFixed(1) + ' MB';
         if (value >= 1024) return (value / 1024).toFixed(1) + ' KB';
         return value.toFixed(0) + ' B';
+    }
+
+    async fetchJsonWithTimeout(url, timeoutMs = 1500) {
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const response = await fetch(url, {
+                cache: 'no-store',
+                signal: controller.signal
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return await response.json();
+        } finally {
+            window.clearTimeout(timer);
+        }
+    }
+
+    async refreshPoolStatesIfNeeded() {
+        const now = Date.now();
+        if ((now - this.lastPoolStateFetchAt) < 1000 && Object.keys(this.poolStates).length > 0) {
+            return;
+        }
+        if (this.poolStateFetchPromise) {
+            await this.poolStateFetchPromise;
+            return;
+        }
+
+        this.poolStateFetchPromise = this.fetchJsonWithTimeout('/data?t=' + now)
+            .then((mainData) => {
+                this.poolStates = mainData?.pool_states || this.poolStates;
+                this.lastPoolStateFetchAt = Date.now();
+            })
+            .catch(() => {
+                // Keep last known pool states during transient load spikes.
+            })
+            .finally(() => {
+                this.poolStateFetchPromise = null;
+            });
+
+        await this.poolStateFetchPromise;
     }
 
     reflowLayout() {
@@ -65,14 +115,10 @@ class ActivityMonitor {
 
     async updateLoop() {
         try {
-            const res = await fetch('/pool-activity?t=' + Date.now());
-            const payload = await res.json();
+            const payload = await this.fetchJsonWithTimeout('/pool-activity?t=' + Date.now(), 1200);
             const data = payload.stats;
-            
-            // Fetch pool states from main data endpoint
-            const dataRes = await fetch('/data?t=' + Date.now());
-            const mainData = await dataRes.json();
-            this.poolStates = mainData.pool_states || {};
+
+            await this.refreshPoolStatesIfNeeded();
             
             let needsReflow = false;
             

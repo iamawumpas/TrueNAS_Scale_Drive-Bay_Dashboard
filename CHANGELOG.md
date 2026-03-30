@@ -1,5 +1,25 @@
 # Storage Dashboard - Change Log
 
+## Version 23.6:
+* **Drive Temperature Collection and Display Enhancements**
+    * Replaced middleware-only temperature dependence with `smartctl`-based collection from `/dev/disk/by-id/ata-*`.
+    * Added resilient SMART JSON parsing with support for valid output even when `smartctl` returns non-zero exit codes.
+    * Improved disk-to-temperature matching across by-id, partition-suffixed, and runtime-resolved device aliases.
+    * Fixed frontend null-temperature handling so missing data no longer renders as false `0C` values.
+* **Temperature Alert Thresholds and Visual Signaling**
+    * Added conditional temperature styling for bay temperature text:
+    * `<=40C`: uses configured temperature color.
+    * `>40C and <=60C`: amber/orange blinking warning state.
+    * `>60C`: red blinking critical state.
+    * Applied threshold logic using backend `temperature_c` values so behavior remains correct in both `C` and `F` display modes.
+* **Dashboard Stability and Recovery Improvements**
+    * Added sticky last-known-good payload behavior with retry/timeout handling to reduce transient render collapse under backend load.
+    * Added partial-topology rejection safeguards to prevent destructive single-chassis fallback during temporary data interruptions.
+    * Added Disk Arrays menu rebuild deduplication and recovery hooks to prevent frequent menu closure on high-frequency refresh.
+* **Disk Arrays and Topology Data Path Fixes**
+    * Restored stable ZFS pool/index join behavior after topology mapping regression.
+    * Added shared temperature propagation support across both by-path and IRCU enclosure topology paths.
+
 ## Version 23.5:
 * **Codebase Cleanup and Redundancy Reduction**
     * Deactivated a redundant legacy `Disk Arrays` CSS block to keep the active style path singular and easier to maintain.

@@ -497,11 +497,31 @@ def get_ircu_slot_topology(pci_address, zfs_map, config):
     ports          = count_controller_ports(pci_address) or override_ports
     result         = {}
 
+    def _lookup_zfs_disk(dev_name):
+        if not isinstance(zfs_map, dict):
+            return {"pool": "", "idx": "", "state": "UNALLOCATED", "temperature_c": None}
+
+        direct = zfs_map.get(dev_name)
+        if direct:
+            return direct
+
+        base_name = re.sub(r'p?\d+$', '', str(dev_name or ''))
+        if base_name:
+            base_match = zfs_map.get(base_name)
+            if base_match:
+                return base_match
+
+            for candidate, info in zfs_map.items():
+                if candidate == base_name or str(candidate).startswith(base_name):
+                    return info
+
+        return {"pool": "", "idx": "", "state": "UNALLOCATED", "temperature_c": None}
+
     def _make_disk(drive):
         """Enrich an ircu drive record with ZFS state from zfs_map."""
         serial    = drive["serial"]
         dev_name  = serial_to_dev.get(serial, "")
-        z         = zfs_map.get(dev_name, {"pool": "", "idx": "", "state": "UNALLOCATED"})
+        z         = _lookup_zfs_disk(dev_name)
         zfs_state = z.get("state", "UNALLOCATED")
         if zfs_state == "UNALLOCATED":
             if any(x in drive["raw_state"] for x in ("Failed", "Missing", "Critical", "Degraded")):
@@ -514,6 +534,7 @@ def get_ircu_slot_topology(pci_address, zfs_map, config):
             "pool_name":  z.get("pool", ""),
             "pool_idx":   z.get("idx", ""),
             "state":      zfs_state,
+            "temperature_c": z.get("temperature_c"),
             "model":      drive["model"]
         }
 
@@ -608,6 +629,27 @@ def get_ircu_slot_topology(pci_address, zfs_map, config):
         }
 
     return result
+
+
+def lookup_zfs_disk_entry(zfs_map, dev_name):
+    if not isinstance(zfs_map, dict):
+        return {"pool": "", "idx": "", "state": "UNALLOCATED", "temperature_c": None}
+
+    direct = zfs_map.get(dev_name)
+    if direct:
+        return direct
+
+    base_name = re.sub(r'p?\d+$', '', str(dev_name or ''))
+    if base_name:
+        base_match = zfs_map.get(base_name)
+        if base_match:
+            return base_match
+
+        for candidate, info in zfs_map.items():
+            if candidate == base_name or str(candidate).startswith(base_name):
+                return info
+
+    return {"pool": "", "idx": "", "state": "UNALLOCATED", "temperature_c": None}
 
 
 def get_controller_capacity(pci_address, config=None):
@@ -872,6 +914,14 @@ DEFAULT_CONFIG = {
             "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
             "size": "1.1vw",
             "style": ["bold"]
+        },
+        "__REMARK_DRIVE_TEMPERATURE": "Drive temperature text (global for all drive bays).",
+        "drive_temperature": {
+            "unit": "C",
+            "color": "#ffffff",
+            "font": "Arial, Helvetica, sans-serif",
+            "size": "10px",
+            "style": ["normal"]
         },
         "__REMARK_CHASSIS": "Chassis/legend/activity shell styling.",
         "chassis": {
@@ -1385,6 +1435,7 @@ def topology_scanner_thread():
             GLOBAL_DATA["hostname"] = socket.gethostname()
             GLOBAL_DATA["config"] = load_config()
             uuid_map = {}
+
             if os.path.exists('/dev/disk/by-partuuid'):
                 for uid in os.listdir('/dev/disk/by-partuuid'):
                     real = os.path.realpath(os.path.join('/dev/disk/by-partuuid', uid))
@@ -1472,10 +1523,10 @@ def topology_scanner_thread():
                             sn, size = (out[0], int(out[1])) if len(out) >= 2 else ("", 0)
                         except: sn, size = "", 0
                         
-                        z = zfs_map.get(dev_name, {"pool": "", "idx": "", "state": "UNALLOCATED"})
+                        z = lookup_zfs_disk_entry(zfs_map, dev_name)
                         new_topology[pci_key]["disks"][bay_num] = {
                             "status": "PRESENT", "sn": sn, "size_bytes": size, "dev_name": dev_name,
-                            "pool_name": z["pool"], "pool_idx": z["idx"], "state": z["state"]
+                            "pool_name": z["pool"], "pool_idx": z["idx"], "state": z["state"], "temperature_c": z.get("temperature_c")
                         }
 
             for pci_key, data in new_topology.items():

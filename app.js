@@ -1,6 +1,101 @@
 import { GEOMETRY_DEFAULTS } from './geometry.js';
 
 let activityMonitor = null;
+const DATA_FETCH_INTERVAL_MS = 200;
+const DATA_FETCH_TIMEOUT_MS = 1500;
+const DATA_FETCH_RETRY_DELAYS_MS = [150, 500];
+const LAST_GOOD_TOPOLOGY_TTL_MS = 60000;
+
+let lastGoodRenderPayload = null;
+let lastGoodRenderAt = 0;
+let lastAcceptedTopologyCount = 0;
+let updateInFlight = false;
+
+function delay(ms) {
+    return new Promise(resolve => window.setTimeout(resolve, ms));
+}
+
+async function fetchJsonWithTimeout(url, timeoutMs) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch(url, {
+            cache: 'no-store',
+            signal: controller.signal
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return await response.json();
+    } finally {
+        window.clearTimeout(timer);
+    }
+}
+
+async function fetchDataWithRetry() {
+    const attempts = [0, ...DATA_FETCH_RETRY_DELAYS_MS];
+    let lastError = null;
+
+    for (let index = 0; index < attempts.length; index += 1) {
+        if (index > 0) {
+            await delay(attempts[index]);
+        }
+        try {
+            return await fetchJsonWithTimeout(`/data?t=${Date.now()}`, DATA_FETCH_TIMEOUT_MS);
+        } catch (error) {
+            lastError = error;
+        }
+    }
+
+    throw lastError || new Error('Failed to fetch /data');
+}
+
+function getTopologyEntries(payload) {
+    if (!payload || typeof payload !== 'object') return [];
+    const topology = payload.topology;
+    if (!topology || typeof topology !== 'object') return [];
+    return Object.entries(topology);
+}
+
+function hasUsableTopology(payload) {
+    return getTopologyEntries(payload).length > 0;
+}
+
+function hasFreshLastGoodTopology() {
+    return Boolean(lastGoodRenderPayload) && (Date.now() - lastGoodRenderAt) < LAST_GOOD_TOPOLOGY_TTL_MS;
+}
+
+function isLikelyPartialTopology(payload) {
+    if (!lastGoodRenderPayload || !hasFreshLastGoodTopology()) return false;
+    const nextCount = getTopologyEntries(payload).length;
+    return lastAcceptedTopologyCount > 1 && nextCount > 0 && nextCount < lastAcceptedTopologyCount;
+}
+
+function dispatchDashboardDataUpdate(payload) {
+    window.dispatchEvent(new CustomEvent('dashboard-data-updated', {
+        detail: { data: payload }
+    }));
+}
+
+function rememberGoodPayload(payload) {
+    lastGoodRenderPayload = payload;
+    lastGoodRenderAt = Date.now();
+    lastAcceptedTopologyCount = getTopologyEntries(payload).length;
+    dispatchDashboardDataUpdate(payload);
+}
+
+function getRenderablePayload(payload) {
+    if (hasUsableTopology(payload) && !isLikelyPartialTopology(payload)) {
+        rememberGoodPayload(payload);
+        return payload;
+    }
+
+    if (hasFreshLastGoodTopology()) {
+        return lastGoodRenderPayload;
+    }
+
+    return payload;
+}
 
 function applyConfigMap(rootStyle, mapping) {
     Object.entries(mapping).forEach(([key, value]) => {
@@ -234,13 +329,14 @@ function statusClassForDisk(disk) {
     return '';
 }
 
-function formatDiskInfo(disk) {
+function formatDiskInfo(disk, unit = 'C') {
     if (!disk || disk.status === 'EMPTY') {
         return {
             serial: '-',
             size: '-',
             pool: '\u00A0',
-            index: '\u00A0'
+            index: '\u00A0',
+            temperature: '\u00A0'
         };
     }
 
@@ -253,13 +349,39 @@ function formatDiskInfo(disk) {
     const poolName = String(disk.pool_name ?? '').trim();
     const rawIndex = String(disk.pool_idx ?? '').trim();
     const normalizedIndex = rawIndex.replace(/^#/, '');
+    const rawTemp = disk.temperature_c;
+    const hasTemp = rawTemp !== null && rawTemp !== undefined && String(rawTemp).trim() !== '';
+    const tempC = hasTemp ? Number(rawTemp) : NaN;
+    let temperature = '\u00A0';
+    if (Number.isFinite(tempC)) {
+        if (String(unit).toUpperCase() === 'F') {
+            const tempF = Math.round((tempC * 9) / 5 + 32);
+            temperature = `${tempF}\u00B0F`;
+        } else {
+            temperature = `${Math.round(tempC)}\u00B0C`;
+        }
+    }
 
     return {
         serial,
         size,
         pool: poolName || '\u00A0',
-        index: normalizedIndex ? `#${normalizedIndex}` : '\u00A0'
+        index: normalizedIndex ? `#${normalizedIndex}` : '\u00A0',
+        temperature
     };
+}
+
+function getTemperatureSeverityClass(disk) {
+    const rawTemp = disk?.temperature_c;
+    const hasTemp = rawTemp !== null && rawTemp !== undefined && String(rawTemp).trim() !== '';
+    if (!hasTemp) return '';
+
+    const tempC = Number(rawTemp);
+    if (!Number.isFinite(tempC)) return '';
+
+    if (tempC > 60) return 'temp-hot';
+    if (tempC > 40) return 'temp-warn';
+    return 'temp-normal';
 }
 
 function buildOrderIndices(totalSlots, cols, rows, fillOrder) {
@@ -524,6 +646,7 @@ function applyUiVariables(config, hostname) {
     applyStyleConfig(rootStyle, 'disk-size', ui.disk_size);
     applyStyleConfig(rootStyle, 'disk-pool', ui.disk_pool);
     applyStyleConfig(rootStyle, 'disk-index', ui.disk_index);
+    applyStyleConfig(rootStyle, 'disk-temp', ui.drive_temperature);
 
     applyConfigMap(rootStyle, {
         '--legend-title-color': ui.legend?.title_color,
@@ -769,11 +892,12 @@ function applyDeviceVariables(config) {
     });
 }
 
-function bayMarkup(disk, latchNumber, layout) {
-    const info = formatDiskInfo(disk);
+function bayMarkup(disk, latchNumber, layout, tempUnit = 'C') {
+    const info = formatDiskInfo(disk, tempUnit);
     const emptyClass = !disk || disk.status === 'EMPTY' ? 'empty' : 'present';
     const statusClass = statusClassForDisk(disk);
     const activityClass = disk && disk.active === true ? 'active' : '';
+    const tempSeverityClass = getTemperatureSeverityClass(disk);
 
     return `
         <div class="bay-shell bay-${layout} ${emptyClass}">
@@ -787,6 +911,9 @@ function bayMarkup(disk, latchNumber, layout) {
                         <span class="info-serial">${info.serial}</span>
                         <span class="info-size">${info.size}</span>
                     </div>
+                    <div class="info-line info-line-temp">
+                        <span class="info-temp ${tempSeverityClass}">${info.temperature}</span>
+                    </div>
                     <div class="info-line">
                         <span class="info-pool">${info.pool}</span>
                         <span class="info-idx">${info.index}</span>
@@ -798,11 +925,12 @@ function bayMarkup(disk, latchNumber, layout) {
     `;
 }
 
-function enclosureMarkup(model, hostname) {
+function enclosureMarkup(model, hostname, tempUnit = 'C') {
     const bays = model.disksByVisualIndex.map((disk, index) => bayMarkup(
         disk,
         model.latchNumberByVisualIndex[index] || index + 1,
-        model.layout
+        model.layout,
+        tempUnit
     )).join('');
 
     const enclosureId = model.arrayAddress ? `${model.pciRaw} / ${model.arrayAddress}` : model.pciRaw;
@@ -845,6 +973,11 @@ function render(data) {
     const availableWidthPx = Math.max(320, canvas.clientWidth || Math.floor(window.innerWidth * 0.98));
     const perChassisWidthPx = Math.max(320, Math.floor((availableWidthPx - (gapPx * (chassisCount - 1))) / chassisCount));
 
+    const activeConfig = (window.__previewConfig__ && typeof window.__previewConfig__ === 'object')
+        ? window.__previewConfig__
+        : data?.config;
+    const tempUnit = String(activeConfig?.ui?.drive_temperature?.unit || 'C').toUpperCase() === 'F' ? 'F' : 'C';
+
     const models = chassisEntries.map(([topologyKey, chassisData]) =>
         buildEnclosureModel(topologyKey, chassisData, data, { preferredWidthPx: perChassisWidthPx })
     );
@@ -854,12 +987,9 @@ function render(data) {
         return;
     }
 
-    canvas.innerHTML = models.map(model => enclosureMarkup(model, hostname)).join('');
+    canvas.innerHTML = models.map(model => enclosureMarkup(model, hostname, tempUnit)).join('');
 
-    const activeDeviceConfig = (window.__previewConfig__ && typeof window.__previewConfig__ === 'object')
-        ? window.__previewConfig__
-        : data?.config;
-    applyDeviceVariables(activeDeviceConfig);
+    applyDeviceVariables(activeConfig);
 
     if (!activityMonitor && window.ActivityMonitor) {
         activityMonitor = new window.ActivityMonitor();
@@ -870,17 +1000,36 @@ function render(data) {
 }
 
 async function update() {
+    if (updateInFlight) return;
+    updateInFlight = true;
     try {
-        const response = await fetch('/data?t=' + Date.now());
-        const data = await response.json();
-        render(data);
-    } catch (error) {
-        const canvas = document.getElementById('canvas');
-        if (canvas) {
-            canvas.innerHTML = '<div class="rebuild-note">Unable to fetch /data while in rebuild mode.</div>';
+        const data = await fetchDataWithRetry();
+        const renderable = getRenderablePayload(data);
+
+        if (hasUsableTopology(renderable)) {
+            render(renderable);
+            return;
         }
+
+        if (!hasFreshLastGoodTopology()) {
+            const canvas = document.getElementById('canvas');
+            if (canvas) {
+                canvas.innerHTML = '<div class="rebuild-note">No enclosure data returned from /data.</div>';
+            }
+        }
+    } catch (error) {
+        if (hasFreshLastGoodTopology()) {
+            render(lastGoodRenderPayload);
+        } else {
+            const canvas = document.getElementById('canvas');
+            if (canvas) {
+                canvas.innerHTML = '<div class="rebuild-note">Unable to fetch /data while in rebuild mode.</div>';
+            }
+        }
+    } finally {
+        updateInFlight = false;
     }
 }
 
 update();
-setInterval(update, 200);
+setInterval(update, DATA_FETCH_INTERVAL_MS);

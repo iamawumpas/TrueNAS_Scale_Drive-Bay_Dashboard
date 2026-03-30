@@ -1,10 +1,151 @@
 import subprocess
 import json
 import re
+import os
+import glob
 
 # Global flag to track API availability
 API_AVAILABLE = True
 API_ERROR_MESSAGE = ""
+
+
+def _normalize_temp_device_name(name):
+    value = str(name or '').strip().lower()
+    if value.startswith('/dev/'):
+        value = value.split('/')[-1]
+    return value
+
+
+def _strip_partition_suffix(name):
+    value = _normalize_temp_device_name(name)
+    if not value:
+        return value
+
+    # by-id partition format: ata-...-part1
+    value = re.sub(r'-part\d+$', '', value)
+    # nvme partition format: nvme0n1p2
+    value = re.sub(r'^(nvme\d+n\d+)p\d+$', r'\1', value)
+    # common block device partition formats: sda1, vda2, xvda3
+    value = re.sub(r'^((?:sd|vd|xvd)[a-z]+)\d+$', r'\1', value)
+    return value
+
+
+def _fetch_disk_temperatures_via_api():
+    """Return disk temperatures from smartctl as {dev_name: temp_c}.
+
+    Queries S.M.A.R.T. data for all ATA devices in /dev/disk/by-id/.
+    Temperatures are optional metadata: errors are swallowed so topology still updates.
+    """
+    try:
+        temps = {}
+        disk_paths = sorted(glob.glob('/dev/disk/by-id/ata-*'))
+
+        for disk_path in disk_paths:
+            device_id = os.path.basename(disk_path)
+            if re.search(r'-part\d+$', device_id):
+                continue
+
+            try:
+                proc = subprocess.run(
+                    ['smartctl', '-a', '-j', disk_path],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                    timeout=5,
+                    check=False
+                )
+                smart_out = proc.stdout or ''
+                if not smart_out.strip():
+                    continue
+                payload = json.loads(smart_out)
+            except Exception:
+                continue
+
+            temp_value = None
+            temp_obj = payload.get('temperature')
+            if isinstance(temp_obj, dict):
+                try:
+                    current = temp_obj.get('current')
+                    if current is not None:
+                        temp_value = int(round(float(current)))
+                except Exception:
+                    temp_value = None
+
+            if temp_value is None:
+                table = payload.get('ata_smart_attributes', {}).get('table', [])
+                for attr in table:
+                    if attr.get('id') not in (190, 194):
+                        continue
+                    raw = attr.get('raw', {})
+                    raw_val = raw.get('value')
+                    raw_text = str(raw.get('string') or '')
+                    candidate = raw_val
+                    if candidate is None:
+                        match = re.search(r'(-?\d+)', raw_text)
+                        if match:
+                            candidate = match.group(1)
+                    try:
+                        if candidate is not None:
+                            temp_value = int(round(float(candidate)))
+                            break
+                    except Exception:
+                        continue
+
+            if temp_value is None or not (0 <= temp_value <= 150):
+                continue
+
+            by_id_name = _normalize_temp_device_name(device_id)
+            if by_id_name:
+                temps[by_id_name] = temp_value
+                by_id_base = _strip_partition_suffix(by_id_name)
+                if by_id_base:
+                    temps[by_id_base] = temp_value
+                if by_id_name.startswith('ata-'):
+                    temps[by_id_name[4:]] = temp_value
+
+            # Runtime alias only: lets matching succeed if pool topology currently reports
+            # /dev/sdX style paths; this is recalculated each scan and not persisted.
+            resolved_name = _normalize_temp_device_name(os.path.realpath(disk_path))
+            if resolved_name:
+                temps[resolved_name] = temp_value
+                resolved_base = _strip_partition_suffix(resolved_name)
+                if resolved_base:
+                    temps[resolved_base] = temp_value
+
+        return temps
+    except Exception:
+        return {}
+
+
+def _lookup_temperature_for_disk(device_path, dev_base, temp_map):
+    if not temp_map:
+        return None
+
+    path_name = _normalize_temp_device_name(device_path)
+    path_base = _strip_partition_suffix(path_name)
+    dev_base_norm = _strip_partition_suffix(dev_base)
+
+    if path_name in temp_map:
+        return temp_map[path_name]
+
+    if path_base in temp_map:
+        return temp_map[path_base]
+
+    if dev_base_norm in temp_map:
+        return temp_map[dev_base_norm]
+
+    # Partition-suffixed names (e.g. sda1, nvme0n1p2) still map to base device temps.
+    if path_base:
+        base = _strip_partition_suffix(path_base)
+        if base in temp_map:
+            return temp_map[base]
+
+    if dev_base_norm:
+        for dev_name, temp_c in temp_map.items():
+            if dev_name.startswith(dev_base_norm):
+                return temp_c
+
+    return None
 
 def check_truenas_api():
     """Check if TrueNAS Scale API (midclt) is available"""
@@ -24,6 +165,7 @@ def get_zfs_topology_via_api(uuid_to_dev_map):
     pool_states = {}
     
     try:
+        temp_map = _fetch_disk_temperatures_via_api()
         # Query pool data via TrueNAS middleware
         output = subprocess.check_output(
             ['midclt', 'call', 'pool.query'],
@@ -73,7 +215,7 @@ def get_zfs_topology_via_api(uuid_to_dev_map):
             for vdev_type in ['data', 'cache', 'log', 'spare']:
                 vdevs = topology.get(vdev_type, [])
                 for vdev in vdevs:
-                    disk_idx = process_vdev(vdev, pool_name, pool_state, disk_idx, uuid_to_dev_map, zfs_map)
+                    disk_idx = process_vdev(vdev, pool_name, pool_state, disk_idx, uuid_to_dev_map, zfs_map, temp_map)
             
             # If there's an active resilver/rebuild/repair, mark all disks in this pool as RESILVERING
             if has_active_scan:
@@ -110,7 +252,7 @@ def get_zfs_topology_via_api(uuid_to_dev_map):
         print(f"API Error: {API_ERROR_MESSAGE}")
         return fallback_to_zpool_status(uuid_to_dev_map)
 
-def process_vdev(vdev, pool_name, pool_state, disk_idx, uuid_to_dev_map, zfs_map):
+def process_vdev(vdev, pool_name, pool_state, disk_idx, uuid_to_dev_map, zfs_map, temp_map):
     """Recursively process vdev and its children"""
     vdev_type = vdev.get('type', '')
     vdev_status = vdev.get('status', 'ONLINE')
@@ -119,7 +261,7 @@ def process_vdev(vdev, pool_name, pool_state, disk_idx, uuid_to_dev_map, zfs_map
     children = vdev.get('children', [])
     if children:
         for child in children:
-            disk_idx = process_vdev(child, pool_name, pool_state, disk_idx, uuid_to_dev_map, zfs_map)
+            disk_idx = process_vdev(child, pool_name, pool_state, disk_idx, uuid_to_dev_map, zfs_map, temp_map)
     else:
         # This is a leaf node (actual disk)
         device_path = vdev.get('path', '')
@@ -141,7 +283,8 @@ def process_vdev(vdev, pool_name, pool_state, disk_idx, uuid_to_dev_map, zfs_map
         
         if disk_id:
             disk_idx += 1
-            dev_base = uuid_to_dev_map.get(disk_id, disk_id).rstrip('0123456789')
+            dev_base = _strip_partition_suffix(uuid_to_dev_map.get(disk_id, disk_id))
+            temp_c = _lookup_temperature_for_disk(device_path, dev_base, temp_map)
             
             # Determine disk state based on priority
             final_state = vdev_status
@@ -184,7 +327,8 @@ def process_vdev(vdev, pool_name, pool_state, disk_idx, uuid_to_dev_map, zfs_map
                 "write_errors": write_errors,
                 "cksum_errors": checksum_errors,
                 "pool_state": pool_state,
-                "vdev_status": vdev_status
+                "vdev_status": vdev_status,
+                "temperature_c": temp_c
             }
     
     return disk_idx
@@ -242,7 +386,7 @@ def fallback_to_zpool_status(uuid_to_dev_map):
                 total_err = read_err + write_err + cksum_err
                 
                 disk_idx += 1
-                dev_base = uuid_to_dev_map.get(uid, uid).rstrip('0123456789')
+                dev_base = _strip_partition_suffix(uuid_to_dev_map.get(uid, uid))
                 
                 is_repairing = any(x in line_stripped.lower() for x in ['resilvering', 'repairing', 'replacing'])
                 
@@ -263,7 +407,8 @@ def fallback_to_zpool_status(uuid_to_dev_map):
                     "read_errors": read_err,
                     "write_errors": write_err,
                     "cksum_errors": cksum_err,
-                    "pool_state": current_pool_state
+                    "pool_state": current_pool_state,
+                    "temperature_c": None
                 }
             
             # Try pattern without errors (UNAVAIL, REMOVED)
@@ -271,7 +416,7 @@ def fallback_to_zpool_status(uuid_to_dev_map):
             if match and current_pool:
                 uid, state = match.group(1), match.group(2)
                 disk_idx += 1
-                dev_base = uuid_to_dev_map.get(uid, uid).rstrip('0123456789')
+                dev_base = _strip_partition_suffix(uuid_to_dev_map.get(uid, uid))
                 
                 zfs_map[dev_base] = {
                     "pool": current_pool,
@@ -280,7 +425,8 @@ def fallback_to_zpool_status(uuid_to_dev_map):
                     "read_errors": 0,
                     "write_errors": 0,
                     "cksum_errors": 0,
-                    "pool_state": current_pool_state
+                    "pool_state": current_pool_state,
+                    "temperature_c": None
                 }
         
         # Mark all disks in pools with active resilver operations

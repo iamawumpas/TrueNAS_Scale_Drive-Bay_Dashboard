@@ -102,6 +102,16 @@
                 "bold"
             ]
         },
+        "__REMARK_DRIVE_TEMPERATURE": "Drive temperature text (global for all drive bays).",
+        "drive_temperature": {
+            "unit": "C",
+            "color": "#ffffff",
+            "font": "Arial, Helvetica, sans-serif",
+            "size": "10px",
+            "style": [
+                "normal"
+            ]
+        },
         "__REMARK_CHASSIS": "Chassis/legend/activity shell styling.",
         "chassis": {
             "background_base": "#1a1a1a",
@@ -157,7 +167,7 @@
             "title_color": "#f28a02",
             "legend_color": "#ffffff",
             "chassis_color": "#3f1818",
-            "scratch_level": 16,
+            "scratch_level": 23,
             "scratch_density": 18,
             "scratch_intensity": 14,
             "server_name": {
@@ -195,7 +205,7 @@
         },
         "__REMARK_ENVIRONMENT": "Page background settings.",
         "environment": {
-            "page_bg_color": "#373434",
+            "page_bg_color": "#6f6767",
             "body_text_color": "#ffffff",
             "rebuild_border": "#2f3d52",
             "rebuild_bg": "#151a22",
@@ -227,7 +237,7 @@
             "dropdown_background": "#1a1a1a",
             "dropdown_border": "#555555",
             "dropdown_shadow": "rgba(0, 0, 0, 0.8)",
-            "dropdown_opacity": 100,
+            "dropdown_opacity": 39,
             "controls": {
                 "background": "#2a2a2a",
                 "border": "#555555",
@@ -298,7 +308,11 @@
         },
         "0000:00:10.0-e2": {
             "chassis": {
-                "rack_units": 2
+                "rack_units": 2,
+                "scratch_level": 32,
+                "color": "#13022c",
+                "scratch_density": 100,
+                "scratch_intensity": 100
             },
             "bay": {
                 "gap_px": 6,
@@ -307,6 +321,14 @@
                 "grid_rows": 3,
                 "fill_order": "row_major_ltr",
                 "drive_sequence": "horizontal"
+            }
+        },
+        "0000:00:10.0-da": {
+            "chassis": {
+                "color": "#0c2400",
+                "scratch_level": 8,
+                "scratch_density": 98,
+                "scratch_intensity": 32
             }
         }
     }
