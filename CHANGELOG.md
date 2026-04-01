@@ -1,5 +1,21 @@
 # Storage Dashboard - Change Log
 
+## Version 23.8:
+* **Menu Runtime Soft Modularization (No Behavior Change)**
+    * Moved full menu runtime logic into `MenuSystem.js` and restored `livereload.js` to a focused dev-only auto-reload helper.
+    * Updated script load order so menu runtime remains initialized before `app.js` render orchestration.
+    * Preserved existing cross-module runtime integration (`window.__previewConfig__`, `window.MenuLivePreview`, and dashboard update events).
+* **Disk Arrays Per-Enclosure Chassis Configuration Controls**
+    * Added new `Chassis Configuration` subsection under each Disk Arrays enclosure panel.
+    * Added per-enclosure `Bay Orientation` radio controls (`Vertical` / `Horizontal`) mapped to `devices.<enclosure>.bay.layout`.
+    * Added per-enclosure `Bay Order` radio controls (`Left-to-Right` / `Top-to-Bottom`) mapped to `devices.<enclosure>.bay.fill_order`.
+    * Wired both controls into live preview and save/revert workflows so changes apply immediately and persist in `config.json`.
+* **Orientation/Grid Rendering Stability Refinements**
+    * Fixed preview-render path so enclosure model generation consumes active preview config, not only persisted backend config.
+    * Updated grid resolution to use preset-first chassis defaults for deterministic layout behavior by rack-unit and orientation.
+    * Preserved horizontal per-enclosure grid overrides while isolating vertical layout from incompatible legacy horizontal grid values.
+    * Corrected fallback precedence that caused some horizontal enclosures to flatten into a single row.
+
 ## Version 23.7:
 * **Menu Section Header Customization**
     * Added new `Dashboard > Menu > Section Name` controls for section header `Colour`, `Font Size`, and `Font Style`.

@@ -1,4 +1,4 @@
-import { GEOMETRY_DEFAULTS } from './geometry.js';
+import { GEOMETRY_DEFAULTS, CHASSIS_BAY_PRESETS } from './geometry.js';
 
 let activityMonitor = null;
 const DATA_FETCH_INTERVAL_MS = 200;
@@ -411,16 +411,32 @@ function resolveGrid(chassisData, bayConfig) {
     const incomingDisks = Array.isArray(chassisData?.disks) ? chassisData.disks : [];
     const layout = normalizeLayout(bayConfig.layout);
 
-    const defaultCols = layout === 'horizontal'
-        ? Math.max(1, Math.min(4, maxBays || incomingDisks.length || 1))
-        : Math.max(1, Math.min(16, maxBays || incomingDisks.length || 1));
+    const totalBays = Math.max(maxBays, incomingDisks.length, 1);
+    const rackUnits = clampInt(settings.rack_units || 2, 2, 1, 12);
+    const presetKey = `${rackUnits}u_${layout}`;
+    const preset = CHASSIS_BAY_PRESETS[presetKey] || null;
 
-    const configuredCols = bayConfig.grid_cols ?? bayConfig.bays_per_row;
-    const configuredRows = bayConfig.grid_rows ?? chassisData?.settings?.rows;
+    const defaultCols = clampInt(
+        preset?.cols ?? settings.cols ?? settings.bays_per_row,
+        layout === 'horizontal' ? Math.max(1, Math.min(4, totalBays)) : totalBays,
+        1,
+        64
+    );
+    const defaultRows = clampInt(
+        preset?.rows ?? settings.rows,
+        Math.ceil(totalBays / defaultCols),
+        1,
+        64
+    );
+
+    // Preserve established horizontal grid tuning, but keep vertical deterministic
+    // so legacy horizontal grid values cannot break vertical rendering.
+    const configuredCols = layout === 'horizontal' ? (bayConfig.grid_cols ?? bayConfig.bays_per_row) : undefined;
+    const configuredRows = layout === 'horizontal' ? bayConfig.grid_rows : undefined;
     let cols = clampInt(configuredCols, defaultCols, 1, 64);
-    let rows = clampInt(configuredRows, Math.ceil(maxBays / cols), 1, 64);
+    let rows = clampInt(configuredRows, defaultRows, 1, 64);
 
-    const targetSlots = Math.max(maxBays, incomingDisks.length, cols * rows);
+    const targetSlots = Math.max(totalBays, cols * rows);
     if (cols * rows < targetSlots) {
         rows = Math.ceil(targetSlots / cols);
     }
@@ -977,9 +993,13 @@ function render(data) {
         ? window.__previewConfig__
         : data?.config;
     const tempUnit = String(activeConfig?.ui?.drive_temperature?.unit || 'C').toUpperCase() === 'F' ? 'F' : 'C';
+    const renderData = {
+        ...data,
+        config: activeConfig || data?.config || {}
+    };
 
     const models = chassisEntries.map(([topologyKey, chassisData]) =>
-        buildEnclosureModel(topologyKey, chassisData, data, { preferredWidthPx: perChassisWidthPx })
+        buildEnclosureModel(topologyKey, chassisData, renderData, { preferredWidthPx: perChassisWidthPx })
     );
 
     if (models.length === 0) {
