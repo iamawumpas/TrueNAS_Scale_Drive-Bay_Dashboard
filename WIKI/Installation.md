@@ -119,4 +119,6 @@ You have the advantage: installing to `/opt/zfs-dashboard` means the dashboard i
 Notes:
 - Default web port: `8010` (configured in `config.json`).
 - If `config.json` is missing or malformed the service will regenerate a default config on startup.
+- Runtime configuration edits are made through the in-app `MenuSystem` UI and persisted via `/save-config`.
+- The in-app `RESET ALL` action uses `/reset-config` to regenerate defaults from `service.py`.
 - For configuration details, see [CONFIG_GUIDE.md](../CONFIG_GUIDE.md) and [CUSTOMIZATION_GUIDE.md](../CUSTOMIZATION_GUIDE.md).

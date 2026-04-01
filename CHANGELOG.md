@@ -17,6 +17,9 @@
     * Added `Height` slider mapping `0-100` to `25px-150px` (`chart.dimensions.chartHeight`).
     * Added `Length` slider mapping `0-100` to `100px-500px` (`chart.dimensions.cardWidth`).
     * Wired slider mapping logic end-to-end for live preview and persisted config updates.
+* **Wiki and Documentation Synchronization**
+    * Updated repository wiki pages to match current runtime architecture and configuration behavior.
+    * Synced the same page updates to the GitHub hosted wiki so repository docs and wiki docs are aligned.
 
 ## Version 23.8:
 * **Menu Runtime Soft Modularization (No Behavior Change)**

@@ -9,7 +9,9 @@ This project contains two primary Python components:
     - `GET /pool-activity` — returns history arrays used by `ActivityMonitor.js` to draw per-pool read/write graphs.
     - `GET /livereload-status` — returns file modification times for development auto-reload checks.
     - `GET /trigger-restart` — triggers `start_up.sh` to restart the service and returns the new port.
+    - `GET /ircu-debug` — returns a diagnostic payload for HBA/enclosure discovery and mapping.
     - `POST /save-config` — accepts a full `config.json` payload and saves it to disk.
+    - `POST /reset-config` — rewrites `config.json` from defaults and reloads in-memory config.
   - Contains background threads that scan topology, monitor I/O activity, and collect pool activity history. If `config.json` is missing or invalid the service will regenerate defaults from `DEFAULT_CONFIG_JSON`.
 
 - `zfs_logic.py` — ZFS helper
@@ -23,7 +25,8 @@ This project contains two primary Python components:
   - Used by `service.py` to build the topology mapping and pool state information.
 
 Notes:
-- `service.py` also exposes a small POST endpoint to persist configuration changes. The front-end `MenuSystem.js` calls this when users click SAVE.
-- The default port is read from `config.json` (network.port) and defaults to `8010` if missing.
+- `MenuSystem.js` uses `/save-config` for persistent writes and `/reset-config` for reset-to-default workflows.
+- `start_up.sh` is used by `/trigger-restart` for port/network restart requests.
+- The default port is read from `config.json` (`network.port`) and defaults to `8010` if missing.
 
 For implementation details see: [service.py](../service.py) and [zfs_logic.py](../zfs_logic.py).

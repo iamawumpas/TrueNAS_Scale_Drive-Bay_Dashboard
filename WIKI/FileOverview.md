@@ -1,41 +1,64 @@
-# File Overview — JS/CSS pairs
+# File Overview
 
-This page describes the main front-end file pairs and what they do.
+This page describes the current front-end and back-end file responsibilities.
 
-- `app.js` + `style.css` / `Base.css` / `Menu.css`:
-  - `app.js` is the client entry point. It fetches `/data` and `/style-config`, applies the styling from `config.json` as CSS variables, and orchestrates UI updates.
-  - Monitors TrueNAS API availability and displays red warning banner with menu bar color change when API detection switches to fallback mode.
-  - `style.css` and `Base.css` contain global layout and CSS variable fallbacks used by the app.
-  - `Menu.css` includes API warning styles with pulsing and shake animations.
+## Front-end runtime
 
-- `MenuSystem.js` + `Menu.css`:
-  - `MenuSystem.js` builds the dynamic configuration menus, handles SAVE/REVERT, and writes updates to `/save-config`.
-  - `Menu.css` styles the menu UI and controls.
+- `index.html`
+  - Static shell that loads CSS and scripts in this order: `livereload.js` (dev helper), `ActivityMonitor.js`, `MenuSystem.js`, then `app.js`.
 
-- `Chassis.js` + `Chassis.css`:
-  - `Chassis.js` generates the markup/container layout for each detected controller/chassis.
-  - `Chassis.css` defines chassis framing, spacing, and visual effects.
+- `app.js`
+  - Main dashboard renderer and polling loop for `/data`.
+  - Builds enclosure models, bay markup, and disk info display.
+  - Applies global UI/chart CSS variables from `config.json`.
+  - Applies per-enclosure overrides from `config.devices.<key>`.
+  - Dispatches dashboard update events consumed by menu and activity monitor.
 
-- `Bay.js` + `Bay.css`:
-  - `Bay.js` renders an individual drive bay (labels, serial, pool, LED container).
-  - `Bay.css` contains bay-specific styles (grill patterns, labels, responsiveness).
+- `MenuSystem.js`
+  - Full configuration menu runtime.
+  - Handles SAVE/REVERT/RESET flows with `/save-config` and `/reset-config`.
+  - Provides live preview by writing `window.__previewConfig__` and applying preview CSS overrides.
+  - Builds per-enclosure Disk Arrays controls (chassis, bay orientation/order, grill, and per-bay text styling).
 
-- `DiskInfo.js` + (shared CSS):
-  - `DiskInfo.js` formats disk metadata (capacity, serial, pool name) for display inside bays. Uses shared CSS variables.
+- `ActivityMonitor.js`
+  - Polls `/pool-activity` and `/data` to render per-pool read/write charts (Chart.js).
+  - Applies pool-state overlays (FAULTED/DEGRADED) and responsive reflow.
+  - Reads chart dimensions/colors from CSS variables populated from config.
 
-- `LEDManager.js` + `LEDs.css`:
-  - `LEDManager.js` maps drive state to LED CSS classes with comprehensive state priority logic (RESILVERING → UNAVAIL/REMOVED → errors → FAULTED → DEGRADED → OFFLINE → ONLINE).
-  - `LEDs.css` contains the LED colors and blinking animations for allocated-offline (green/gray), unallocated-error (purple/orange), and unallocated-fault (purple/red) states.
+- `DiskInfo.js`
+  - Legacy helper module retained in the repository.
+  - Primary runtime disk formatting is currently handled inside `app.js`.
 
-- `ActivityMonitor.js` + `ActivityMonitor.css`:
-  - `ActivityMonitor.js` fetches `/pool-activity` and `/data` to render per-pool read/write charts (Chart.js) with pool state overlays.
-  - Displays pool-level warnings: FAULTED pools show red overlay with "FAULTED" text (chart hidden), DEGRADED pools show orange overlay (chart visible).
-  - `ActivityMonitor.css` styles the activity cards, charts, and pool state overlays with pulsing animations.
+- `geometry.js`
+  - Shared geometry constants and chassis-bay presets used by renderer sizing logic.
 
-- `index.html`:
-  - Static HTML shell that loads the scripts and styles.
+- `ui/utils.js`
+  - Utility helpers for CSS-variable application and small UI helpers.
 
-- `livereload.js`:
-  - Development helper used for auto-refresh during local editing.
+## Styling files
 
-For more implementation and customization details see [CUSTOMIZATION_GUIDE.md](../CUSTOMIZATION_GUIDE.md) and [CONFIG_GUIDE.md](../CONFIG_GUIDE.md).
+- `style.css`
+  - Core dashboard/chassis/bay styles.
+  - Includes bay orientation variants and single-enclosure bay-content scaling behavior.
+
+- `ActivityMonitor.css`
+  - Activity monitor card/chassis/chart layout and state overlay visuals.
+
+- `Menu.css`
+  - Top menu, dropdown panels, controls, and modal styles.
+
+- `Base.css`
+  - Shared baseline visual styles and common defaults.
+
+## Back-end runtime
+
+- `service.py`
+  - HTTP server, topology scan orchestration, config persistence, and endpoint routing.
+
+- `zfs_logic.py`
+  - ZFS mapping/state layer (TrueNAS API primary, `zpool` parsing fallback).
+
+- `livereload.js`
+  - Development-only helper that polls `/livereload-status` and refreshes browser on file-change snapshots.
+
+For schema and customization details see [CONFIG_GUIDE.md](../CONFIG_GUIDE.md) and [CUSTOMIZATION_GUIDE.md](../CUSTOMIZATION_GUIDE.md).

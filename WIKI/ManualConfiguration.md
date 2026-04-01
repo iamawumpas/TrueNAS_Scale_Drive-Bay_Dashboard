@@ -6,7 +6,11 @@ This page collects pointers for manual edits and references to the canonical gui
 
    Note: `CONFIG_GUIDE.md` has been updated to match the authoritative `config.json` shape. Use that guide as the canonical reference when editing `config.json`.
 
-2. Visual/theming options: `config.json` contains `fonts`, `fontSizes`, `fontStyles`, and `colors` used by the front-end. See [CUSTOMIZATION_GUIDE.md](../CUSTOMIZATION_GUIDE.md) for examples.
+2. Visual/theming options are defined under `config.ui`, `config.chart`, and `config.devices`.
+   - `ui`: global dashboard/chassis/bay/menu/legend/activity styling and typography.
+   - `chart`: activity monitor graph colors, dimensions, and typography scales.
+   - `devices.<enclosure-key>`: per-enclosure overrides (chassis color/scratches, bay orientation/order/grill, and per-bay text styles).
+   - See [CUSTOMIZATION_GUIDE.md](../CUSTOMIZATION_GUIDE.md) for examples.
 
 3. To force a restart after changing the listening port or other network settings, the front-end triggers `GET /trigger-restart`. The server will run `start_up.sh` to perform the restart — you can also run `start_up.sh` manually.
 
@@ -18,5 +22,3 @@ This page collects pointers for manual edits and references to the canonical gui
    - Release history and features: [CHANGELOG.md](../CHANGELOG.md)
    - Primary configuration reference: [CONFIG_GUIDE.md](../CONFIG_GUIDE.md)
    - Styling and theming: [CUSTOMIZATION_GUIDE.md](../CUSTOMIZATION_GUIDE.md)
-
-If you want me to publish these pages to the repository wiki (GitHub wiki), I can push these files to the remote wiki repo or create a lightweight `docs/` branch — tell me which you prefer.
