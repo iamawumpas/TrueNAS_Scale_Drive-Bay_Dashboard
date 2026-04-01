@@ -1,5 +1,23 @@
 # Storage Dashboard - Change Log
 
+## Version 23.9:
+* **Single-Enclosure Bay Content Scaling**
+    * Added proportional bay-content scaling for single-enclosure layouts so latch size, bay numbers, LEDs, and disk metadata scale with chassis growth.
+    * Kept two-enclosure layouts at baseline sizing for predictable side-by-side rendering.
+    * Applied scale-aware spacing and positioning updates for vertical bay info blocks to preserve alignment.
+* **Per-Enclosure Drive Bay Typography Controls**
+    * Added Drive Bay submenu controls per enclosure for `Pool Name`, `ID`, `Serial`, `Size`, and `Drive Temp` typography.
+    * Added per-field controls for `Font Name`, `Font Size`, `Font Style`, and `Colour`, saved under `devices.<enclosure>.bay.*`.
+    * Removed global Drive Temperature typography controls from the top Disk Arrays panel and moved customization to per-enclosure scope.
+* **Typography Override and Specificity Fixes**
+    * Fixed CSS specificity conflicts so per-field font-size settings apply correctly in both live preview and saved render paths.
+    * Applied the same specificity fixes for horizontal and vertical bay layouts across Pool/ID/Serial/Size/Temp values.
+* **Activity Monitor Manual Graph Resizing**
+    * Added `Graphs > Manual Size` controls in Activity Monitor for chart dimensions.
+    * Added `Height` slider mapping `0-100` to `25px-150px` (`chart.dimensions.chartHeight`).
+    * Added `Length` slider mapping `0-100` to `100px-500px` (`chart.dimensions.cardWidth`).
+    * Wired slider mapping logic end-to-end for live preview and persisted config updates.
+
 ## Version 23.8:
 * **Menu Runtime Soft Modularization (No Behavior Change)**
     * Moved full menu runtime logic into `MenuSystem.js` and restored `livereload.js` to a focused dev-only auto-reload helper.

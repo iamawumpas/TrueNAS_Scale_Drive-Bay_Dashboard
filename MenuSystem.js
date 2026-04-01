@@ -356,6 +356,19 @@
 			}
 			el.style.setProperty(name, String(value));
 		};
+		const applyTextStyleOverride = (el, cssPrefix, styleCfg) => {
+			const cfg = styleCfg || {};
+			const styles = Array.isArray(cfg.style) ? cfg.style.map(v => String(v).toLowerCase()) : [];
+			const hasStyleOverride = Array.isArray(cfg.style);
+
+			setOrClear(el, `--${cssPrefix}-color`, cfg.color);
+			setOrClear(el, `--${cssPrefix}-font`, cfg.font);
+			setOrClear(el, `--${cssPrefix}-size`, cfg.size);
+			setOrClear(el, `--${cssPrefix}-weight`, hasStyleOverride ? (styles.includes('bold') ? '700' : '400') : undefined);
+			setOrClear(el, `--${cssPrefix}-style`, hasStyleOverride ? (styles.includes('italic') ? 'italic' : 'normal') : undefined);
+			setOrClear(el, `--${cssPrefix}-transform`, hasStyleOverride ? (styles.includes('allcaps') ? 'uppercase' : 'none') : undefined);
+			setOrClear(el, `--${cssPrefix}-variant`, hasStyleOverride ? (styles.includes('smallcaps') ? 'small-caps' : 'normal') : undefined);
+		};
 		Object.entries(devices).forEach(([key, devCfg]) => {
 			const el = document.querySelector(`.chassis-card[data-key="${key}"]`);
 			if (!el) return;
@@ -420,6 +433,12 @@
 			setOrClear(el, '--server-name-transform', hasServerStyleOverride ? (serverStyles.includes('allcaps') ? 'uppercase' : 'none') : undefined);
 			setOrClear(el, '--server-name-variant', hasServerStyleOverride ? (serverStyles.includes('smallcaps') ? 'small-caps' : 'normal') : undefined);
 			setOrClear(el, '--pci-address-color', chassisDev?.pci_address?.color);
+
+			applyTextStyleOverride(el, 'disk-pool', bayDev.disk_pool);
+			applyTextStyleOverride(el, 'disk-index', bayDev.disk_index);
+			applyTextStyleOverride(el, 'disk-serial', bayDev.disk_serial);
+			applyTextStyleOverride(el, 'disk-size', bayDev.disk_size);
+			applyTextStyleOverride(el, 'disk-temp', bayDev.drive_temperature);
 
 			const hasScratchOverride =
 				chassisDev.scratch_level !== undefined ||
@@ -709,6 +728,18 @@
 			</div>`;
 	}
 
+	function buildMappedPxSliderRow(labelText, configPath, outMinPx, outMaxPx) {
+		const id = 'mc-' + toSafeId(configPath.join('-'));
+		return `
+			<div class="menu-control-row">
+				<label class="menu-ctrl-label" for="${id}">${labelText}</label>
+				<div class="menu-ctrl-right menu-slider-wrap">
+					<input type="range" class="menu-slider" id="${id}" data-path="${configPath.join('|')}" data-value-format="mapped-px" data-map-min-px="${outMinPx}" data-map-max-px="${outMaxPx}" min="0" max="100" step="1">
+					<span class="menu-slider-value" id="${id}-val">${outMinPx}px</span>
+				</div>
+			</div>`;
+	}
+
 	function buildStyleCheckboxRow(labelText, configPath) {
 		const id = 'mc-' + toSafeId(configPath.join('-'));
 		const options = [
@@ -909,6 +940,11 @@
 					${buildColorRow('Write Colour', ['chart', 'colors', 'writeColor'])}
 					${buildColorRow('Grid Colour', ['chart', 'colors', 'yAxisGridColor'])}
 					<div class="panel-subsection">
+						<div class="panel-subsection-title">Manual Size</div>
+						${buildMappedPxSliderRow('Height', ['chart', 'dimensions', 'chartHeight'], 25, 150)}
+						${buildMappedPxSliderRow('Length', ['chart', 'dimensions', 'cardWidth'], 100, 500)}
+					</div>
+					<div class="panel-subsection">
 						<div class="panel-subsection-title">Graph Title</div>
 						${buildSliderRow('Font Size', ['chart', 'typography', 'graph_title_size_scale'])}
 						${buildColorRow('Colour', ['chart', 'colors', 'graphTitleColor'])}
@@ -939,12 +975,26 @@
 				el.value = hex;
 			} else if (el.type === 'range') {
 				const isPx = String(el.dataset.valueFormat || '').toLowerCase() === 'px';
-				const num = val !== undefined
-					? (isPx ? Number(String(val).replace('px', '')) : Number(val))
-					: (isPx ? 10 : 50);
+				const isMappedPx = String(el.dataset.valueFormat || '').toLowerCase() === 'mapped-px';
+				let num;
+				let displayText;
+				if (isMappedPx) {
+					const mapMin = Number(el.dataset.mapMinPx || 0);
+					const mapMax = Number(el.dataset.mapMaxPx || 100);
+					const span = Math.max(1, mapMax - mapMin);
+					const pxValRaw = val !== undefined ? Number(String(val).replace('px', '')) : mapMin;
+					const pxVal = Number.isFinite(pxValRaw) ? Math.min(mapMax, Math.max(mapMin, pxValRaw)) : mapMin;
+					num = Math.round(((pxVal - mapMin) / span) * 100);
+					displayText = `${Math.round(pxVal)}px`;
+				} else {
+					num = val !== undefined
+						? (isPx ? Number(String(val).replace('px', '')) : Number(val))
+						: (isPx ? 10 : 50);
+					displayText = isPx ? `${num}px` : String(num);
+				}
 				el.value = num;
 				const valEl = panel.querySelector(`#${el.id}-val`);
-				if (valEl) valEl.textContent = isPx ? `${num}px` : num;
+				if (valEl) valEl.textContent = displayText;
 			} else if (el.tagName === 'SELECT') {
 				if (val) el.value = val;
 			}
@@ -1006,6 +1056,15 @@
 			input.addEventListener('input', () => {
 				const num = Number(input.value);
 				const isPx = String(input.dataset.valueFormat || '').toLowerCase() === 'px';
+				const isMappedPx = String(input.dataset.valueFormat || '').toLowerCase() === 'mapped-px';
+				if (isMappedPx) {
+					const mapMin = Number(input.dataset.mapMinPx || 0);
+					const mapMax = Number(input.dataset.mapMaxPx || 100);
+					const pxVal = Math.round(mapMin + ((mapMax - mapMin) * (num / 100)));
+					if (valEl) valEl.textContent = `${pxVal}px`;
+					setConfigValue(path, `${pxVal}px`);
+					return;
+				}
 				if (valEl) valEl.textContent = isPx ? `${num}px` : num;
 				setConfigValue(path, isPx ? `${num}px` : num);
 			});
@@ -1253,6 +1312,41 @@
 								${buildGrillShapeRow('Shape', ['devices', key, 'bay', 'grill_shape'])}
 								${buildSliderRow('Size', ['devices', key, 'bay', 'grill_size_scale'])}
 							</div>
+							<div class="panel-subsection">
+								<div class="panel-subsection-title">Pool Name</div>
+								${buildFontRow('Font Name', ['devices', key, 'bay', 'disk_pool', 'font'])}
+								${buildPxSliderRow('Font Size', ['devices', key, 'bay', 'disk_pool', 'size'])}
+								${buildStyleCheckboxRow('Font Style', ['devices', key, 'bay', 'disk_pool', 'style'])}
+								${buildColorRow('Colour', ['devices', key, 'bay', 'disk_pool', 'color'])}
+							</div>
+							<div class="panel-subsection">
+								<div class="panel-subsection-title">ID</div>
+								${buildFontRow('Font Name', ['devices', key, 'bay', 'disk_index', 'font'])}
+								${buildPxSliderRow('Font Size', ['devices', key, 'bay', 'disk_index', 'size'])}
+								${buildStyleCheckboxRow('Font Style', ['devices', key, 'bay', 'disk_index', 'style'])}
+								${buildColorRow('Colour', ['devices', key, 'bay', 'disk_index', 'color'])}
+							</div>
+							<div class="panel-subsection">
+								<div class="panel-subsection-title">Serial</div>
+								${buildFontRow('Font Name', ['devices', key, 'bay', 'disk_serial', 'font'])}
+								${buildPxSliderRow('Font Size', ['devices', key, 'bay', 'disk_serial', 'size'])}
+								${buildStyleCheckboxRow('Font Style', ['devices', key, 'bay', 'disk_serial', 'style'])}
+								${buildColorRow('Colour', ['devices', key, 'bay', 'disk_serial', 'color'])}
+							</div>
+							<div class="panel-subsection">
+								<div class="panel-subsection-title">Size</div>
+								${buildFontRow('Font Name', ['devices', key, 'bay', 'disk_size', 'font'])}
+								${buildPxSliderRow('Font Size', ['devices', key, 'bay', 'disk_size', 'size'])}
+								${buildStyleCheckboxRow('Font Style', ['devices', key, 'bay', 'disk_size', 'style'])}
+								${buildColorRow('Colour', ['devices', key, 'bay', 'disk_size', 'color'])}
+							</div>
+							<div class="panel-subsection">
+								<div class="panel-subsection-title">Drive Temp</div>
+								${buildFontRow('Font Name', ['devices', key, 'bay', 'drive_temperature', 'font'])}
+								${buildPxSliderRow('Font Size', ['devices', key, 'bay', 'drive_temperature', 'size'])}
+								${buildStyleCheckboxRow('Font Style', ['devices', key, 'bay', 'drive_temperature', 'style'])}
+								${buildColorRow('Colour', ['devices', key, 'bay', 'drive_temperature', 'color'])}
+							</div>
 						</div>
 					</div>
 				</div>`;
@@ -1263,14 +1357,6 @@
 		wrapper.innerHTML = `
 			<button class="menu-button" id="disk-arrays-menu-btn" type="button">Disk Arrays</button>
 			<div class="dropdown-panel disk-arrays-panel" id="disk-arrays-panel">
-				<div class="panel-section">
-					<div class="panel-section-title">Drive Temperature</div>
-					${buildUnitRadioRow('Unit', ['ui', 'drive_temperature', 'unit'])}
-					${buildFontRow('Font', ['ui', 'drive_temperature', 'font'])}
-					${buildPxSliderRow('Font Size', ['ui', 'drive_temperature', 'size'])}
-					${buildTempStyleCheckboxRow('Font Style', ['ui', 'drive_temperature', 'style'])}
-					${buildColorRow('Font Colour', ['ui', 'drive_temperature', 'color'])}
-				</div>
 				${panelSections}
 			</div>`;
 

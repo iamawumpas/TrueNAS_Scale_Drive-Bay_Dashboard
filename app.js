@@ -818,6 +818,19 @@ function applyDeviceVariables(config) {
         }
         el.style.setProperty(name, String(value));
     };
+    const applyTextStyleOverride = (el, cssPrefix, styleCfg) => {
+        const cfg = styleCfg || {};
+        const styles = Array.isArray(cfg.style) ? cfg.style.map(v => String(v).toLowerCase()) : [];
+        const hasStyleOverride = Array.isArray(cfg.style);
+
+        setOrClear(el, `--${cssPrefix}-color`, cfg.color);
+        setOrClear(el, `--${cssPrefix}-font`, cfg.font);
+        setOrClear(el, `--${cssPrefix}-size`, cfg.size);
+        setOrClear(el, `--${cssPrefix}-weight`, hasStyleOverride ? (styles.includes('bold') ? '700' : '400') : undefined);
+        setOrClear(el, `--${cssPrefix}-style`, hasStyleOverride ? (styles.includes('italic') ? 'italic' : 'normal') : undefined);
+        setOrClear(el, `--${cssPrefix}-transform`, hasStyleOverride ? (styles.includes('allcaps') ? 'uppercase' : 'none') : undefined);
+        setOrClear(el, `--${cssPrefix}-variant`, hasStyleOverride ? (styles.includes('smallcaps') ? 'small-caps' : 'normal') : undefined);
+    };
     Object.entries(devices).forEach(([key, devCfg]) => {
         const el = document.querySelector(`.chassis-card[data-key="${key}"]`);
         if (!el) return;
@@ -884,6 +897,12 @@ function applyDeviceVariables(config) {
         setOrClear(el, '--server-name-variant', hasServerStyleOverride ? (serverStyles.includes('smallcaps') ? 'small-caps' : 'normal') : undefined);
         setOrClear(el, '--pci-address-color', chassisDev?.pci_address?.color);
 
+        applyTextStyleOverride(el, 'disk-pool', bayDev.disk_pool);
+        applyTextStyleOverride(el, 'disk-index', bayDev.disk_index);
+        applyTextStyleOverride(el, 'disk-serial', bayDev.disk_serial);
+        applyTextStyleOverride(el, 'disk-size', bayDev.disk_size);
+        applyTextStyleOverride(el, 'disk-temp', bayDev.drive_temperature);
+
         const hasScratchOverride =
             chassisDev.scratch_level !== undefined ||
             chassisDev.scratch_density !== undefined ||
@@ -941,7 +960,7 @@ function bayMarkup(disk, latchNumber, layout, tempUnit = 'C') {
     `;
 }
 
-function enclosureMarkup(model, hostname, tempUnit = 'C') {
+function enclosureMarkup(model, hostname, tempUnit = 'C', contentScale = 1.0) {
     const bays = model.disksByVisualIndex.map((disk, index) => bayMarkup(
         disk,
         model.latchNumberByVisualIndex[index] || index + 1,
@@ -953,7 +972,7 @@ function enclosureMarkup(model, hostname, tempUnit = 'C') {
     const caption = model.hasBackplane ? 'Backplane Enclosure' : 'Direct-Attach Enclosure';
 
     return `
-        <section class="chassis-card" data-key="${model.key}" style="--bay-gap:${model.bayGap}px; --chassis-width:${model.chassisWidthPx}px; --chassis-body-height:${model.bodyHeightPx}px; --bay-width:${model.bayWidthPx}px; --bay-height:${model.bayHeightPx}px;">
+        <section class="chassis-card" data-key="${model.key}" style="--bay-gap:${model.bayGap}px; --chassis-width:${model.chassisWidthPx}px; --chassis-body-height:${model.bodyHeightPx}px; --bay-width:${model.bayWidthPx}px; --bay-height:${model.bayHeightPx}px; --bay-scale:${contentScale};">
             <header class="chassis-head">
                 <div class="title-group">
                     <h2 class="chassis-title">${hostname}<span class="chassis-caption">${caption}</span></h2>
@@ -992,6 +1011,13 @@ function render(data) {
     const activeConfig = (window.__previewConfig__ && typeof window.__previewConfig__ === 'object')
         ? window.__previewConfig__
         : data?.config;
+    // Content scale is explicitly tuned for the supported layout envelope:
+    // 1 chassis wide => scale interior bay content up to match chassis growth.
+    // 2 chassis wide => baseline sizing (no extra scaling).
+    const referenceWidthPx = Math.max(320, Math.floor((availableWidthPx - gapPx) / 2));
+    const contentScale = chassisCount === 1
+        ? parseFloat((perChassisWidthPx / referenceWidthPx).toFixed(3))
+        : 1.0;
     const tempUnit = String(activeConfig?.ui?.drive_temperature?.unit || 'C').toUpperCase() === 'F' ? 'F' : 'C';
     const renderData = {
         ...data,
@@ -1007,7 +1033,7 @@ function render(data) {
         return;
     }
 
-    canvas.innerHTML = models.map(model => enclosureMarkup(model, hostname, tempUnit)).join('');
+    canvas.innerHTML = models.map(model => enclosureMarkup(model, hostname, tempUnit, contentScale)).join('');
 
     applyDeviceVariables(activeConfig);
 

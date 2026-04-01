@@ -209,8 +209,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 6px;
+    gap: calc(6px * var(--bay-scale, 1));
+    padding: calc(6px * var(--bay-scale, 1));
     flex-shrink: 0;
     background: var(--bay-led-panel-bg, rgba(0, 0, 0, 0.2));
 }
@@ -218,21 +218,21 @@ body {
 .led-panel-vertical {
     flex-direction: row;
     width: auto;
-    height: 16px;
-    padding: 0 3px;
-    margin-top: 6px;
+    height: calc(16px * var(--bay-scale, 1));
+    padding: 0 calc(3px * var(--bay-scale, 1));
+    margin-top: calc(6px * var(--bay-scale, 1));
 }
 
 .led-panel-horizontal {
     flex-direction: column;
-    width: 18px;
+    width: calc(18px * var(--bay-scale, 1));
 }
 
 .info-panel {
     flex: 1;
     min-width: 0;
     min-height: 0;
-    padding: 4px;
+    padding: calc(4px * var(--bay-scale, 1));
     display: grid;
     grid-template-rows: repeat(3, minmax(0, 1fr));
     gap: 1px;
@@ -241,10 +241,10 @@ body {
 .info-panel-vertical {
     position: absolute;
     left: 50%;
-    top: calc(24px + ((var(--bay-height, 100px) - 44px) / 2) - (var(--bay-width, 40px) * 0.1));
-    width: calc(var(--bay-height, 100px) - 44px - (var(--bay-height, 100px) * 0.1));
-    height: calc(var(--bay-width, 40px) - 12px);
-    padding: 2px;
+    top: calc(calc(24px * var(--bay-scale, 1)) + ((var(--bay-height, 100px) - calc(44px * var(--bay-scale, 1))) / 2) - (var(--bay-width, 40px) * 0.1));
+    width: calc(var(--bay-height, 100px) - calc(44px * var(--bay-scale, 1)) - (var(--bay-height, 100px) * 0.1));
+    height: calc(var(--bay-width, 40px) - calc(12px * var(--bay-scale, 1)));
+    padding: calc(2px * var(--bay-scale, 1));
     gap: 1px;
     transform: translate(-50%, -50%) rotate(-90deg);
     transform-origin: center;
@@ -255,7 +255,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 6px;
+    gap: calc(6px * var(--bay-scale, 1));
     min-width: 0;
 }
 
@@ -263,7 +263,7 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: 0.56rem;
+    font-size: calc(0.56rem * var(--bay-scale, 1));
     line-height: 1;
 }
 
@@ -277,59 +277,74 @@ body {
 }
 
 .bay-vertical .info-line {
-    gap: 3px;
+    gap: calc(3px * var(--bay-scale, 1));
 }
 
 .bay-vertical .info-line span {
-    font-size: 0.52rem;
     line-height: 0.92;
 }
 
+.bay-vertical .info-line .info-serial {
+    font-size: calc(var(--disk-serial-size, 0.52rem) * var(--bay-scale, 1));
+}
+
+.bay-vertical .info-line .info-size {
+    font-size: calc(var(--disk-size-size, 0.52rem) * var(--bay-scale, 1));
+}
+
+.bay-vertical .info-line .info-pool {
+    font-size: calc(var(--disk-pool-size, 0.52rem) * var(--bay-scale, 1));
+}
+
+.bay-vertical .info-line .info-idx {
+    font-size: calc(var(--disk-index-size, 0.52rem) * var(--bay-scale, 1));
+}
+
 .bay-vertical .info-line .info-temp {
-    font-size: var(--disk-temp-size, 10px);
+    font-size: calc(var(--disk-temp-size, 10px) * var(--bay-scale, 1));
     line-height: 1;
 }
 
-.info-serial {
+.info-line .info-serial {
     color: var(--disk-serial-color, #fff26a);
     font-family: var(--disk-serial-font, var(--font-default));
-    font-size: var(--disk-serial-size, 0.56rem);
+    font-size: calc(var(--disk-serial-size, 0.56rem) * var(--bay-scale, 1));
     font-weight: var(--disk-serial-weight, 700);
     font-style: var(--disk-serial-style, normal);
     text-transform: var(--disk-serial-transform, none);
 }
 
-.info-size {
+.info-line .info-size {
     color: var(--disk-size-color, #f37df5);
     font-family: var(--disk-size-font, var(--font-default));
-    font-size: var(--disk-size-size, 0.56rem);
+    font-size: calc(var(--disk-size-size, 0.56rem) * var(--bay-scale, 1));
     font-weight: var(--disk-size-weight, 700);
     font-style: var(--disk-size-style, normal);
     text-transform: var(--disk-size-transform, none);
 }
 
-.info-pool {
+.info-line .info-pool {
     color: var(--disk-pool-color, #d5dee9);
     font-family: var(--disk-pool-font, var(--font-default));
-    font-size: var(--disk-pool-size, 0.56rem);
+    font-size: calc(var(--disk-pool-size, 0.56rem) * var(--bay-scale, 1));
     font-weight: var(--disk-pool-weight, 700);
     font-style: var(--disk-pool-style, normal);
     text-transform: var(--disk-pool-transform, none);
 }
 
-.info-idx {
+.info-line .info-idx {
     color: var(--disk-index-color, #6ad9ff);
     font-family: var(--disk-index-font, var(--font-default));
-    font-size: var(--disk-index-size, 0.56rem);
+    font-size: calc(var(--disk-index-size, 0.56rem) * var(--bay-scale, 1));
     font-weight: var(--disk-index-weight, 700);
     font-style: var(--disk-index-style, normal);
     text-transform: var(--disk-index-transform, none);
 }
 
-.info-temp {
+.info-line .info-temp {
     color: var(--disk-temp-color, #ffffff);
     font-family: var(--disk-temp-font, Arial, Helvetica, sans-serif);
-    font-size: var(--disk-temp-size, 10px);
+    font-size: calc(var(--disk-temp-size, 10px) * var(--bay-scale, 1));
     font-weight: var(--disk-temp-weight, 400);
     font-style: var(--disk-temp-style, normal);
     text-transform: var(--disk-temp-transform, none);
@@ -365,18 +380,18 @@ body {
 
 .latch-vertical {
     width: 100%;
-    height: 16px;
+    height: calc(16px * var(--bay-scale, 1));
     border-top: 2px solid var(--latch-border-color, rgba(255, 255, 255, 0.22));
 }
 
 .latch-horizontal {
     height: 100%;
-    width: 16px;
+    width: calc(16px * var(--bay-scale, 1));
     border-left: 2px solid var(--latch-border-color, rgba(255, 255, 255, 0.22));
 }
 
 .latch-num {
-    font-size: var(--bay-id-size, 0.67rem);
+    font-size: calc(var(--bay-id-size, 0.67rem) * var(--bay-scale, 1));
     font-family: var(--bay-id-font, var(--font-default));
     font-weight: var(--bay-id-weight, 700);
     font-style: var(--bay-id-style, normal);
@@ -387,7 +402,7 @@ body {
 }
 
 .led {
-    width: clamp(5px, 11%, 12px);
+    width: clamp(calc(5px * var(--bay-scale, 1)), 11%, calc(12px * var(--bay-scale, 1)));
     aspect-ratio: 1;
     border-radius: 50%;
     flex-shrink: 0;
