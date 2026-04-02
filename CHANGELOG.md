@@ -1,5 +1,15 @@
 # Storage Dashboard - Change Log
 
+## Version 24.6:
+* **Vertical Bay LED-to-Info Proportion Adjustment**
+    * Increased spacing between the vertical LED panel and rotated info panel to better match horizontal bay visual proportions.
+    * Applied scale-aware offset logic so spacing remains consistent across scene-scale and bay-scale changes.
+* **Vertical Info Panel Latch-Clearance Safeguard**
+    * Added vertical info-panel height constraints to prevent rotated metadata text from overlapping the latch area.
+    * Preserved existing vertical text layout and flicker-stability behavior while enforcing latch-safe bounds.
+* **Targeted Vertical CSS Refinement**
+    * Final adjustments were limited to vertical info-panel geometry in `style.css` with no horizontal rendering changes.
+
 ## Version 24.5:
 * **Scratch Pattern Stability Fix (Mirror/Live Refresh Safe)**
     * Fixed chassis scratch patterns changing during normal dashboard data refresh and mirror access.
