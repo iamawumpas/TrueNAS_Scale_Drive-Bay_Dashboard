@@ -1,10 +1,14 @@
 @import 'Base.css';
 
+:root {
+    --dashboard-scene-scale: 1;
+}
+
 body {
     background-color: var(--page-bg-color, #02040a);
     color: var(--body-text-color, #ffffff);
     margin: 0;
-    padding: 10px;
+    padding: calc(10px * var(--dashboard-scene-scale, 1));
     font-family: var(--font-default, "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif);
     container-type: inline-size;
 }
@@ -12,7 +16,7 @@ body {
 #dashboard-wrapper {
     width: 100%;
     max-width: var(--dashboard-max-width, 1600px);
-    margin: 20px auto 0;
+    margin: calc(20px * var(--dashboard-scene-scale, 1)) auto 0;
     container-type: inline-size;
 }
 
@@ -21,24 +25,25 @@ body {
     flex-wrap: wrap;
     align-items: stretch;
     justify-content: center;
-    gap: var(--dashboard-gap, 16px);
+    gap: calc(var(--dashboard-gap, 16px) * var(--dashboard-scene-scale, 1));
 }
 
 #canvas {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    gap: var(--dashboard-gap, 16px);
-    margin-top: var(--dashboard-top-gap, 14px);
+    justify-content: center;
+    gap: calc(var(--dashboard-gap, 16px) * var(--dashboard-scene-scale, 1));
+    margin-top: calc(var(--dashboard-top-gap, 14px) * var(--dashboard-scene-scale, 1));
 }
 
 .rebuild-note {
     border: 1px solid var(--rebuild-note-border, #2f3d52);
     background: var(--rebuild-note-bg, #151a22);
-    border-radius: 8px;
-    padding: 8px 12px;
+    border-radius: calc(8px * var(--dashboard-scene-scale, 1));
+    padding: calc(8px * var(--dashboard-scene-scale, 1)) calc(12px * var(--dashboard-scene-scale, 1));
     color: var(--rebuild-note-color, #a4b4c8);
-    font-size: 0.92rem;
+    font-size: calc(0.92rem * var(--dashboard-scene-scale, 1));
 }
 
 .chassis-card {
@@ -54,12 +59,12 @@ body {
             var(--enc-chassis-gradient-mid-a, var(--enc-chassis-bg, var(--chassis-card-bg, #14181f))) 60%,
             var(--enc-chassis-gradient-end, var(--enc-chassis-bg, var(--chassis-card-bg, #14181f))) 100%
         );
-    border-radius: 10px;
-    box-shadow: inset 0 0 20px #000000, 0 10px 30px var(--chassis-shadow, rgba(0,0,0,0.8));
-    padding: 10px 10px 12px;
+    border-radius: calc(10px * var(--dashboard-scene-scale, 1));
+    box-shadow: inset 0 0 calc(20px * var(--dashboard-scene-scale, 1)) #000000, 0 calc(10px * var(--dashboard-scene-scale, 1)) calc(30px * var(--dashboard-scene-scale, 1)) var(--chassis-shadow, rgba(0,0,0,0.8));
+    padding: calc(10px * var(--dashboard-scene-scale, 1)) calc(10px * var(--dashboard-scene-scale, 1)) calc(12px * var(--dashboard-scene-scale, 1));
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: calc(8px * var(--dashboard-scene-scale, 1));
     min-width: min(100%, 340px);
     width: min(100%, var(--chassis-width, 620px));
     max-width: 100%;
@@ -68,10 +73,10 @@ body {
 .chassis-head {
     display: flex;
     justify-content: flex-start;
-    gap: 14px;
+    gap: calc(14px * var(--dashboard-scene-scale, 1));
     align-items: flex-start;
     border-bottom: 1px solid var(--chassis-header-divider, rgba(255, 255, 255, 0.08));
-    padding-bottom: 8px;
+    padding-bottom: calc(8px * var(--dashboard-scene-scale, 1));
 }
 
 .title-group {
@@ -82,9 +87,9 @@ body {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 2px;
+    gap: calc(2px * var(--dashboard-scene-scale, 1));
     color: var(--chassis-meta-color, var(--chassis-font-color, #98a7bd));
-    font-size: 0.74rem;
+    font-size: calc(0.74rem * var(--dashboard-scene-scale, 1));
     font-family: var(--chassis-font, var(--font-default));
     letter-spacing: 0.02em;
     text-transform: uppercase;
@@ -94,22 +99,22 @@ body {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 8px;
+    gap: calc(8px * var(--dashboard-scene-scale, 1));
     color: var(--server-name-color, #ffffff);
     font-family: var(--server-name-font, var(--font-default));
-    font-size: calc(var(--server-name-size, 1.55rem) * var(--server-name-scale, 1));
+    font-size: calc(var(--server-name-size, 1.55rem) * var(--server-name-scale, 1) * var(--dashboard-scene-scale, 1));
     font-weight: var(--server-name-weight, 700);
     font-style: var(--server-name-style, normal);
     text-transform: var(--server-name-transform, none);
     font-variant: var(--server-name-variant, small-caps);
     line-height: 1;
-    margin: 0 0 3px 0;
+    margin: 0 0 calc(3px * var(--dashboard-scene-scale, 1)) 0;
 }
 
 .chassis-caption {
     color: var(--enclosure-label-color, var(--server-name-color, #ffffff));
     font-family: var(--enclosure-label-font, var(--server-name-font, var(--font-default)));
-    font-size: calc(var(--enclosure-label-size, 1em) * var(--enclosure-label-scale, 0.4));
+    font-size: calc(var(--enclosure-label-size, 1em) * var(--enclosure-label-scale, 0.4) * var(--dashboard-scene-scale, 1));
     font-weight: var(--enclosure-label-weight, 700);
     font-style: var(--enclosure-label-style, normal);
     text-transform: var(--enclosure-label-transform, uppercase);
@@ -121,7 +126,7 @@ body {
     color: var(--pci-address-color, var(--chassis-subtitle-color, #7f8b9b));
     margin: 0;
     font-family: var(--pci-address-font, var(--font-monospace));
-    font-size: calc(var(--pci-address-size, 0.88rem) * var(--pci-address-scale, 1));
+    font-size: calc(var(--pci-address-size, 0.88rem) * var(--pci-address-scale, 1) * var(--dashboard-scene-scale, 1));
     font-weight: var(--pci-address-weight, 700);
     font-style: var(--pci-address-style, normal);
     text-transform: var(--pci-address-transform, none);
@@ -129,12 +134,12 @@ body {
 }
 
 .chassis-body {
-    padding: 5px;
-    border-radius: 8px;
+    padding: calc(5px * var(--dashboard-scene-scale, 1));
+    border-radius: calc(8px * var(--dashboard-scene-scale, 1));
     background: var(--enc-chassis-bg-body, var(--chassis-body-bg, var(--chassis-bg-base, #0d121a)));
     height: var(--chassis-body-height, 120px);
     box-sizing: border-box;
-    overflow: visible;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -150,7 +155,7 @@ body {
 .bay-shell {
     border: 1px solid var(--bay-border, #2b3340);
     background: linear-gradient(145deg, var(--enc-bay-bg-start, var(--bay-bg-gradient-start, #111621)), var(--enc-bay-bg-end, var(--bay-bg-gradient-end, #0a0f18)));
-    border-radius: 7px;
+    border-radius: calc(7px * var(--dashboard-scene-scale, 1));
     overflow: hidden;
     width: var(--bay-width, 40px);
     height: var(--bay-height, 100px);
@@ -171,11 +176,11 @@ body {
         radial-gradient(circle, var(--bay-grill-hole-color, #000000) 42%, transparent 45%)
     );
     background-size:
-        var(--enc-grill-size, var(--bay-grill-size, 18px))
-        var(--enc-grill-size, var(--bay-grill-size, 18px));
+        calc(var(--enc-grill-size, var(--bay-grill-size, 18px)) * var(--dashboard-scene-scale, 1))
+        calc(var(--enc-grill-size, var(--bay-grill-size, 18px)) * var(--dashboard-scene-scale, 1));
     background-position: 0 0, var(--enc-grill-pos2,
-        calc(var(--enc-grill-size, var(--bay-grill-size, 18px)) / 2)
-        calc(var(--enc-grill-size, var(--bay-grill-size, 18px)) / 2)
+        calc((var(--enc-grill-size, var(--bay-grill-size, 18px)) * var(--dashboard-scene-scale, 1)) / 2)
+        calc((var(--enc-grill-size, var(--bay-grill-size, 18px)) * var(--dashboard-scene-scale, 1)) / 2)
     );
 }
 
@@ -211,8 +216,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: calc(6px * var(--bay-scale, 1));
-    padding: calc(6px * var(--bay-scale, 1));
+    gap: calc(6px * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1));
+    padding: calc(6px * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1));
     flex-shrink: 0;
     background: var(--bay-led-panel-bg, rgba(0, 0, 0, 0.2));
 }
@@ -220,34 +225,34 @@ body {
 .led-panel-vertical {
     flex-direction: row;
     width: auto;
-    height: calc(16px * var(--bay-scale, 1));
-    padding: 0 calc(3px * var(--bay-scale, 1));
-    margin-top: calc(6px * var(--bay-scale, 1));
+    height: calc(16px * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1));
+    padding: 0 calc(3px * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1));
+    margin-top: calc(6px * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1));
 }
 
 .led-panel-horizontal {
     flex-direction: column;
-    width: calc(18px * var(--bay-scale, 1));
+    width: calc(18px * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1));
 }
 
 .info-panel {
     flex: 1;
     min-width: 0;
     min-height: 0;
-    padding: calc(4px * var(--bay-scale, 1));
+    padding: calc(4px * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1));
     display: grid;
     grid-template-rows: repeat(3, minmax(0, 1fr));
-    gap: 1px;
+    gap: calc(1px * var(--dashboard-scene-scale, 1));
 }
 
 .info-panel-vertical {
     position: absolute;
     left: 50%;
-    top: calc(calc(24px * var(--bay-scale, 1)) + ((var(--bay-height, 100px) - calc(44px * var(--bay-scale, 1))) / 2) - (var(--bay-width, 40px) * 0.1));
-    width: calc(var(--bay-height, 100px) - calc(44px * var(--bay-scale, 1)) - (var(--bay-height, 100px) * 0.1));
-    height: calc(var(--bay-width, 40px) - calc(12px * var(--bay-scale, 1)));
-    padding: calc(2px * var(--bay-scale, 1));
-    gap: 1px;
+    top: 50%;
+    width: calc(var(--bay-height, 100px) * 0.68);
+    height: calc(var(--bay-width, 40px) * 0.62);
+    padding: calc(2px * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1));
+    gap: calc(1px * var(--dashboard-scene-scale, 1));
     transform: translate(-50%, -50%) rotate(-90deg);
     transform-origin: center;
     overflow: hidden;
@@ -257,7 +262,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: calc(6px * var(--bay-scale, 1));
+    gap: calc(6px * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1));
     min-width: 0;
 }
 
@@ -265,7 +270,7 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: calc(0.56rem * var(--bay-scale, 1));
+    font-size: calc(0.56rem * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1));
     line-height: 1;
 }
 
@@ -279,7 +284,7 @@ body {
 }
 
 .bay-vertical .info-line {
-    gap: calc(3px * var(--bay-scale, 1));
+    gap: calc(3px * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1));
 }
 
 .bay-vertical .info-line span {
@@ -287,30 +292,30 @@ body {
 }
 
 .bay-vertical .info-line .info-serial {
-    font-size: calc(var(--disk-serial-size, 0.52rem) * var(--bay-scale, 1));
+    font-size: min(calc(var(--disk-serial-size, 0.52rem) * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), var(--bay-text-cap-px, 12px));
 }
 
 .bay-vertical .info-line .info-size {
-    font-size: calc(var(--disk-size-size, 0.52rem) * var(--bay-scale, 1));
+    font-size: min(calc(var(--disk-size-size, 0.52rem) * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), var(--bay-text-cap-px, 12px));
 }
 
 .bay-vertical .info-line .info-pool {
-    font-size: calc(var(--disk-pool-size, 0.52rem) * var(--bay-scale, 1));
+    font-size: min(calc(var(--disk-pool-size, 0.52rem) * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), var(--bay-text-cap-small-px, 10px));
 }
 
 .bay-vertical .info-line .info-idx {
-    font-size: calc(var(--disk-index-size, 0.52rem) * var(--bay-scale, 1));
+    font-size: min(calc(var(--disk-index-size, 0.52rem) * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), var(--bay-text-cap-small-px, 10px));
 }
 
 .bay-vertical .info-line .info-temp {
-    font-size: calc(var(--disk-temp-size, 10px) * var(--bay-scale, 1));
+    font-size: min(calc(var(--disk-temp-size, 10px) * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), var(--bay-text-cap-px, 12px));
     line-height: 1;
 }
 
 .info-line .info-serial {
     color: var(--disk-serial-color, #fff26a);
     font-family: var(--disk-serial-font, var(--font-default));
-    font-size: calc(var(--disk-serial-size, 0.56rem) * var(--bay-scale, 1));
+    font-size: min(calc(var(--disk-serial-size, 0.56rem) * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), var(--bay-text-cap-px, 12px));
     font-weight: var(--disk-serial-weight, 700);
     font-style: var(--disk-serial-style, normal);
     text-transform: var(--disk-serial-transform, none);
@@ -319,7 +324,7 @@ body {
 .info-line .info-size {
     color: var(--disk-size-color, #f37df5);
     font-family: var(--disk-size-font, var(--font-default));
-    font-size: calc(var(--disk-size-size, 0.56rem) * var(--bay-scale, 1));
+    font-size: min(calc(var(--disk-size-size, 0.56rem) * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), var(--bay-text-cap-px, 12px));
     font-weight: var(--disk-size-weight, 700);
     font-style: var(--disk-size-style, normal);
     text-transform: var(--disk-size-transform, none);
@@ -328,7 +333,7 @@ body {
 .info-line .info-pool {
     color: var(--disk-pool-color, #d5dee9);
     font-family: var(--disk-pool-font, var(--font-default));
-    font-size: calc(var(--disk-pool-size, 0.56rem) * var(--bay-scale, 1));
+    font-size: min(calc(var(--disk-pool-size, 0.56rem) * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), var(--bay-text-cap-small-px, 10px));
     font-weight: var(--disk-pool-weight, 700);
     font-style: var(--disk-pool-style, normal);
     text-transform: var(--disk-pool-transform, none);
@@ -337,7 +342,7 @@ body {
 .info-line .info-idx {
     color: var(--disk-index-color, #6ad9ff);
     font-family: var(--disk-index-font, var(--font-default));
-    font-size: calc(var(--disk-index-size, 0.56rem) * var(--bay-scale, 1));
+    font-size: min(calc(var(--disk-index-size, 0.56rem) * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), var(--bay-text-cap-small-px, 10px));
     font-weight: var(--disk-index-weight, 700);
     font-style: var(--disk-index-style, normal);
     text-transform: var(--disk-index-transform, none);
@@ -346,7 +351,7 @@ body {
 .info-line .info-temp {
     color: var(--disk-temp-color, #ffffff);
     font-family: var(--disk-temp-font, Arial, Helvetica, sans-serif);
-    font-size: calc(var(--disk-temp-size, 10px) * var(--bay-scale, 1));
+    font-size: min(calc(var(--disk-temp-size, 10px) * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), var(--bay-text-cap-px, 12px));
     font-weight: var(--disk-temp-weight, 400);
     font-style: var(--disk-temp-style, normal);
     text-transform: var(--disk-temp-transform, none);
@@ -361,13 +366,13 @@ body {
 .info-temp.temp-warn {
     color: #ffb347;
     animation: temp-blink-amber 1s infinite;
-    text-shadow: 0 0 4px rgba(255, 179, 71, 0.6);
+    text-shadow: 0 0 calc(4px * var(--dashboard-scene-scale, 1)) rgba(255, 179, 71, 0.6);
 }
 
 .info-temp.temp-hot {
     color: #ff3b30;
     animation: temp-blink-red 0.8s infinite;
-    text-shadow: 0 0 5px rgba(255, 59, 48, 0.72);
+    text-shadow: 0 0 calc(5px * var(--dashboard-scene-scale, 1)) rgba(255, 59, 48, 0.72);
 }
 
 .latch {
@@ -382,18 +387,18 @@ body {
 
 .latch-vertical {
     width: 100%;
-    height: calc(16px * var(--bay-scale, 1));
-    border-top: 2px solid var(--latch-border-color, rgba(255, 255, 255, 0.22));
+    height: calc(16px * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1));
+    border-top: calc(2px * var(--dashboard-scene-scale, 1)) solid var(--latch-border-color, rgba(255, 255, 255, 0.22));
 }
 
 .latch-horizontal {
     height: 100%;
-    width: calc(16px * var(--bay-scale, 1));
-    border-left: 2px solid var(--latch-border-color, rgba(255, 255, 255, 0.22));
+    width: calc(16px * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1));
+    border-left: calc(2px * var(--dashboard-scene-scale, 1)) solid var(--latch-border-color, rgba(255, 255, 255, 0.22));
 }
 
 .latch-num {
-    font-size: calc(var(--bay-id-size, 0.67rem) * var(--bay-scale, 1));
+    font-size: min(calc(var(--bay-id-size, 0.67rem) * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), var(--bay-text-cap-small-px, 10px));
     font-family: var(--bay-id-font, var(--font-default));
     font-weight: var(--bay-id-weight, 700);
     font-style: var(--bay-id-style, normal);
@@ -404,35 +409,35 @@ body {
 }
 
 .led {
-    width: clamp(calc(5px * var(--bay-scale, 1)), 11%, calc(12px * var(--bay-scale, 1)));
+    width: clamp(calc(5px * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), 11%, calc(12px * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)));
     aspect-ratio: 1;
     border-radius: 50%;
     flex-shrink: 0;
     background: var(--led-dark-core, #111111);
-    box-shadow: inset 0 2px 4px var(--led-shell-shadow, rgba(0,0,0,0.9));
+    box-shadow: inset 0 calc(2px * var(--dashboard-scene-scale, 1)) calc(4px * var(--dashboard-scene-scale, 1)) var(--led-shell-shadow, rgba(0,0,0,0.9));
     border: 1px solid var(--led-shell-border, rgba(255,255,255,0.05));
 }
 
 /* 3D Sphere LED Status Colors */
 .status-led.allocated-healthy {
     background: radial-gradient(circle at 35% 35%, #fff 0%, var(--led-allocated-healthy, #00ff00) 45%, #000 100%);
-    box-shadow: 0 0 10px var(--led-allocated-healthy, #00ff00);
+    box-shadow: 0 0 calc(10px * var(--dashboard-scene-scale, 1)) var(--led-allocated-healthy, #00ff00);
 }
 .status-led.error {
     background: radial-gradient(circle at 35% 35%, #fff 0%, var(--led-error, #ffaa00) 45%, #000 100%);
-    box-shadow: 0 0 10px var(--led-error, #ffaa00);
+    box-shadow: 0 0 calc(10px * var(--dashboard-scene-scale, 1)) var(--led-error, #ffaa00);
 }
 .status-led.unallocated {
     background: radial-gradient(circle at 35% 35%, #fff 0%, var(--led-unallocated, #a000ff) 45%, #000 100%);
-    box-shadow: 0 0 10px var(--led-unallocated, #a000ff);
+    box-shadow: 0 0 calc(10px * var(--dashboard-scene-scale, 1)) var(--led-unallocated, #a000ff);
 }
 .status-led.faulted {
     background: radial-gradient(circle at 35% 35%, #fff 0%, var(--led-faulted, #ff0000) 45%, #000 100%);
-    box-shadow: 0 0 10px var(--led-faulted, #ff0000);
+    box-shadow: 0 0 calc(10px * var(--dashboard-scene-scale, 1)) var(--led-faulted, #ff0000);
 }
 .status-led.resilvering {
     background: radial-gradient(circle at 35% 35%, #fff 0%, var(--led-resilvering, #ffffff) 45%, #000 100%);
-    box-shadow: 0 0 10px var(--led-resilvering, #ffffff);
+    box-shadow: 0 0 calc(10px * var(--dashboard-scene-scale, 1)) var(--led-resilvering, #ffffff);
 }
 
 /* Blinking LED States */
@@ -449,12 +454,12 @@ body {
 /* Activity LED */
 .activity-led {
     background: var(--led-dark-core, #111111);
-    box-shadow: inset 0 2px 4px var(--led-shell-shadow, rgba(0,0,0,0.9));
+    box-shadow: inset 0 calc(2px * var(--dashboard-scene-scale, 1)) calc(4px * var(--dashboard-scene-scale, 1)) var(--led-shell-shadow, rgba(0,0,0,0.9));
     border: 1px solid var(--led-shell-border, rgba(255,255,255,0.05));
 }
 .activity-led.active {
     background: radial-gradient(circle at 35% 35%, #fff 0%, var(--led-activity, #008cff) 45%, #000 100%);
-    box-shadow: 0 0 12px var(--led-activity, #008cff);
+    box-shadow: 0 0 calc(12px * var(--dashboard-scene-scale, 1)) var(--led-activity, #008cff);
     animation: led-pulse 0.1s infinite alternate;
 }
 
@@ -514,20 +519,21 @@ body {
 #legend-chassis {
     background: var(--menu-dropdown-bg, #1a1a1a);
     border: 1px solid var(--menu-dropdown-border, #555555);
-    padding: 14px;
-    border-radius: 12px;
-    box-shadow: 0 8px 16px var(--menu-dropdown-shadow, rgba(0, 0, 0, 0.8));
+    padding: calc(14px * var(--dashboard-scene-scale, 1));
+    border-radius: calc(12px * var(--dashboard-scene-scale, 1));
+    box-shadow: 0 calc(8px * var(--dashboard-scene-scale, 1)) calc(16px * var(--dashboard-scene-scale, 1)) var(--menu-dropdown-shadow, rgba(0, 0, 0, 0.8));
     display: none;
     flex-direction: column;
     justify-content: center;
-    min-width: 300px;
+    width: max-content;
+    min-width: 0;
 }
 
 #legend-chassis.legend-overlay-active {
     display: flex;
     position: fixed;
-    top: 68px;
-    right: 16px;
+    top: calc(68px * var(--dashboard-scene-scale, 1));
+    right: calc(16px * var(--dashboard-scene-scale, 1));
     width: max-content;
     max-width: min(360px, calc(100cqw - 32px));
     max-height: calc(100cqh - 84px);
@@ -549,27 +555,27 @@ body {
 
 #legend-chassis .legend-title {
     color: var(--legend-title-color, rgba(255,255,255,0.9));
-    font-size: var(--legend-title-size, 1.1rem);
+    font-size: calc(var(--legend-title-size, 1.1rem) * var(--dashboard-scene-scale, 1));
     font-family: var(--legend-font, var(--font-default));
     font-weight: var(--legend-title-weight, 800);
-    letter-spacing: 1px;
-    margin-bottom: 14px;
+    letter-spacing: calc(1px * var(--dashboard-scene-scale, 1));
+    margin-bottom: calc(14px * var(--dashboard-scene-scale, 1));
 }
 
 .legend-items-row {
     display: grid;
     grid-template-columns: repeat(2, auto);
-    column-gap: 20px;
-    row-gap: 10px;
+    column-gap: calc(20px * var(--dashboard-scene-scale, 1));
+    row-gap: calc(10px * var(--dashboard-scene-scale, 1));
     width: max-content;
 }
 
 .legend-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: calc(8px * var(--dashboard-scene-scale, 1));
     color: var(--legend-color, #cccccc);
-    font-size: var(--legend-size, 0.75rem);
+    font-size: calc(var(--legend-size, 0.75rem) * var(--dashboard-scene-scale, 1));
     font-family: var(--legend-font, var(--font-default));
     font-weight: var(--legend-weight, 700);
     font-style: var(--legend-style, normal);
@@ -578,8 +584,8 @@ body {
 }
 
 .dot {
-    width: 10px;
-    height: 10px;
+    width: calc(10px * var(--dashboard-scene-scale, 1));
+    height: calc(10px * var(--dashboard-scene-scale, 1));
     border-radius: 50%;
     display: inline-block;
 }
@@ -595,16 +601,12 @@ body {
 
 @media (max-width: 800px) {
     body {
-        padding: 8px;
-    }
-
-    .chassis-card {
-        width: 100%;
+        padding: calc(8px * var(--dashboard-scene-scale, 1));
     }
 
     .chassis-head {
         flex-direction: column;
-        gap: 6px;
+        gap: calc(6px * var(--dashboard-scene-scale, 1));
     }
 
     .meta-group {

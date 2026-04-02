@@ -10,6 +10,8 @@ let lastGoodRenderPayload = null;
 let lastGoodRenderAt = 0;
 let lastAcceptedTopologyCount = 0;
 let updateInFlight = false;
+const DASHBOARD_SCENE_REFERENCE_WIDTH_PX = 1280;
+const DASHBOARD_SCENE_REFERENCE_HEIGHT_PX = 800;
 
 function delay(ms) {
     return new Promise(resolve => window.setTimeout(resolve, ms));
@@ -95,6 +97,16 @@ function getRenderablePayload(payload) {
     }
 
     return payload;
+}
+
+function computeDashboardSceneScale(availableWidthPx) {
+    const viewportHeightPx = Math.max(
+        1,
+        window.innerHeight || document.documentElement.clientHeight || DASHBOARD_SCENE_REFERENCE_HEIGHT_PX
+    );
+    const widthScale = availableWidthPx / DASHBOARD_SCENE_REFERENCE_WIDTH_PX;
+    const heightScale = viewportHeightPx / DASHBOARD_SCENE_REFERENCE_HEIGHT_PX;
+    return Math.max(0.5, Math.min(1.15, Math.min(widthScale, heightScale)));
 }
 
 function applyConfigMap(rootStyle, mapping) {
@@ -499,7 +511,8 @@ function buildEnclosureModel(topologyKey, chassisData, data, layoutContext = {})
     const chassisUnits = clampInt(chassisConfig.rack_units || 2, 2, 1, 12);
     const configuredWidthPx = clampInt(chassisConfig.width_px, 620, 320, 2600);
     const viewportWidthPx = clampInt(layoutContext.preferredWidthPx, configuredWidthPx, 320, 2600);
-    const chassisWidthPx = viewportWidthPx;
+    const nineteenInMaxPx = clampInt(layoutContext.nineteenInMaxPx, 620, 320, 2600);
+    const chassisWidthPx = Math.min(viewportWidthPx, nineteenInMaxPx);
     const rackWidthIn = Number(uiLayout.rack_width_in);
     const uHeightIn = Number(uiLayout.u_height_in);
     const safeRackWidthIn = Number.isFinite(rackWidthIn) && rackWidthIn > 0 ? rackWidthIn : GEOMETRY_DEFAULTS.RACK_WIDTH_MM / 25.4;
@@ -541,8 +554,35 @@ function buildEnclosureModel(topologyKey, chassisData, data, layoutContext = {})
     const bayShortSidePx = Math.max(20, shortMm * pxPerMm);
     const bayLongSidePx  = Math.max(24, longMm  * pxPerMm);
 
-    const bayWidthPx  = grid.layout === 'horizontal' ? bayLongSidePx  : bayShortSidePx * 1.21;
-    const bayHeightPx = grid.layout === 'horizontal' ? bayShortSidePx : bayLongSidePx;
+    let bayWidthPx  = grid.layout === 'horizontal' ? bayLongSidePx  : bayShortSidePx;
+    let bayHeightPx = grid.layout === 'horizontal' ? bayShortSidePx : bayLongSidePx;
+
+    // Final safety fit: keep bay proportions but shrink uniformly if the grid would overflow.
+    const gridWidthPx = (grid.cols * bayWidthPx) + ((grid.cols - 1) * bayGap);
+    const gridHeightPx = (grid.rows * bayHeightPx) + ((grid.rows - 1) * bayGap);
+    const widthFitScale = bodyWidthPx / Math.max(1, gridWidthPx);
+    const heightFitScale = innerHeightPx / Math.max(1, gridHeightPx);
+    const finalFitScale = Math.max(0.1, Math.min(1, widthFitScale, heightFitScale));
+
+    if (finalFitScale < 1) {
+        bayWidthPx = Math.max(20, bayWidthPx * finalFitScale);
+        bayHeightPx = Math.max(24, bayHeightPx * finalFitScale);
+    }
+
+    // Fit internals (LED/text/latch) to physical bay dimensions.
+    const contentReference = grid.layout === 'horizontal'
+        ? { width: 100, height: 26 }
+        : { width: 40, height: 100 };
+    const bayContentScale = Math.max(
+        0.55,
+        Math.min(
+            1,
+            bayWidthPx / contentReference.width,
+            bayHeightPx / contentReference.height
+        )
+    );
+    const bayTextCapPx = Math.max(7, Math.min(16, Math.min(bayWidthPx * 0.38, bayHeightPx * 0.42)));
+    const bayTextCapSmallPx = Math.max(6, Math.min(14, bayTextCapPx * 0.82));
 
     const disks = Array.isArray(chassisData?.disks) ? chassisData.disks.slice(0, grid.targetSlots) : [];
     while (disks.length < grid.targetSlots) disks.push({ status: 'EMPTY' });
@@ -574,6 +614,9 @@ function buildEnclosureModel(topologyKey, chassisData, data, layoutContext = {})
         bayLongSidePx,
         bayWidthPx,
         bayHeightPx,
+        bayContentScale,
+        bayTextCapPx,
+        bayTextCapSmallPx,
         disksByVisualIndex,
         latchNumberByVisualIndex
     };
@@ -960,7 +1003,7 @@ function bayMarkup(disk, latchNumber, layout, tempUnit = 'C') {
     `;
 }
 
-function enclosureMarkup(model, hostname, tempUnit = 'C', contentScale = 1.0) {
+function enclosureMarkup(model, hostname, tempUnit = 'C') {
     const bays = model.disksByVisualIndex.map((disk, index) => bayMarkup(
         disk,
         model.latchNumberByVisualIndex[index] || index + 1,
@@ -972,7 +1015,7 @@ function enclosureMarkup(model, hostname, tempUnit = 'C', contentScale = 1.0) {
     const caption = model.hasBackplane ? 'Backplane Enclosure' : 'Direct-Attach Enclosure';
 
     return `
-        <section class="chassis-card" data-key="${model.key}" style="--bay-gap:${model.bayGap}px; --chassis-width:${model.chassisWidthPx}px; --chassis-body-height:${model.bodyHeightPx}px; --bay-width:${model.bayWidthPx}px; --bay-height:${model.bayHeightPx}px; --bay-scale:${contentScale};">
+        <section class="chassis-card" data-key="${model.key}" style="--bay-gap:${model.bayGap}px; --chassis-width:${model.chassisWidthPx}px; --chassis-body-height:${model.bodyHeightPx}px; --bay-width:${model.bayWidthPx}px; --bay-height:${model.bayHeightPx}px; --bay-scale:${model.bayContentScale}; --bay-text-cap-px:${model.bayTextCapPx}px; --bay-text-cap-small-px:${model.bayTextCapSmallPx}px;">
             <header class="chassis-head">
                 <div class="title-group">
                     <h2 class="chassis-title">${hostname}<span class="chassis-caption">${caption}</span></h2>
@@ -1011,17 +1054,14 @@ function render(data) {
     const containerWidth = dashboardContainer?.clientWidth || window.innerWidth;
     const availableWidthPx = Math.max(320, canvas.clientWidth || Math.floor(containerWidth * 0.98));
     const perChassisWidthPx = Math.max(320, Math.floor((availableWidthPx - (gapPx * (chassisCount - 1))) / chassisCount));
+    const nineteenInMaxPx = Math.max(320, Math.floor((DASHBOARD_SCENE_REFERENCE_WIDTH_PX - gapPx) / 2));
+
+    const sceneScale = Number(computeDashboardSceneScale(availableWidthPx).toFixed(3));
+    document.documentElement.style.setProperty('--dashboard-scene-scale', String(sceneScale));
 
     const activeConfig = (window.__previewConfig__ && typeof window.__previewConfig__ === 'object')
         ? window.__previewConfig__
         : data?.config;
-    // Content scale is explicitly tuned for the supported layout envelope:
-    // 1 chassis wide => scale interior bay content up to match chassis growth.
-    // 2 chassis wide => baseline sizing (no extra scaling).
-    const referenceWidthPx = Math.max(320, Math.floor((availableWidthPx - gapPx) / 2));
-    const contentScale = chassisCount === 1
-        ? parseFloat((perChassisWidthPx / referenceWidthPx).toFixed(3))
-        : 1.0;
     const tempUnit = String(activeConfig?.ui?.drive_temperature?.unit || 'C').toUpperCase() === 'F' ? 'F' : 'C';
     const renderData = {
         ...data,
@@ -1029,7 +1069,10 @@ function render(data) {
     };
 
     const models = chassisEntries.map(([topologyKey, chassisData]) =>
-        buildEnclosureModel(topologyKey, chassisData, renderData, { preferredWidthPx: perChassisWidthPx })
+        buildEnclosureModel(topologyKey, chassisData, renderData, {
+            preferredWidthPx: perChassisWidthPx,
+            nineteenInMaxPx
+        })
     );
 
     if (models.length === 0) {
@@ -1037,7 +1080,7 @@ function render(data) {
         return;
     }
 
-    canvas.innerHTML = models.map(model => enclosureMarkup(model, hostname, tempUnit, contentScale)).join('');
+    canvas.innerHTML = models.map(model => enclosureMarkup(model, hostname, tempUnit)).join('');
 
     applyDeviceVariables(activeConfig);
 

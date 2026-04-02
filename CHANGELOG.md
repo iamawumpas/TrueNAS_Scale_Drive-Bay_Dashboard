@@ -1,5 +1,26 @@
 # Storage Dashboard - Change Log
 
+## Version 24.1:
+* **Unified Scene-Scale Geometry Refinement**
+    * Reworked runtime scaling so chassis, bays, legend, menu shell, and activity cards use the same scene-scale pathway.
+    * Removed mixed mobile-only bay text scaling paths and replaced them with unified per-scene scaling behavior.
+    * Updated Activity Monitor sizing and y-axis label sizing to respect the shared dashboard scale factor.
+* **Chassis Width and Centering Corrections**
+    * Added a 19-inch-equivalent maximum render width for each enclosure chassis so cards do not over-expand on wide containers.
+    * Centered chassis rows inside the dashboard canvas when available space exceeds capped chassis width.
+    * Removed a conflicting small-screen `width: 100%` chassis rule that previously bypassed the width cap.
+* **Legend and Menu Layout Stability**
+    * Fixed legend overlay sizing so the legend panel shrinks to content instead of forcing an oversized minimum width.
+    * Updated menu shell/button/dropdown dimensions to scale from the same dashboard scene factor.
+    * Removed special-case menu wrapping behavior so line breaks occur naturally only when content truly exceeds available width.
+* **Bay Geometry and Text-Fit Corrections**
+    * Restored true bay long/short physical ratio handling for vertical and horizontal layouts.
+    * Added a final bay-grid fit pass so bay shells always fit inside the enclosure body bounds.
+    * Added bay-internal content fit scaling and per-bay text caps to keep Serial/Size/Pool/Index/Temp/ID labels inside each bay on smaller displays.
+    * Refined vertical bay info-block geometry to use centered, proportion-based dimensions instead of brittle offset heuristics.
+* **Visual Containment Safeguards**
+    * Changed chassis body overflow handling to prevent bay overflow artifacts when display area is constrained.
+
 ## Version 24.0:
 * **Container Queries: Responsive Scaling for Embedded Environments**
     * Replaced all viewport-based scaling (`vw`/`vh`) with CSS Container Queries (`cqw`/`cqh`) for better iframe/embedded support.

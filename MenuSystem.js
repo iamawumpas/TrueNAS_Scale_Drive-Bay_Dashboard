@@ -19,6 +19,7 @@
 	let menuModalConfirmBtn = null;
 	let menuModalCancelBtn = null;
 	let menuModalResolver = null;
+	let responsiveSliderRefreshTimer = null;
 
 	function deepClone(value) {
 		return JSON.parse(JSON.stringify(value || {}));
@@ -722,10 +723,76 @@
 			<div class="menu-control-row">
 				<label class="menu-ctrl-label" for="${id}">${labelText}</label>
 				<div class="menu-ctrl-right menu-slider-wrap">
-					<input type="range" class="menu-slider" id="${id}" data-path="${configPath.join('|')}" data-value-format="px" min="${min}" max="${max}" step="${step}">
+					<input type="range" class="menu-slider" id="${id}" data-path="${configPath.join('|')}" data-value-format="px" data-base-min="${min}" data-base-max="${max}" data-base-step="${step}" min="${min}" max="${max}" step="${step}">
 					<span class="menu-slider-value" id="${id}-val">10px</span>
 				</div>
 			</div>`;
+	}
+
+	function getControlContextMetrics() {
+		const dashboard = document.getElementById('dashboard-wrapper');
+		const menuBar = document.getElementById('menu-bar');
+		const width = Math.max(1, Math.round(dashboard?.clientWidth || menuBar?.clientWidth || window.innerWidth || 1));
+		const height = Math.max(1, Math.round(window.innerHeight || document.documentElement.clientHeight || 1));
+		const isLandscape = width > height;
+		const isCoarsePointer = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+		const enclosureCount = Math.max(1, Object.keys(lastTopology || {}).length);
+
+		return {
+			width,
+			height,
+			isLandscape,
+			isCoarsePointer,
+			enclosureCount
+		};
+	}
+
+	function getAdaptivePxSliderScale() {
+		const ctx = getControlContextMetrics();
+		let scale = 1;
+
+		if (ctx.isCoarsePointer && ctx.isLandscape && ctx.height <= 500) {
+			scale = ctx.enclosureCount > 1 ? 0.72 : 0.80;
+		} else if (ctx.isCoarsePointer && ctx.width <= 480) {
+			scale = 0.90;
+		} else if (ctx.isCoarsePointer && ctx.width <= 900) {
+			scale = 0.95;
+		}
+
+		return Math.max(0.65, Math.min(1.0, scale));
+	}
+
+	function applyAdaptivePxSliderRanges(panel) {
+		const pxScale = getAdaptivePxSliderScale();
+		panel.querySelectorAll('input[type="range"][data-value-format="px"]').forEach(input => {
+			const baseMin = Number(input.dataset.baseMin || input.min || 6);
+			const baseMax = Number(input.dataset.baseMax || input.max || 24);
+			const baseStep = Number(input.dataset.baseStep || input.step || 1);
+
+			const min = Math.max(5, Math.round(baseMin * Math.max(pxScale, 0.85)));
+			const max = Math.max(min + 2, Math.round(baseMax * pxScale));
+			input.min = String(min);
+			input.max = String(max);
+			input.step = String(Number.isFinite(baseStep) && baseStep > 0 ? baseStep : 1);
+
+			const currentVal = Number(input.value);
+			if (Number.isFinite(currentVal)) {
+				const clampedVal = Math.min(max, Math.max(min, currentVal));
+				input.value = String(clampedVal);
+				const valEl = panel.querySelector(`#${input.id}-val`);
+				if (valEl) valEl.textContent = `${Math.round(clampedVal)}px`;
+			}
+		});
+	}
+
+	function scheduleResponsiveSliderRefresh() {
+		if (responsiveSliderRefreshTimer) return;
+		responsiveSliderRefreshTimer = setTimeout(() => {
+			responsiveSliderRefreshTimer = null;
+			document.querySelectorAll('.dropdown-panel.open').forEach(panel => {
+				syncPanelValues(panel);
+			});
+		}, 120);
 	}
 
 	function buildMappedPxSliderRow(labelText, configPath, outMinPx, outMaxPx) {
@@ -964,6 +1031,8 @@
 	}
 
 	function syncPanelValues(panel) {
+		applyAdaptivePxSliderRanges(panel);
+
 		panel.querySelectorAll('[data-path]').forEach(el => {
 			const path = el.dataset.path.split('|');
 			const val = getNestedValue(workingConfig, path);
@@ -990,6 +1059,12 @@
 					num = val !== undefined
 						? (isPx ? Number(String(val).replace('px', '')) : Number(val))
 						: (isPx ? 10 : 50);
+					if (isPx) {
+						const min = Number(el.min);
+						const max = Number(el.max);
+						if (Number.isFinite(min)) num = Math.max(min, num);
+						if (Number.isFinite(max)) num = Math.min(max, num);
+					}
 					displayText = isPx ? `${num}px` : String(num);
 				}
 				el.value = num;
@@ -1510,6 +1585,7 @@
 			lastTopology = topology;
 			lastHostname = payload.hostname || lastHostname || '';
 			buildDiskArraysMenu(lastTopology, lastHostname);
+			scheduleResponsiveSliderRefresh();
 		}
 
 		if (!originalConfig && payload.config) {
@@ -1531,6 +1607,7 @@
 			setPreviewConfig(workingConfig);
 			updateDirtyUI();
 			if (statusEl) statusEl.textContent = '';
+			scheduleResponsiveSliderRefresh();
 		}
 	}
 
@@ -1539,6 +1616,8 @@
 		ensureLegendOverlayShell();
 		ensureMenuModalShell();
 		window.addEventListener('dashboard-data-updated', handleDashboardDataUpdate);
+		window.addEventListener('resize', scheduleResponsiveSliderRefresh);
+		window.addEventListener('orientationchange', scheduleResponsiveSliderRefresh);
 		try {
 			const payload = await fetchPayload();
 			originalConfig = payload?.config || {};

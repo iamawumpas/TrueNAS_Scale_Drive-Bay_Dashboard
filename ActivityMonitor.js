@@ -99,9 +99,11 @@ class ActivityMonitor {
         const style = getComputedStyle(document.documentElement);
         const cardWStr = style.getPropertyValue('--chart-card-width').trim() || '250px';
         const gapStr = style.getPropertyValue('--chart-container-gap').trim() || '20px';
+        const sceneScaleStr = style.getPropertyValue('--dashboard-scene-scale').trim() || '1';
         
-        const cardW = parseInt(cardWStr);
-        const gap = parseInt(gapStr);
+        const sceneScale = Math.max(0.5, Number.parseFloat(sceneScaleStr) || 1);
+        const cardW = Math.round(parseInt(cardWStr, 10) * sceneScale);
+        const gap = Math.round(parseInt(gapStr, 10) * sceneScale);
         const paddingTotal = 0;
         
         // Use container width instead of viewport width
@@ -174,7 +176,8 @@ class ActivityMonitor {
         const yAxisLabelColor = style.getPropertyValue('--chart-y-axis-label-color').trim() || '#888888';
         const yAxisGridColor = style.getPropertyValue('--chart-y-axis-grid-color').trim() || 'rgba(255, 255, 255, 0.3)';
         const yAxisFontSizeStr = style.getPropertyValue('--chart-y-axis-label-font-size').trim();
-        const yAxisLabelFontSize = yAxisFontSizeStr ? (parseInt(yAxisFontSizeStr) || 9) : 9;
+        const sceneScale = Math.max(0.5, parseFloat(style.getPropertyValue('--dashboard-scene-scale').trim() || '1') || 1);
+        const yAxisLabelFontSize = yAxisFontSizeStr ? Math.round((parseInt(yAxisFontSizeStr) || 9) * sceneScale) : Math.round(9 * sceneScale);
         
         return {
             readColor,
