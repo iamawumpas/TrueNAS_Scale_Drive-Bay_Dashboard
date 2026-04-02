@@ -9,13 +9,28 @@ class ActivityMonitor {
         this.poolStates = {};  // Track pool states from API
         this.lastPoolStateFetchAt = 0;
         this.poolStateFetchPromise = null;
+
+        this.lastLayoutSignature = '';
+        this.lastChartStyleSignature = '';
+        this.resizeObserver = null;
+        this.reflowRaf = null;
+
+        this.onResize = () => this.scheduleReflowAndStyleRefresh();
+        this.onDashboardDataUpdated = (event) => {
+            const payload = event?.detail?.data;
+            if (payload?.pool_states && typeof payload.pool_states === 'object') {
+                this.poolStates = payload.pool_states;
+                this.lastPoolStateFetchAt = Date.now();
+            }
+            this.scheduleReflowAndStyleRefresh();
+        };
     }
 
     initialize() {
         // Create the activity monitor container
         this.chassis = document.getElementById('activity-chassis');
         this.container = document.getElementById('activity-container');
-        
+
         if (!this.chassis || !this.container) {
             console.error('Activity monitor containers not found');
             return;
@@ -23,20 +38,39 @@ class ActivityMonitor {
 
         // Start the update loop
         this.startUpdateLoop();
-        
-        // Handle window resize for responsive layout
-        window.addEventListener('resize', () => this.reflowLayout());
-        
-        window.addEventListener('dashboard-data-updated', (event) => {
-            const payload = event?.detail?.data;
-            if (payload?.pool_states && typeof payload.pool_states === 'object') {
-                this.poolStates = payload.pool_states;
-                this.lastPoolStateFetchAt = Date.now();
-            }
-        });
-        
+
+        // Handle resize and dashboard render updates for responsive layout and chart text scaling
+        window.addEventListener('resize', this.onResize);
+        window.addEventListener('dashboard-data-updated', this.onDashboardDataUpdated);
+
         // Store reference globally for menu system to trigger updates
         window.activityMonitor = this;
+
+        this.attachResizeObserver();
+        this.scheduleReflowAndStyleRefresh();
+    }
+
+    attachResizeObserver() {
+        if (typeof ResizeObserver === 'undefined' || !this.chassis) return;
+        if (this.resizeObserver) this.resizeObserver.disconnect();
+
+        this.resizeObserver = new ResizeObserver(() => {
+            this.scheduleReflowAndStyleRefresh();
+        });
+
+        this.resizeObserver.observe(this.chassis);
+        if (this.chassis.parentElement) {
+            this.resizeObserver.observe(this.chassis.parentElement);
+        }
+    }
+
+    scheduleReflowAndStyleRefresh() {
+        if (this.reflowRaf) return;
+        this.reflowRaf = window.requestAnimationFrame(() => {
+            this.reflowRaf = null;
+            this.refreshChartRuntimeStyles();
+            this.reflowLayout();
+        });
     }
 
     formatUnits(value) {
@@ -86,34 +120,51 @@ class ActivityMonitor {
         await this.poolStateFetchPromise;
     }
 
-    reflowLayout() {
+    getLayoutMetrics() {
         const pools = Object.keys(this.charts).length;
-        if (pools === 0) {
-            this.chassis.style.display = 'none';
-            return;
-        }
-        
-        this.chassis.style.display = 'flex';
-        
-        // Get card width and gap from CSS variables
         const style = getComputedStyle(document.documentElement);
         const cardWStr = style.getPropertyValue('--chart-card-width').trim() || '250px';
         const gapStr = style.getPropertyValue('--chart-container-gap').trim() || '20px';
         const sceneScaleStr = style.getPropertyValue('--dashboard-scene-scale').trim() || '1';
-        
-        const sceneScale = Math.max(0.5, Number.parseFloat(sceneScaleStr) || 1);
-        const cardW = Math.round(parseInt(cardWStr, 10) * sceneScale);
-        const gap = Math.round(parseInt(gapStr, 10) * sceneScale);
+
+        const sceneScale = Math.max(0.25, Number.parseFloat(sceneScaleStr) || 1);
+        const cardW = Math.max(80, Math.round(parseInt(cardWStr, 10) * sceneScale));
+        const gap = Math.max(4, Math.round(parseInt(gapStr, 10) * sceneScale));
+        const containerWidth = this.chassis?.parentElement?.clientWidth || this.chassis?.clientWidth || window.innerWidth;
+
+        return {
+            pools,
+            cardW,
+            gap,
+            containerWidth
+        };
+    }
+
+    reflowLayout() {
+        if (!this.chassis) return;
+
+        const { pools, cardW, gap, containerWidth } = this.getLayoutMetrics();
+        if (pools === 0) {
+            this.chassis.style.display = 'none';
+            this.lastLayoutSignature = '';
+            return;
+        }
+
+        this.chassis.style.display = 'flex';
+
         const paddingTotal = 0;
-        
-        // Use container width instead of viewport width
-        const containerWidth = this.chassis.parentElement?.clientWidth || this.chassis.clientWidth || window.innerWidth;
         const fudge = containerWidth * 0.01;
         const maxAvailable = containerWidth * 0.95;
-        
+
         let columns = Math.floor((maxAvailable - paddingTotal + gap) / (cardW + gap));
         columns = Math.max(1, Math.min(columns, pools));
-        
+
+        const layoutSignature = [pools, cardW, gap, Math.round(containerWidth), columns].join('|');
+        if (layoutSignature === this.lastLayoutSignature) {
+            return;
+        }
+        this.lastLayoutSignature = layoutSignature;
+
         const finalWidth = (columns * cardW) + ((columns - 1) * gap) + paddingTotal + fudge;
         this.chassis.style.width = `${finalWidth}px`;
     }
@@ -124,18 +175,18 @@ class ActivityMonitor {
             const data = payload.stats;
 
             await this.refreshPoolStatesIfNeeded();
-            
+
             let needsReflow = false;
-            
+
             for (const pool in data) {
                 if (!this.charts[pool]) {
                     this.charts[pool] = this.createChart(pool);
                     needsReflow = true;
                 }
-                
+
                 // Update pool state overlay
                 this.updatePoolStateOverlay(pool);
-                
+
                 // Only update chart data if pool is not FAULTED
                 if (this.poolStates[pool] !== 'FAULTED') {
                     this.charts[pool].data.datasets[0].data = data[pool].r;
@@ -143,8 +194,9 @@ class ActivityMonitor {
                     this.charts[pool].update('none');
                 }
             }
-            
-            if (needsReflow) {
+
+            const styleChanged = this.refreshChartRuntimeStyles();
+            if (needsReflow || styleChanged) {
                 this.reflowLayout();
             }
         } catch (e) {
@@ -155,7 +207,7 @@ class ActivityMonitor {
     startUpdateLoop() {
         // Initial update
         this.updateLoop();
-        
+
         // Update every 50ms
         this.updateInterval = setInterval(() => this.updateLoop(), 50);
     }
@@ -164,7 +216,7 @@ class ActivityMonitor {
         // Get chart configuration from CSS variables set by config.json
         const root = document.documentElement;
         const style = getComputedStyle(root);
-        
+
         const readColor = style.getPropertyValue('--chart-read-color').trim() || '#2a00d6';
         const writeColor = style.getPropertyValue('--chart-write-color').trim() || '#ff9f00';
         const readGradientTop = style.getPropertyValue('--chart-read-gradient-top').trim() || 'rgba(42, 0, 214, 0.5)';
@@ -176,9 +228,9 @@ class ActivityMonitor {
         const yAxisLabelColor = style.getPropertyValue('--chart-y-axis-label-color').trim() || '#888888';
         const yAxisGridColor = style.getPropertyValue('--chart-y-axis-grid-color').trim() || 'rgba(255, 255, 255, 0.3)';
         const yAxisFontSizeStr = style.getPropertyValue('--chart-y-axis-label-font-size').trim();
-        const sceneScale = Math.max(0.5, parseFloat(style.getPropertyValue('--dashboard-scene-scale').trim() || '1') || 1);
-        const yAxisLabelFontSize = yAxisFontSizeStr ? Math.round((parseInt(yAxisFontSizeStr) || 9) * sceneScale) : Math.round(9 * sceneScale);
-        
+        const sceneScale = Math.max(0.25, parseFloat(style.getPropertyValue('--dashboard-scene-scale').trim() || '1') || 1);
+        const yAxisLabelFontSize = yAxisFontSizeStr ? Math.round((parseInt(yAxisFontSizeStr, 10) || 9) * sceneScale) : Math.round(9 * sceneScale);
+
         return {
             readColor,
             writeColor,
@@ -192,6 +244,43 @@ class ActivityMonitor {
             yAxisGridColor,
             yAxisLabelFontSize
         };
+    }
+
+    refreshChartRuntimeStyles(force = false) {
+        const config = this.getChartConfig();
+        const styleSignature = [
+            config.yAxisLabelColor,
+            config.yAxisGridColor,
+            config.yAxisLabelFontSize,
+            config.lineWidth,
+            config.lineTension
+        ].join('|');
+
+        if (!force && styleSignature === this.lastChartStyleSignature) {
+            return false;
+        }
+        this.lastChartStyleSignature = styleSignature;
+
+        Object.values(this.charts).forEach(chart => {
+            if (!chart?.options?.scales?.y?.ticks) return;
+
+            chart.options.scales.y.ticks.color = config.yAxisLabelColor;
+            chart.options.scales.y.ticks.font = { size: config.yAxisLabelFontSize || 9 };
+            chart.options.scales.y.grid = chart.options.scales.y.grid || {};
+            chart.options.scales.y.grid.color = config.yAxisGridColor;
+
+            if (Array.isArray(chart.data?.datasets)) {
+                chart.data.datasets.forEach(dataset => {
+                    dataset.borderWidth = config.lineWidth;
+                    dataset.tension = config.lineTension;
+                });
+            }
+
+            chart.resize();
+            chart.update('none');
+        });
+
+        return true;
     }
 
     createChart(name) {
@@ -214,24 +303,24 @@ class ActivityMonitor {
                 <canvas id="activity-chart-${name}"></canvas>
                 <div class="pool-state-overlay" id="pool-state-${name}"></div>
             </div>`;
-        
+
         this.container.appendChild(div);
-        
+
         // Sort cards alphabetically
         Array.from(this.container.children)
             .sort((a, b) => a.id.localeCompare(b.id))
             .forEach(n => this.container.appendChild(n));
 
         const ctx = document.getElementById(`activity-chart-${name}`).getContext('2d');
-        
+
         // Get chart configuration from CSS variables
         const config = this.getChartConfig();
-        
+
         // Create gradient fills using configured colors
         const gradientRead = ctx.createLinearGradient(0, 0, 0, 150);
         gradientRead.addColorStop(0, config.readGradientTop);
         gradientRead.addColorStop(1, config.readGradientBottom);
-        
+
         const gradientWrite = ctx.createLinearGradient(0, 0, 0, 150);
         gradientWrite.addColorStop(0, config.writeGradientTop);
         gradientWrite.addColorStop(1, config.writeGradientBottom);
@@ -299,9 +388,9 @@ class ActivityMonitor {
     updatePoolStateOverlay(poolName) {
         const overlay = document.getElementById(`pool-state-${poolName}`);
         if (!overlay) return;
-        
+
         const poolState = this.poolStates[poolName];
-        
+
         if (poolState === 'FAULTED' || poolState === 'SUSPENDED') {
             // Show RED box with white "FAULTED" text (no chart)
             overlay.className = 'pool-state-overlay pool-faulted';
@@ -329,43 +418,58 @@ class ActivityMonitor {
     recreateCharts() {
         // Destroy existing charts and recreate them with new configuration
         console.log('Recreating charts with updated configuration...');
-        
+
         const poolNames = Object.keys(this.charts);
-        
+
         // Destroy all existing charts
         for (const pool in this.charts) {
             if (this.charts[pool]) {
                 this.charts[pool].destroy();
             }
         }
-        
+
         // Clear the container
         if (this.container) {
             this.container.innerHTML = '';
         }
-        
+
         // Reset charts object
         this.charts = {};
-        
+
         // Recreate charts for each pool
         poolNames.forEach(pool => {
             this.charts[pool] = this.createChart(pool);
         });
-        
+
+        this.refreshChartRuntimeStyles(true);
+
         // Reflow the layout
         this.reflowLayout();
     }
 
     destroy() {
+        if (this.reflowRaf) {
+            window.cancelAnimationFrame(this.reflowRaf);
+            this.reflowRaf = null;
+        }
+
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect();
+            this.resizeObserver = null;
+        }
+
+        window.removeEventListener('resize', this.onResize);
+        window.removeEventListener('dashboard-data-updated', this.onDashboardDataUpdated);
+
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
         }
-        
+
         // Destroy all charts
         for (const pool in this.charts) {
             this.charts[pool].destroy();
         }
-        
+
         this.charts = {};
     }
 }

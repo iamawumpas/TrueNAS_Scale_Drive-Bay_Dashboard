@@ -1,5 +1,18 @@
 # Storage Dashboard - Change Log
 
+## Version 24.3:
+* **Activity Monitor Geometry-Scale Synchronization**
+    * Updated Activity Monitor layout flow so chart card geometry reflows whenever dashboard scene scale or container dimensions change.
+    * Added ResizeObserver-based reflow triggers on the activity chassis and parent container to catch runtime geometry changes beyond window resize events.
+    * Added layout-signature tracking to avoid redundant width recomputation while keeping card sizing responsive.
+* **Chart Internal Text and Style Runtime Scaling**
+    * Added runtime Chart.js style refresh so y-axis label font size tracks scene-scale updates in real time.
+    * Synced y-axis tick color, grid color, and line rendering properties with active style variables during live updates.
+    * Applied chart resize/update on style changes so canvas-rendered chart text stays aligned with dashboard geometry scaling.
+* **Activity Monitor Lifecycle Stability**
+    * Added scheduled reflow/style refresh orchestration via requestAnimationFrame to reduce layout thrash under rapid updates.
+    * Added explicit observer/listener cleanup in destroy path to prevent stale scaling callbacks.
+
 ## Version 24.2:
 * **Disk Arrays Menu Value Hydration Hardening**
     * Added comprehensive menu-path hydration so dynamic Disk Arrays controls initialize from persisted config values instead of falling back to UI defaults.
