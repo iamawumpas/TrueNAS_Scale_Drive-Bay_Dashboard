@@ -1,5 +1,15 @@
 # Storage Dashboard - Change Log
 
+## Version 24.4:
+* **Vertical Bay Info-Panel Flicker Stabilization**
+    * Fixed vertical drive-bay info text flicker that was visually coupling to LED blink animation repaints.
+    * Applied compositor/paint isolation directly on the original vertical info panel path (`translateZ(0)`, `backface-visibility`, `contain: paint`) to stabilize text rendering.
+* **Vertical Layout Preservation and Regression Recovery**
+    * Restored original vertical info-panel geometry and rendering structure after wrapper-based experiments caused clipping regressions.
+    * Kept horizontal bay rendering and ordering unchanged while ensuring vertical bays again show full Serial/Size/Temp/Pool/ID information.
+* **Targeted CSS-Only Finalization**
+    * Final fix was constrained to the vertical info-panel CSS path to minimize risk and preserve established bay sizing behavior.
+
 ## Version 24.3:
 * **Activity Monitor Geometry-Scale Synchronization**
     * Updated Activity Monitor layout flow so chart card geometry reflows whenever dashboard scene scale or container dimensions change.

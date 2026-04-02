@@ -253,8 +253,10 @@ body {
     height: calc(var(--bay-width, 40px) * 0.62);
     padding: calc(2px * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1));
     gap: calc(1px * var(--dashboard-scene-scale, 1));
-    transform: translate(-50%, -50%) rotate(-90deg);
+    transform: translate(-50%, -50%) rotate(-90deg) translateZ(0);
     transform-origin: center;
+    backface-visibility: hidden;
+    contain: paint;
     overflow: hidden;
 }
 
