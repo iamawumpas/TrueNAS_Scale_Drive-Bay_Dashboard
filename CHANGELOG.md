@@ -1,5 +1,17 @@
 # Storage Dashboard - Change Log
 
+## Version 24.5:
+* **Scratch Pattern Stability Fix (Mirror/Live Refresh Safe)**
+    * Fixed chassis scratch patterns changing during normal dashboard data refresh and mirror access.
+    * Kept scratch textures stable unless scratch sliders (`level`, `density`, `intensity`) are changed.
+* **Deterministic Scratch Generation Standardization**
+    * Switched scratch generation to deterministic seeded output keyed by slider values, eliminating random cross-refresh variation.
+    * Ensured Activity and Disk Arrays chassis paths resolve to the same scratch texture for identical slider settings.
+* **Shared Scratch Utility Cleanup**
+    * Added shared `scratchTexture.js` as the single source of truth for scratch texture generation.
+    * Removed duplicated scratch generator implementations from `app.js` and `MenuSystem.js`.
+    * Updated script load order in `index.html` so shared utility is available before menu and app runtime logic.
+
 ## Version 24.4:
 * **Vertical Bay Info-Panel Flicker Stabilization**
     * Fixed vertical drive-bay info text flicker that was visually coupling to LED blink animation repaints.
