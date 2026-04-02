@@ -1,5 +1,18 @@
 # Storage Dashboard - Change Log
 
+## Version 24.2:
+* **Disk Arrays Menu Value Hydration Hardening**
+    * Added comprehensive menu-path hydration so dynamic Disk Arrays controls initialize from persisted config values instead of falling back to UI defaults.
+    * Added silent backfill for missing per-device menu keys and immediate persistence to `config.json` via `/save-config`.
+    * Ensured hydration runs during initialization and topology/menu rebuild cycles so controls remain stable after runtime updates.
+* **Legacy Bay Value Normalization for Radio Controls**
+    * Added normalization for legacy bay layout and fill-order values (including `row_major_ltr`, `column_major_ttb`, and shorthand aliases) so menu radios map to current option values.
+    * Added legacy `drive_sequence` fallback mapping for older configurations missing canonical `fill_order`/`layout` keys.
+    * Updated panel sync logic to render normalized values consistently for radio/select controls and persist canonical values.
+* **Configuration Consistency Improvements**
+    * Prevented stale legacy values from leaving radio groups visually unselected.
+    * Unified menu-state read/write behavior so displayed control state always reflects effective runtime configuration.
+
 ## Version 24.1:
 * **Unified Scene-Scale Geometry Refinement**
     * Reworked runtime scaling so chassis, bays, legend, menu shell, and activity cards use the same scene-scale pathway.

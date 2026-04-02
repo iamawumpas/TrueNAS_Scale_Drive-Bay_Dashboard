@@ -20,6 +20,7 @@
 	let menuModalCancelBtn = null;
 	let menuModalResolver = null;
 	let responsiveSliderRefreshTimer = null;
+	let isHydratingMissingDefaults = false;
 
 	function deepClone(value) {
 		return JSON.parse(JSON.stringify(value || {}));
@@ -642,6 +643,204 @@
 		return path.reduce((cur, key) => (cur && typeof cur === 'object' ? cur[key] : undefined), obj);
 	}
 
+	function normalizeMenuControlValue(path, rawValue) {
+		if (!Array.isArray(path) || rawValue === undefined || rawValue === null) return rawValue;
+		if (path[0] !== 'devices' || path[2] !== 'bay') return rawValue;
+
+		const key = String(path[3] || '').toLowerCase();
+		const value = String(rawValue).trim().toLowerCase();
+
+		if (key === 'layout') {
+			if (value === 'horizontal' || value === 'h') return 'horizontal';
+			if (value === 'vertical' || value === 'v') return 'vertical';
+			return rawValue;
+		}
+
+		if (key === 'fill_order') {
+			if (value === 'row_major_ltr' || value === 'ltr' || value === 'left_to_right' || value === 'horizontal') {
+				return 'left_to_right';
+			}
+			if (value === 'column_major_ttb' || value === 'ttb' || value === 'top_to_bottom' || value === 'vertical') {
+				return 'top_to_bottom';
+			}
+			return rawValue;
+		}
+
+		return rawValue;
+	}
+
+	function getLegacyMenuFallback(path) {
+		if (!Array.isArray(path) || path[0] !== 'devices' || path[2] !== 'bay') return undefined;
+		const deviceKey = path[1];
+		const legacyDriveSequence = getNestedValue(workingConfig, ['devices', deviceKey, 'bay', 'drive_sequence']);
+		if (legacyDriveSequence === undefined || legacyDriveSequence === null) return undefined;
+
+		const key = String(path[3] || '').toLowerCase();
+		if (key === 'layout') {
+			const normalizedLayout = normalizeMenuControlValue(path, legacyDriveSequence);
+			return normalizedLayout === 'horizontal' || normalizedLayout === 'vertical' ? normalizedLayout : undefined;
+		}
+
+		if (key === 'fill_order') {
+			const normalizedFillOrder = normalizeMenuControlValue(path, legacyDriveSequence);
+			return normalizedFillOrder === 'left_to_right' || normalizedFillOrder === 'top_to_bottom'
+				? normalizedFillOrder
+				: undefined;
+		}
+
+		return undefined;
+	}
+
+	function setConfigValueSilent(path, value) {
+		if (!workingConfig || !Array.isArray(path) || path.length === 0 || value === undefined) return false;
+		const current = getNestedValue(workingConfig, path);
+		if (JSON.stringify(current) === JSON.stringify(value)) return false;
+
+		let cursor = workingConfig;
+		for (let i = 0; i < path.length - 1; i += 1) {
+			const key = path[i];
+			if (!cursor[key] || typeof cursor[key] !== 'object') {
+				cursor[key] = {};
+			}
+			cursor = cursor[key];
+		}
+		cursor[path[path.length - 1]] = deepClone(value);
+		return true;
+	}
+
+	function getDefaultForMenuPath(path) {
+		if (!Array.isArray(path) || path.length === 0) return undefined;
+		const current = getNestedValue(workingConfig, path);
+		if (current !== undefined && current !== null) return current;
+
+		if (path[0] !== 'devices' || path.length < 3) {
+			return undefined;
+		}
+
+		const relative = path.slice(2).join('|');
+		const mapToUi = {
+			'chassis|server_name|font': ['ui', 'server_name', 'font'],
+			'chassis|server_name|style': ['ui', 'server_name', 'style'],
+			'chassis|server_name|color': ['ui', 'server_name', 'color'],
+			'chassis|pci_address|color': ['ui', 'pci_address', 'color'],
+			'bay|grill_size_scale': ['ui', 'bay', 'grill_size_scale'],
+			'bay|disk_pool|font': ['ui', 'disk_pool', 'font'],
+			'bay|disk_pool|size': ['ui', 'disk_pool', 'size'],
+			'bay|disk_pool|style': ['ui', 'disk_pool', 'style'],
+			'bay|disk_pool|color': ['ui', 'disk_pool', 'color'],
+			'bay|disk_index|font': ['ui', 'disk_index', 'font'],
+			'bay|disk_index|size': ['ui', 'disk_index', 'size'],
+			'bay|disk_index|style': ['ui', 'disk_index', 'style'],
+			'bay|disk_index|color': ['ui', 'disk_index', 'color'],
+			'bay|disk_serial|font': ['ui', 'disk_serial', 'font'],
+			'bay|disk_serial|size': ['ui', 'disk_serial', 'size'],
+			'bay|disk_serial|style': ['ui', 'disk_serial', 'style'],
+			'bay|disk_serial|color': ['ui', 'disk_serial', 'color'],
+			'bay|disk_size|font': ['ui', 'disk_size', 'font'],
+			'bay|disk_size|size': ['ui', 'disk_size', 'size'],
+			'bay|disk_size|style': ['ui', 'disk_size', 'style'],
+			'bay|disk_size|color': ['ui', 'disk_size', 'color'],
+			'bay|drive_temperature|font': ['ui', 'drive_temperature', 'font'],
+			'bay|drive_temperature|size': ['ui', 'drive_temperature', 'size'],
+			'bay|drive_temperature|style': ['ui', 'drive_temperature', 'style'],
+			'bay|drive_temperature|color': ['ui', 'drive_temperature', 'color']
+		};
+
+		const literalDefaults = {
+			'chassis|scratch_level': 50,
+			'chassis|scratch_density': 50,
+			'chassis|scratch_intensity': 50,
+			'bay|layout': 'vertical',
+			'bay|fill_order': 'left_to_right',
+			'bay|grill_shape': 'round'
+		};
+
+		if (Object.prototype.hasOwnProperty.call(literalDefaults, relative)) {
+			return literalDefaults[relative];
+		}
+
+		const legacyFallback = getLegacyMenuFallback(path);
+		if (legacyFallback !== undefined && legacyFallback !== null) {
+			return legacyFallback;
+		}
+
+		const uiPath = mapToUi[relative];
+		if (uiPath) {
+			const fallback = getNestedValue(workingConfig, uiPath);
+			if (fallback !== undefined && fallback !== null) return fallback;
+		}
+
+		return undefined;
+	}
+
+	function collectPanelPaths(panel) {
+		const collected = new Set();
+		if (!panel) return collected;
+		panel.querySelectorAll('[data-path]').forEach(el => {
+			if (!el.dataset.path) return;
+			collected.add(el.dataset.path);
+		});
+		panel.querySelectorAll('[data-style-path]').forEach(el => {
+			if (!el.dataset.stylePath) return;
+			collected.add(el.dataset.stylePath);
+		});
+		panel.querySelectorAll('[data-temp-style-path]').forEach(el => {
+			if (!el.dataset.tempStylePath) return;
+			collected.add(el.dataset.tempStylePath);
+		});
+		return collected;
+	}
+
+	async function hydrateMissingMenuDefaults() {
+		if (!workingConfig || isHydratingMissingDefaults) return;
+		isHydratingMissingDefaults = true;
+
+		try {
+			let changed = false;
+			document.querySelectorAll('.dropdown-panel').forEach(panel => {
+				const paths = collectPanelPaths(panel);
+				paths.forEach(pathStr => {
+					const path = pathStr.split('|');
+					const current = getNestedValue(workingConfig, path);
+					if (current !== undefined && current !== null && current !== '') {
+						const normalizedCurrent = normalizeMenuControlValue(path, current);
+						if (JSON.stringify(normalizedCurrent) !== JSON.stringify(current)) {
+							if (setConfigValueSilent(path, normalizedCurrent)) changed = true;
+						}
+						return;
+					}
+					const fallback = getDefaultForMenuPath(path);
+					if (fallback === undefined || fallback === null) return;
+					const normalizedFallback = normalizeMenuControlValue(path, fallback);
+					if (setConfigValueSilent(path, normalizedFallback)) changed = true;
+				});
+			});
+
+			if (!changed) return;
+
+			setPreviewConfig(workingConfig);
+			applyMenuVariables(workingConfig);
+			applyActivityVariables(workingConfig);
+			applyEnclosurePreview(workingConfig);
+			scheduleChartRecreation();
+
+			await fetch('/save-config', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(workingConfig)
+			});
+
+			originalConfig = deepClone(workingConfig);
+			isDirty = false;
+			updateDirtyUI();
+			document.querySelectorAll('.dropdown-panel.open').forEach(panel => syncPanelValues(panel));
+		} catch (error) {
+			console.error('[menu] default hydration failed', error);
+		} finally {
+			isHydratingMissingDefaults = false;
+		}
+	}
+
 	function toSafeId(str) {
 		return String(str || '').replace(/[^a-zA-Z0-9_-]/g, '-');
 	}
@@ -1035,7 +1234,8 @@
 
 		panel.querySelectorAll('[data-path]').forEach(el => {
 			const path = el.dataset.path.split('|');
-			const val = getNestedValue(workingConfig, path);
+			const rawVal = getNestedValue(workingConfig, path);
+			const val = normalizeMenuControlValue(path, rawVal);
 			if (el.classList.contains('color-swatch')) {
 				el.style.background = val || '#000000';
 			} else if (el.type === 'color') {
@@ -1071,7 +1271,7 @@
 				const valEl = panel.querySelector(`#${el.id}-val`);
 				if (valEl) valEl.textContent = displayText;
 			} else if (el.tagName === 'SELECT') {
-				if (val) el.value = val;
+				if (val !== undefined && val !== null) el.value = String(val);
 			}
 		});
 
@@ -1091,7 +1291,8 @@
 
 		panel.querySelectorAll('input[type="radio"][data-path]').forEach(input => {
 			const path = input.dataset.path.split('|');
-			const val = getNestedValue(workingConfig, path);
+			const rawVal = getNestedValue(workingConfig, path);
+			const val = normalizeMenuControlValue(path, rawVal);
 			if (val !== undefined && val !== null) {
 				input.checked = (String(val) === String(input.dataset.radioValue));
 			} else if (input.dataset.radioDefault) {
@@ -1585,6 +1786,7 @@
 			lastTopology = topology;
 			lastHostname = payload.hostname || lastHostname || '';
 			buildDiskArraysMenu(lastTopology, lastHostname);
+			hydrateMissingMenuDefaults();
 			scheduleResponsiveSliderRefresh();
 		}
 
@@ -1607,6 +1809,7 @@
 			setPreviewConfig(workingConfig);
 			updateDirtyUI();
 			if (statusEl) statusEl.textContent = '';
+			hydrateMissingMenuDefaults();
 			scheduleResponsiveSliderRefresh();
 		}
 	}
@@ -1629,6 +1832,7 @@
 			setPreviewConfig(workingConfig);
 			updateDirtyUI();
 			buildDiskArraysMenu(lastTopology, lastHostname);
+			await hydrateMissingMenuDefaults();
 		} catch (error) {
 			console.error('[menu] init failed', error);
 			if (statusEl) statusEl.textContent = 'Config unavailable';
