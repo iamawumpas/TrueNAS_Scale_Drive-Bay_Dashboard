@@ -1,5 +1,18 @@
 # Storage Dashboard - Change Log
 
+## Version 24.7:
+* **Menu and Submenu Flow Reordering**
+    * Reorganized top-level menu flow and subsection ordering for a more logical customization sequence.
+    * Reordered Activity Monitor, Dashboard, and Disk Arrays panel content to group related controls and reduce navigation friction.
+    * Preserved existing control behavior and data bindings while updating presentation order only.
+* **Bay LED Edge Alignment Refinements**
+    * Adjusted vertical and horizontal LED panel edge offsets so LED groups sit closer to their bay edges with more consistent visual balance.
+    * Tuned per-orientation LED panel sizing/padding to keep alignment stable across scene-scale changes.
+* **Info Container Expansion Tuning**
+    * Expanded horizontal info-container usable space toward the LED side.
+    * Expanded vertical info-container usable space toward the latch side while preserving latch-clearance safeguards.
+    * Kept vertical text rendering/flicker stability protections intact.
+
 ## Version 24.6:
 * **Vertical Bay LED-to-Info Proportion Adjustment**
     * Increased spacing between the vertical LED panel and rotated info panel to better match horizontal bay visual proportions.

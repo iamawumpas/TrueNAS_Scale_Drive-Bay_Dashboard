@@ -1081,15 +1081,15 @@
 					${buildColorRow('Background Color', ['ui', 'menu', 'background'])}
 					${buildColorRow('Text Color', ['ui', 'menu', 'text'])}
 					${buildFontRow('Font', ['ui', 'menu', 'font'])}
-					${buildSliderRow('Dropdown Transparency', ['ui', 'menu', 'dropdown_opacity'])}
-					${buildColorRow('Control Background Colour', ['ui', 'menu', 'controls', 'background'])}
-					${buildColorRow('Control Highlight Colour', ['ui', 'menu', 'controls', 'focus_border'])}
 					<div class="panel-subsection">
 						<div class="panel-subsection-title">Section Name</div>
 						${buildColorRow('Colour', ['ui', 'menu', 'section_name', 'color'])}
 						${buildPxSliderRow('Font Size', ['ui', 'menu', 'section_name', 'size'], 8, 24, 1)}
 						${buildStyleCheckboxRow('Font Style', ['ui', 'menu', 'section_name', 'style'])}
 					</div>
+					${buildColorRow('Control Background Colour', ['ui', 'menu', 'controls', 'background'])}
+					${buildColorRow('Control Highlight Colour', ['ui', 'menu', 'controls', 'focus_border'])}
+					${buildSliderRow('Dropdown Transparency', ['ui', 'menu', 'dropdown_opacity'])}
 				</div>
 				<div class="panel-section">
 					<div class="panel-section-title">Reset</div>
@@ -1108,28 +1108,10 @@
 		return `
 			<div class="dropdown-panel activity-monitor-panel" id="activity-monitor-panel">
 				<div class="panel-section">
-					<div class="panel-section-title">Chassis</div>
-					${buildColorRow('Colour', ['ui', 'activity', 'chassis_color'])}
-					${buildSliderRow('Scratch Level', ['ui', 'activity', 'scratch_level'])}
-					${buildSliderRow('Scratch Density', ['ui', 'activity', 'scratch_density'])}
-					${buildSliderRow('Scratch Intensity', ['ui', 'activity', 'scratch_intensity'])}
-					<div class="panel-subsection">
-						<div class="panel-subsection-title">Server Name</div>
-						${buildFontRow('Font Name', ['ui', 'activity', 'server_name', 'font'])}
-						${buildStyleCheckboxRow('Font Style', ['ui', 'activity', 'server_name', 'style'])}
-						${buildColorRow('Colour', ['ui', 'activity', 'server_name', 'color'])}
-					</div>
-				</div>
-				<div class="panel-section">
 					<div class="panel-section-title">Graphs</div>
 					${buildColorRow('Read Colour', ['chart', 'colors', 'readColor'])}
 					${buildColorRow('Write Colour', ['chart', 'colors', 'writeColor'])}
 					${buildColorRow('Grid Colour', ['chart', 'colors', 'yAxisGridColor'])}
-					<div class="panel-subsection">
-						<div class="panel-subsection-title">Manual Size</div>
-						${buildMappedPxSliderRow('Height', ['chart', 'dimensions', 'chartHeight'], 25, 150)}
-						${buildMappedPxSliderRow('Length', ['chart', 'dimensions', 'cardWidth'], 100, 500)}
-					</div>
 					<div class="panel-subsection">
 						<div class="panel-subsection-title">Graph Title</div>
 						${buildSliderRow('Font Size', ['chart', 'typography', 'graph_title_size_scale'])}
@@ -1140,10 +1122,28 @@
 						${buildSliderRow('Font Size', ['chart', 'typography', 'y_axis_label_size_scale'])}
 						${buildColorRow('Colour', ['chart', 'colors', 'yAxisLabelColor'])}
 					</div>
-					<div class="panel-subsection panel-subsection-last">
+					<div class="panel-subsection">
 						<div class="panel-subsection-title">Legend Text</div>
 						${buildSliderRow('Font Size', ['chart', 'typography', 'legend_text_size_scale'])}
 						${buildColorRow('Colour', ['ui', 'activity', 'legend_color'])}
+					</div>
+					<div class="panel-subsection panel-subsection-last">
+						<div class="panel-subsection-title">Manual Size</div>
+						${buildMappedPxSliderRow('Height', ['chart', 'dimensions', 'chartHeight'], 25, 150)}
+						${buildMappedPxSliderRow('Length', ['chart', 'dimensions', 'cardWidth'], 100, 500)}
+					</div>
+				</div>
+				<div class="panel-section">
+					<div class="panel-section-title">Chassis</div>
+					${buildColorRow('Colour', ['ui', 'activity', 'chassis_color'])}
+					${buildSliderRow('Scratch Level', ['ui', 'activity', 'scratch_level'])}
+					${buildSliderRow('Scratch Density', ['ui', 'activity', 'scratch_density'])}
+					${buildSliderRow('Scratch Intensity', ['ui', 'activity', 'scratch_intensity'])}
+					<div class="panel-subsection">
+						<div class="panel-subsection-title">Server Name</div>
+						${buildFontRow('Font Name', ['ui', 'activity', 'server_name', 'font'])}
+						${buildStyleCheckboxRow('Font Style', ['ui', 'activity', 'server_name', 'style'])}
+						${buildColorRow('Colour', ['ui', 'activity', 'server_name', 'color'])}
 					</div>
 				</div>
 			</div>`;
@@ -1480,10 +1480,6 @@
 					<div class="da-enclosure-body" hidden>
 						<div class="panel-section">
 							<div class="panel-section-title">Chassis</div>
-							${buildColorRow('Colour', ['devices', key, 'chassis', 'color'])}
-							${buildSliderRow('Scratch Level', ['devices', key, 'chassis', 'scratch_level'])}
-							${buildSliderRow('Scratch Density', ['devices', key, 'chassis', 'scratch_density'])}
-							${buildSliderRow('Scratch Intensity', ['devices', key, 'chassis', 'scratch_intensity'])}
 							<div class="panel-subsection">
 								<div class="panel-subsection-title">Server Name</div>
 								${buildFontRow('Font Name', ['devices', key, 'chassis', 'server_name', 'font'])}
@@ -1494,33 +1490,23 @@
 								<div class="panel-subsection-title">Enclosure ID</div>
 								${buildColorRow('Subtitle Colour', ['devices', key, 'chassis', 'pci_address', 'color'])}
 							</div>
+							${buildColorRow('Colour', ['devices', key, 'chassis', 'color'])}
+							${buildSliderRow('Scratch Level', ['devices', key, 'chassis', 'scratch_level'])}
+							${buildSliderRow('Scratch Density', ['devices', key, 'chassis', 'scratch_density'])}
+							${buildSliderRow('Scratch Intensity', ['devices', key, 'chassis', 'scratch_intensity'])}
 						</div>
 						<div class="panel-section">
 							<div class="panel-section-title">Drive Bay</div>
-							${buildColorRow('Door Colour', ['devices', key, 'bay', 'door_color'])}
 							<div class="panel-subsection">
 								<div class="panel-subsection-title">Chassis Configuration</div>
 								${buildBayOrientationRow('Bay Orientation', ['devices', key, 'bay', 'layout'])}
 								${buildBayOrderRow('Bay Order', ['devices', key, 'bay', 'fill_order'])}
 							</div>
+							${buildColorRow('Door Colour', ['devices', key, 'bay', 'door_color'])}
 							<div class="panel-subsection">
 								<div class="panel-subsection-title">Grill</div>
 								${buildGrillShapeRow('Shape', ['devices', key, 'bay', 'grill_shape'])}
 								${buildSliderRow('Size', ['devices', key, 'bay', 'grill_size_scale'])}
-							</div>
-							<div class="panel-subsection">
-								<div class="panel-subsection-title">Pool Name</div>
-								${buildFontRow('Font Name', ['devices', key, 'bay', 'disk_pool', 'font'])}
-								${buildPxSliderRow('Font Size', ['devices', key, 'bay', 'disk_pool', 'size'])}
-								${buildStyleCheckboxRow('Font Style', ['devices', key, 'bay', 'disk_pool', 'style'])}
-								${buildColorRow('Colour', ['devices', key, 'bay', 'disk_pool', 'color'])}
-							</div>
-							<div class="panel-subsection">
-								<div class="panel-subsection-title">ID</div>
-								${buildFontRow('Font Name', ['devices', key, 'bay', 'disk_index', 'font'])}
-								${buildPxSliderRow('Font Size', ['devices', key, 'bay', 'disk_index', 'size'])}
-								${buildStyleCheckboxRow('Font Style', ['devices', key, 'bay', 'disk_index', 'style'])}
-								${buildColorRow('Colour', ['devices', key, 'bay', 'disk_index', 'color'])}
 							</div>
 							<div class="panel-subsection">
 								<div class="panel-subsection-title">Serial</div>
@@ -1543,6 +1529,20 @@
 								${buildStyleCheckboxRow('Font Style', ['devices', key, 'bay', 'drive_temperature', 'style'])}
 								${buildColorRow('Colour', ['devices', key, 'bay', 'drive_temperature', 'color'])}
 							</div>
+							<div class="panel-subsection">
+								<div class="panel-subsection-title">Pool Name</div>
+								${buildFontRow('Font Name', ['devices', key, 'bay', 'disk_pool', 'font'])}
+								${buildPxSliderRow('Font Size', ['devices', key, 'bay', 'disk_pool', 'size'])}
+								${buildStyleCheckboxRow('Font Style', ['devices', key, 'bay', 'disk_pool', 'style'])}
+								${buildColorRow('Colour', ['devices', key, 'bay', 'disk_pool', 'color'])}
+							</div>
+							<div class="panel-subsection">
+								<div class="panel-subsection-title">ID</div>
+								${buildFontRow('Font Name', ['devices', key, 'bay', 'disk_index', 'font'])}
+								${buildPxSliderRow('Font Size', ['devices', key, 'bay', 'disk_index', 'size'])}
+								${buildStyleCheckboxRow('Font Style', ['devices', key, 'bay', 'disk_index', 'style'])}
+								${buildColorRow('Colour', ['devices', key, 'bay', 'disk_index', 'color'])}
+							</div>
 						</div>
 					</div>
 				</div>`;
@@ -1558,7 +1558,12 @@
 
 		const leftGroup = host.querySelector('.menu-left-group');
 		if (!leftGroup) return;
-		leftGroup.appendChild(wrapper);
+		const activityWrapper = leftGroup.querySelector('#activity-monitor-menu-btn')?.closest('.menu-dropdown-wrapper');
+		if (activityWrapper) {
+			leftGroup.insertBefore(wrapper, activityWrapper);
+		} else {
+			leftGroup.appendChild(wrapper);
+		}
 		lastDiskArraysMenuSignature = nextSignature;
 
 		const daBtn = document.getElementById('disk-arrays-menu-btn');
