@@ -1,9 +1,11 @@
 /* Base.css */
 /* Base.css — structural layout defaults only */
 /* All colours, fonts and sizes are defined in config.json */
+/* Container Queries: Enables responsive scaling in iframes and nested containers */
 
 :root {
     --bay-gap: 6px;
     --server-name-scale: 1;
     --pci-address-scale: 1;
+    container-type: inline-size;
 }

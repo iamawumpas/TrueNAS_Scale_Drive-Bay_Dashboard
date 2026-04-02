@@ -103,8 +103,11 @@ class ActivityMonitor {
         const cardW = parseInt(cardWStr);
         const gap = parseInt(gapStr);
         const paddingTotal = 0;
-        const fudge = window.innerWidth * 0.01;
-        const maxAvailable = document.documentElement.clientWidth * 0.95;
+        
+        // Use container width instead of viewport width
+        const containerWidth = this.chassis.parentElement?.clientWidth || this.chassis.clientWidth || window.innerWidth;
+        const fudge = containerWidth * 0.01;
+        const maxAvailable = containerWidth * 0.95;
         
         let columns = Math.floor((maxAvailable - paddingTotal + gap) / (cardW + gap));
         columns = Math.max(1, Math.min(columns, pools));

@@ -1005,7 +1005,11 @@ function render(data) {
     const chassisCount = Math.max(1, chassisEntries.length);
     const canvasStyle = window.getComputedStyle(canvas);
     const gapPx = parseFloat(canvasStyle.columnGap || canvasStyle.gap || '16') || 16;
-    const availableWidthPx = Math.max(320, canvas.clientWidth || Math.floor(window.innerWidth * 0.98));
+    
+    // Use container width instead of viewport width for better iframe support
+    const dashboardContainer = document.getElementById('dashboard-wrapper');
+    const containerWidth = dashboardContainer?.clientWidth || window.innerWidth;
+    const availableWidthPx = Math.max(320, canvas.clientWidth || Math.floor(containerWidth * 0.98));
     const perChassisWidthPx = Math.max(320, Math.floor((availableWidthPx - (gapPx * (chassisCount - 1))) / chassisCount));
 
     const activeConfig = (window.__previewConfig__ && typeof window.__previewConfig__ === 'object')

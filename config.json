@@ -60,7 +60,7 @@
         "bay_id": {
             "color": "#ffaa00",
             "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
-            "size": "0.8vw",
+            "size": "0.8cqw",
             "style": [
                 "bold",
                 "allcaps"
@@ -70,7 +70,7 @@
         "disk_serial": {
             "color": "#ffff00",
             "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
-            "size": "1.1vw",
+            "size": "1.1cqw",
             "style": [
                 "bold"
             ]
@@ -79,7 +79,7 @@
         "disk_size": {
             "color": "#ff00ff",
             "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
-            "size": "1.1vw",
+            "size": "1.1cqw",
             "style": [
                 "bold"
             ]
@@ -88,7 +88,7 @@
         "disk_pool": {
             "color": "#ffffff",
             "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
-            "size": "1.1vw",
+            "size": "1.1cqw",
             "style": [
                 "bold"
             ]
@@ -97,7 +97,7 @@
         "disk_index": {
             "color": "#00ffff",
             "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
-            "size": "1.1vw",
+            "size": "1.1cqw",
             "style": [
                 "bold"
             ]
@@ -216,7 +216,7 @@
             "rack_width_in": 19,
             "u_height_in": 1.75,
             "bay_gap_px": 6,
-            "dashboard_max_width": "98vw",
+            "dashboard_max_width": "98cqw",
             "dashboard_gap": "16px",
             "dashboard_top_gap": "14px",
             "ru_height_in_overrides": {

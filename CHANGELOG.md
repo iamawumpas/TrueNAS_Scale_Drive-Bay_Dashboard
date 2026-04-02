@@ -1,6 +1,44 @@
 # Storage Dashboard - Change Log
 
+## Version 24.0:
+* **Container Queries: Responsive Scaling for Embedded Environments**
+    * Replaced all viewport-based scaling (`vw`/`vh`) with CSS Container Queries (`cqw`/`cqh`) for better iframe/embedded support.
+    * Added `container-type: inline-size` declarations to body, `#dashboard-wrapper`, `#menu-bar`, and `#activity-chassis` for responsive context.
+    * Updated Configuration values: all `*vw` font sizes now use `*cqw` (e.g., `1.1vw` → `1.1cqw`).
+    * Updated CSS max-width constraints to use container units: `98vw` → `98cqw`, `95vw` → `95cqw`, `100vw` → `100cqw`.
+    * Updated JavaScript scaling calculations to use container element widths instead of viewport dimensions.
+* **JavaScript Layout Reflow Improvements**
+    * Updated `ActivityMonitor.js` `reflowLayout()` to calculate chart columns based on container width, not viewport width.
+    * Updated `app.js` render function to derive available width from `#dashboard-wrapper` container instead of `window.innerWidth`.
+    * Maintains fallback to viewport dimensions for unsupported browsers or edge cases.
+* **Benefits**
+    * Dashboard now scales correctly in iframes (Home Assistant, other embedded contexts).
+    * Each container independently tracks its own width, enabling nested/multi-container scenarios without recalculation.
+    * Maintains full browser compatibility: modern browsers use CQ logic, older browsers degrade gracefully to fallback values.
+    * No visual changes to dashboard appearance—pure scaling infrastructure improvement.
+
 ## Version 23.9:
+* **Single-Enclosure Bay Content Scaling**
+    * Added proportional bay-content scaling for single-enclosure layouts so latch size, bay numbers, LEDs, and disk metadata scale with chassis growth.
+    * Kept two-enclosure layouts at baseline sizing for predictable side-by-side rendering.
+    * Applied scale-aware spacing and positioning updates for vertical bay info blocks to preserve alignment.
+* **Per-Enclosure Drive Bay Typography Controls**
+    * Added Drive Bay submenu controls per enclosure for `Pool Name`, `ID`, `Serial`, `Size`, and `Drive Temp` typography.
+    * Added per-field controls for `Font Name`, `Font Size`, `Font Style`, and `Colour`, saved under `devices.<enclosure>.bay.*`.
+    * Removed global Drive Temperature typography controls from the top Disk Arrays panel and moved customization to per-enclosure scope.
+* **Typography Override and Specificity Fixes**
+    * Fixed CSS specificity conflicts so per-field font-size settings apply correctly in both live preview and saved render paths.
+    * Applied the same specificity fixes for horizontal and vertical bay layouts across Pool/ID/Serial/Size/Temp values.
+* **Activity Monitor Manual Graph Resizing**
+    * Added `Graphs > Manual Size` controls in Activity Monitor for chart dimensions.
+    * Added `Height` slider mapping `0-100` to `25px-150px` (`chart.dimensions.chartHeight`).
+    * Added `Length` slider mapping `0-100` to `100px-500px` (`chart.dimensions.cardWidth`).
+    * Wired slider mapping logic end-to-end for live preview and persisted config updates.
+* **Wiki and Documentation Synchronization**
+    * Updated repository wiki pages to match current runtime architecture and configuration behavior.
+    * Synced the same page updates to the GitHub hosted wiki so repository docs and wiki docs are aligned.
+
+## Version 23.8:
 * **Single-Enclosure Bay Content Scaling**
     * Added proportional bay-content scaling for single-enclosure layouts so latch size, bay numbers, LEDs, and disk metadata scale with chassis growth.
     * Kept two-enclosure layouts at baseline sizing for predictable side-by-side rendering.

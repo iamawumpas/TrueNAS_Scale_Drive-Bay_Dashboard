@@ -6,12 +6,14 @@ body {
     margin: 0;
     padding: 10px;
     font-family: var(--font-default, "Calibri", "Candara", "Segoe UI", Optima, Arial, sans-serif);
+    container-type: inline-size;
 }
 
 #dashboard-wrapper {
     width: 100%;
     max-width: var(--dashboard-max-width, 1600px);
     margin: 20px auto 0;
+    container-type: inline-size;
 }
 
 #top-row {
@@ -527,8 +529,8 @@ body {
     top: 68px;
     right: 16px;
     width: max-content;
-    max-width: min(360px, calc(100vw - 32px));
-    max-height: calc(100vh - 84px);
+    max-width: min(360px, calc(100cqw - 32px));
+    max-height: calc(100cqh - 84px);
     overflow: auto;
     z-index: 3100;
 }

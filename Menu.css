@@ -4,7 +4,7 @@
     background: var(--menu-bg-color, linear-gradient(180deg, #222222 0%, #1a1a1a 100%));
     border-bottom: 2px solid var(--menu-border-color, #444444);
     padding: 8px 16px;
-    width: min(100%, var(--dashboard-max-width, 98vw));
+    width: min(100%, var(--dashboard-max-width, 98cqw));
     box-sizing: border-box;
     margin: 0 auto;
     display: flex;
@@ -17,6 +17,7 @@
     font-size: var(--menu-font-size, 12pt);
     opacity: var(--menu-opacity, 1);
     min-height: 48px;
+    container-type: inline-size;
 }
 
 .menu-container {
@@ -172,7 +173,7 @@
 }
 
 .menu-modal {
-    width: min(480px, calc(100vw - 32px));
+    width: min(480px, calc(100cqw - 32px));
     background: linear-gradient(180deg, #1f1f1f 0%, #171717 100%);
     border: 1px solid var(--menu-dropdown-border, #555555);
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.6);

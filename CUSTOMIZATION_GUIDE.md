@@ -34,11 +34,11 @@ Simply open `config.json` in any text editor and modify the values:
     "legend": "0.75rem",
     "serverName": "2.8rem",
     "pciAddress": "1.1rem",
-    "bayId": "0.8vw",
-    "diskSerial": "1.1vw",
-    "diskSize": "1.1vw",
-    "diskPool": "1.1vw",
-    "diskIndex": "1.1vw"
+    "bayId": "0.8cqw",
+    "diskSerial": "1.1cqw",
+    "diskSize": "1.1cqw",
+    "diskPool": "1.1cqw",
+    "diskIndex": "1.1cqw"
   },
   "fontStyles": {
     "bold": "bold",
@@ -100,7 +100,7 @@ If you accidentally corrupt or delete `config.json`, the service will automatica
 
 All font sizes can be specified in:
 - `rem` - Relative to root font size (responsive)
-- `vw` - Relative to viewport width (scales with screen)
+- `cqw` - Relative to container width (scales with container, better for embedded/iframe contexts)
 - `px` - Fixed pixel size (not responsive)
 
 **Key Elements:**
@@ -108,11 +108,11 @@ All font sizes can be specified in:
 - `pciAddress` - PCI address text (default: `1.1rem`)
 - `legendTitle` - Legend box title (default: `1.25rem`)
 - `legend` - Legend items (default: `0.75rem`)
-- `bayId` - Bay number labels (default: `0.8vw`)
-- `diskSerial` - Disk serial numbers (default: `1.1vw`)
-- `diskSize` - Disk capacity (default: `1.1vw`)
-- `diskPool` - Pool name (default: `1.1vw`)
-- `diskIndex` - Pool index (default: `1.1vw`)
+- `bayId` - Bay number labels (default: `0.8cqw`)
+- `diskSerial` - Disk serial numbers (default: `1.1cqw`)
+- `diskSize` - Disk capacity (default: `1.1cqw`)
+- `diskPool` - Pool name (default: `1.1cqw`)
+- `diskIndex` - Pool index (default: `1.1cqw`)
 
 ### Colors
 
