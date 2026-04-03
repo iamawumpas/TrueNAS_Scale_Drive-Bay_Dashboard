@@ -292,7 +292,7 @@
 
 ## Version 23.1:
 * **Menu System Rebuild - Phase 1 Baseline**
-    * Reintroduced a clean top menu bar shell from scratch while keeping SAVE/REVERT workflow behavior.
+    * Reintroduced a clean top menu bar shell from a fresh baseline while keeping SAVE/REVERT workflow behavior.
     * Removed all legacy dropdown menus and submenus to establish a minimal, stable foundation for the next rebuild phase.
     * Preserved dirty-page handling: SAVE/REVERT activate only when pending changes exist.
     * Preserved live-preview plumbing so unsaved menu-driven config changes can be previewed immediately.
