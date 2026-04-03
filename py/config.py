@@ -280,6 +280,9 @@ DEFAULT_CONFIG = {
                 "background": "#aa0000",
                 "border": "#ffffff",
                 "text": "#ffb3b3"
+            },
+            "repo_sync": {
+                "enabled": False
             }
         }
     },

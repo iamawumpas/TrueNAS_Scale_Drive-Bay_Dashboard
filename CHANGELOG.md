@@ -1,5 +1,15 @@
 # Storage Dashboard - Change Log
 
+## Version 25.3:
+* **Repository Sync Menu UI Refinement**
+    * Simplified the Repository Sync toggle layout by removing the redundant "Enable GitHub sync" label and consolidating the checkbox with descriptive text.
+    * Updated checkbox label to "Allow manual update checks and downloading and restoring of missing file(s)" for clarity.
+    * Applied CSS grid layout and alignment fixes to ensure checkbox and text display on a single line without overflow.
+* **Auto-Restart on Missing File Restoration**
+    * Enhanced `/repo-sync-repair` endpoint to automatically run `start_up.sh` after successfully restoring missing tracked files.
+    * Added `startup_initiated` flag to response payload to indicate whether post-restore restart was triggered.
+    * Ensures restored files are immediately applied without requiring manual service restart.
+
 ## Version 25.2:
 * **Customization Guide Modernization (Menu-First Workflow)**
     * Rewrote `CUSTOMIZATION_GUIDE.md` to reflect the current in-app menu workflow (`SAVE`, `REVERT`, `RESET ALL`) as the primary customization path.

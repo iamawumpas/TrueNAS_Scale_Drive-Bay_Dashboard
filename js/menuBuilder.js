@@ -211,6 +211,25 @@ export function buildDashboardPanel() {
                 </div>
                 <div class="menu-reset-note">Rewrites config.json from service defaults. Hard refresh runs in 3s.</div>
             </div>
+            <div class="panel-section">
+                <div class="panel-section-title">Repository Sync</div>
+                <div class="menu-control-row menu-style-row repo-sync-toggle-row">
+                    <div class="menu-ctrl-right menu-style-options">
+                        <label class="menu-style-option repo-sync-option">
+                            <input type="checkbox" id="menu-repo-sync-enabled" data-path="ui|menu|repo_sync|enabled">
+                            <span>Allow manual update checks and downloading and restoring of missing file(s)</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="menu-control-row menu-action-row repo-sync-action-row">
+                    <div class="menu-ctrl-label">Repository Actions</div>
+                    <div class="menu-ctrl-right repo-sync-action-buttons">
+                        <button class="menu-action-btn repo-sync-action-btn" id="menu-repo-check-btn" type="button">CHECK UPDATES</button>
+                        <button class="menu-action-btn repo-sync-action-btn" id="menu-repo-restore-btn" type="button">RESTORE MISSING FILES</button>
+                    </div>
+                </div>
+                <div class="menu-reset-note" id="menu-repo-sync-status">Repo sync disabled.</div>
+            </div>
         </div>`;
 }
 

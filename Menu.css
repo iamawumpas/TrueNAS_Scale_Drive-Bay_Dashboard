@@ -57,6 +57,7 @@
     min-width: calc(260px * var(--menu-scene-scale, 1));
     max-height: calc(500px * var(--menu-scene-scale, 1));
     overflow-y: auto;
+    overflow-x: hidden;
     background: var(--menu-dropdown-bg, #1a1a1a);
     border: 1px solid var(--menu-dropdown-border, #555555);
     box-shadow: 0 calc(8px * var(--menu-scene-scale, 1)) calc(24px * var(--menu-scene-scale, 1)) var(--menu-dropdown-shadow, rgba(0,0,0,0.8));
@@ -114,14 +115,16 @@
     flex: 1;
     color: var(--menu-label-color, #cccccc);
     font-size: 10.5pt;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .menu-ctrl-right {
     display: flex;
     align-items: center;
     gap: 6px;
-    flex-shrink: 0;
+    flex-shrink: 1;
+    min-width: 0;
 }
 
 .menu-action-row {
@@ -157,6 +160,8 @@
     color: var(--menu-label-color, #cccccc);
     font-size: 8.75pt;
     line-height: 1.25;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 /* ── Menu Modal (kiosk-safe messaging) ─────────────────────── */
@@ -337,12 +342,18 @@
 
 .menu-style-option {
     display: inline-flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 4px;
     color: var(--menu-control-text, #ffffff);
     font-size: 9.5pt;
     cursor: pointer;
     user-select: none;
+    max-width: 100%;
+}
+
+.menu-style-option span {
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .menu-style-checkbox {
@@ -377,6 +388,62 @@
 /* ── Activity Monitor panel width override ────────────────── */
 .activity-monitor-panel {
     min-width: 300px;
+}
+
+#dashboard-panel {
+    min-width: min(calc(360px * var(--menu-scene-scale, 1)), 92vw);
+    max-width: min(calc(420px * var(--menu-scene-scale, 1)), 96vw);
+}
+
+.repo-sync-toggle-row {
+    align-items: flex-start;
+}
+
+.repo-sync-toggle-row .menu-ctrl-right {
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.repo-sync-option {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 8px;
+    align-items: start;
+    width: 100%;
+}
+
+.repo-sync-option input[type="checkbox"] {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.repo-sync-option span {
+    white-space: normal;
+    overflow-wrap: break-word;
+}
+
+.repo-sync-action-row {
+    align-items: flex-start;
+}
+
+.repo-sync-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+    max-width: 72%;
+}
+
+.repo-sync-action-btn {
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.2;
+}
+
+#menu-repo-sync-status {
+    margin-top: 8px;
+    word-break: break-word;
 }
 
 .menu-item {

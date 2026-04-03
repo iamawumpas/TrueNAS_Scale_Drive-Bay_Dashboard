@@ -1,4 +1,5 @@
 import http.server, socketserver, json, time, subprocess, socket, os, re, threading, shutil
+import urllib.request, urllib.error
 from collections import deque
 from zfs_logic import get_zfs_topology, get_api_status
 from .config import load_config, load_style_config, CONFIG_FILE, DEFAULT_CONFIG_JSON, BASE_DIR
@@ -14,6 +15,144 @@ GLOBAL_DATA = {
     "config": {},
     "pool_activity_history": {}
 }
+
+GITHUB_OWNER = 'iamawumpas'
+GITHUB_REPO = 'TrueNAS_Scale_Drive-Bay_Dashboard'
+GITHUB_BRANCH = 'main'
+REPO_SYNC_TIMEOUT_SECS = 12
+
+# Critical runtime and startup files that can be restored if accidentally deleted.
+REPO_SYNC_TRACKED_FILES = [
+    'index.html', 'app.js', 'MenuSystem.js', 'ActivityMonitor.js', 'DecorationTexture.js',
+    'geometry.js', 'DiskInfo.js', 'livereload.js', 'style.css', 'Base.css', 'Menu.css', 'ActivityMonitor.css',
+    'service.py', 'start_up.sh', 'zfs_logic.py',
+    'js/utils.js', 'js/data.js', 'js/topology.js', 'js/styleVars.js', 'js/renderer.js',
+    'js/configStore.js', 'js/stylePreview.js', 'js/menuBuilder.js',
+    'py/__init__.py', 'py/config.py', 'py/topology.py', 'py/server.py'
+]
+
+
+def _nested_get(obj, path, fallback=None):
+    cur = obj
+    for key in path:
+        if not isinstance(cur, dict) or key not in cur:
+            return fallback
+        cur = cur[key]
+    return cur
+
+
+def _repo_sync_enabled(config):
+    return bool(_nested_get(config or {}, ['ui', 'menu', 'repo_sync', 'enabled'], False))
+
+
+def _github_json(url):
+    req = urllib.request.Request(url, headers={
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': f'{GITHUB_REPO}-repo-sync'
+    })
+    with urllib.request.urlopen(req, timeout=REPO_SYNC_TIMEOUT_SECS) as response:
+        charset = response.headers.get_content_charset() or 'utf-8'
+        return json.loads(response.read().decode(charset))
+
+
+def _github_text(url):
+    req = urllib.request.Request(url, headers={'User-Agent': f'{GITHUB_REPO}-repo-sync'})
+    with urllib.request.urlopen(req, timeout=REPO_SYNC_TIMEOUT_SECS) as response:
+        charset = response.headers.get_content_charset() or 'utf-8'
+        return response.read().decode(charset)
+
+
+def _parse_semver(tag):
+    value = str(tag or '').strip().lower()
+    if value.startswith('v'):
+        value = value[1:]
+    parts = value.split('.')
+    if len(parts) != 3:
+        return None
+    try:
+        return tuple(int(p) for p in parts)
+    except Exception:
+        return None
+
+
+def _read_local_version():
+    changelog_path = os.path.join(BASE_DIR, 'CHANGELOG.md')
+    try:
+        with open(changelog_path, 'r', encoding='utf-8') as fh:
+            for line in fh:
+                match = re.match(r'^##\s+Version\s+([0-9]+\.[0-9]+\.[0-9]+):\s*$', line.strip())
+                if match:
+                    return f"v{match.group(1)}"
+    except Exception:
+        return None
+    return None
+
+
+def _read_latest_remote_version():
+    latest_url = f'https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest'
+    try:
+        payload = _github_json(latest_url)
+        tag = payload.get('tag_name')
+        if tag:
+            return str(tag)
+    except Exception:
+        pass
+
+    tags_url = f'https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/tags?per_page=1'
+    payload = _github_json(tags_url)
+    if isinstance(payload, list) and payload:
+        return str(payload[0].get('name') or '')
+    return None
+
+
+def _check_missing_tracked_files():
+    missing = []
+    for rel in REPO_SYNC_TRACKED_FILES:
+        if not os.path.exists(os.path.join(BASE_DIR, rel)):
+            missing.append(rel)
+    return missing
+
+
+def _restore_missing_tracked_files(ref=GITHUB_BRANCH):
+    restored = []
+    failed = {}
+    for rel in _check_missing_tracked_files():
+        try:
+            raw_url = f'https://raw.githubusercontent.com/{GITHUB_OWNER}/{GITHUB_REPO}/{ref}/{rel}'
+            content = _github_text(raw_url)
+            out_path = os.path.join(BASE_DIR, rel)
+            out_dir = os.path.dirname(out_path)
+            if out_dir:
+                os.makedirs(out_dir, exist_ok=True)
+            with open(out_path, 'w', encoding='utf-8', newline='\n') as fh:
+                fh.write(content)
+            restored.append(rel)
+        except Exception as ex:
+            failed[rel] = str(ex)
+    return restored, failed
+
+
+def _repo_sync_status_payload(config):
+    local_version = _read_local_version()
+    remote_version = None
+    remote_error = None
+    try:
+        remote_version = _read_latest_remote_version()
+    except Exception as ex:
+        remote_error = str(ex)
+
+    local_semver = _parse_semver(local_version)
+    remote_semver = _parse_semver(remote_version)
+    update_available = bool(local_semver and remote_semver and remote_semver > local_semver)
+
+    return {
+        'enabled': _repo_sync_enabled(config),
+        'localVersion': local_version,
+        'remoteVersion': remote_version,
+        'updateAvailable': update_available,
+        'missingFiles': _check_missing_tracked_files(),
+        'remoteError': remote_error
+    }
 
 def get_port():
     """Get the listening port from config or return default"""
@@ -263,6 +402,54 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
         global CONFIG_MTIME, CONFIG_CACHE
         path = self.path.split('?')[0]
 
+        if path == '/repo-sync-repair':
+            try:
+                config = load_config()
+                if not _repo_sync_enabled(config):
+                    self.send_response(403)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        "status": "error",
+                        "message": "Repository sync is disabled in Dashboard > Reset > Repository Sync"
+                    }).encode())
+                    return
+
+                restored, failed = _restore_missing_tracked_files(GITHUB_BRANCH)
+                payload = _repo_sync_status_payload(config)
+                payload.update({
+                    "status": "success" if not failed else "partial",
+                    "restored": restored,
+                    "failed": failed
+                })
+
+                # After successful restoration, run start_up.sh to apply changes
+                if restored > 0:
+                    try:
+                        startup_script = os.path.join(BASE_DIR, 'start_up.sh')
+                        if os.path.exists(startup_script):
+                            subprocess.Popen(['bash', startup_script])
+                            print(f"Startup script initiated after restoring {restored} file(s)")
+                            payload["startup_initiated"] = True
+                        else:
+                            print("Warning: start_up.sh not found for post-restore restart")
+                            payload["startup_initiated"] = False
+                    except Exception as startup_err:
+                        print(f"Error triggering startup after restore: {startup_err}")
+                        payload["startup_initiated"] = False
+
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                self.wfile.write(json.dumps(payload).encode())
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode())
+            return
+
         if path == '/reset-config':
             try:
                 # Ensure the config file directory exists
@@ -389,6 +576,21 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Expires', '0')
             self.end_headers()
             self.wfile.write(json.dumps(style_config).encode())
+            return
+        elif path == '/repo-sync-status':
+            try:
+                config = load_config()
+                payload = _repo_sync_status_payload(config)
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                self.wfile.write(json.dumps(payload).encode())
+            except Exception as ex:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "error", "message": str(ex)}).encode())
             return
         elif path == '/pool-activity':
             # Serve pool activity history for Chart.js visualization

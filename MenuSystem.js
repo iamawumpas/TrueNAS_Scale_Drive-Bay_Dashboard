@@ -30,6 +30,9 @@ let revertButton = null;
 let legendButton = null;
 let legendBackdrop = null;
 let statusEl = null;
+let repoSyncStatusEl = null;
+let repoSyncCheckButton = null;
+let repoSyncRestoreButton = null;
 let lastTopology = null;
 let lastHostname = null;
 let lastDiskArraysMenuSignature = '';
@@ -212,6 +215,8 @@ function syncPanelValues(panel) {
             if (valEl) valEl.textContent = displayText;
         } else if (el.tagName === 'SELECT') {
             if (val !== undefined && val !== null) el.value = String(val);
+        } else if (el.type === 'checkbox' && el.dataset.path) {
+            el.checked = Boolean(val);
         }
     });
 
@@ -232,6 +237,10 @@ function syncPanelValues(panel) {
             input.checked = true;
         }
     });
+
+    if (panel.id === 'dashboard-panel') {
+        updateRepoSyncControls();
+    }
 }
 
 function applyWorkingConfig() {
@@ -313,6 +322,14 @@ function bindPanelEvents(panel) {
         });
     });
 
+    panel.querySelectorAll('input[type="checkbox"][data-path]').forEach(input => {
+        input.addEventListener('change', () => {
+            const path = input.dataset.path.split('|');
+            setConfigValue(path, Boolean(input.checked));
+            updateRepoSyncControls();
+        });
+    });
+
     const resetBtn = panel.querySelector('#menu-reset-btn');
     if (resetBtn) {
         resetBtn.addEventListener('click', (e) => {
@@ -320,6 +337,78 @@ function bindPanelEvents(panel) {
             e.stopPropagation();
             resetConfigToDefaults();
         });
+    }
+}
+
+function repoSyncEnabled() {
+    return Boolean(getNestedValue(workingConfig, ['ui', 'menu', 'repo_sync', 'enabled']));
+}
+
+function setRepoSyncStatusText(text) {
+    if (repoSyncStatusEl) repoSyncStatusEl.textContent = text;
+}
+
+function updateRepoSyncControls() {
+    const enabled = repoSyncEnabled();
+    if (repoSyncCheckButton) repoSyncCheckButton.disabled = !enabled;
+    if (repoSyncRestoreButton) repoSyncRestoreButton.disabled = !enabled;
+    if (!enabled) {
+        setRepoSyncStatusText('Repo sync disabled. Enable and SAVE to allow checks/restores.');
+    }
+}
+
+function formatRepoStatus(payload) {
+    if (!payload || typeof payload !== 'object') return 'Repository status unavailable.';
+    const local = payload.localVersion || 'unknown';
+    const remote = payload.remoteVersion || 'unknown';
+    const missingCount = Array.isArray(payload.missingFiles) ? payload.missingFiles.length : 0;
+    const updateNote = payload.updateAvailable ? ` Update available: ${remote}.` : ' Up to date.';
+    const missingNote = missingCount > 0 ? ` Missing files: ${missingCount}.` : ' No tracked files are missing.';
+    if (payload.remoteError) {
+        return `Local ${local}. Could not query GitHub (${payload.remoteError}).${missingNote}`;
+    }
+    return `Local ${local}, remote ${remote}.${updateNote}${missingNote}`;
+}
+
+async function refreshRepoSyncStatus(userInitiated = false) {
+    try {
+        if (userInitiated) setRepoSyncStatusText('Checking GitHub release/version status...');
+        const response = await fetch('/repo-sync-status', { cache: 'no-store' });
+        if (!response.ok) throw new Error('Status check failed with HTTP ' + response.status);
+        const payload = await response.json();
+        setRepoSyncStatusText(formatRepoStatus(payload));
+    } catch (error) {
+        console.error('[menu] repo sync status failed', error);
+        setRepoSyncStatusText('Repository status check failed.');
+    }
+}
+
+async function restoreMissingFilesFromRepo() {
+    if (!repoSyncEnabled()) {
+        setRepoSyncStatusText('Repo sync disabled. Enable and SAVE first.');
+        return;
+    }
+
+    const confirmed = window.confirm('Restore missing tracked runtime files from GitHub main branch?');
+    if (!confirmed) return;
+
+    try {
+        setRepoSyncStatusText('Restoring missing files from GitHub...');
+        const response = await fetch('/repo-sync-repair', { method: 'POST' });
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Repair failed with HTTP ${response.status}: ${text}`);
+        }
+        const payload = await response.json();
+        const restoredCount = Array.isArray(payload.restored) ? payload.restored.length : 0;
+        const failedCount = payload.failed ? Object.keys(payload.failed).length : 0;
+        let status = `Restore complete. Restored ${restoredCount} file(s).`;
+        if (failedCount > 0) status += ` Failed ${failedCount} file(s).`;
+        status += ` ${formatRepoStatus(payload)}`;
+        setRepoSyncStatusText(status);
+    } catch (error) {
+        console.error('[menu] repo sync repair failed', error);
+        setRepoSyncStatusText('Missing-file restore failed.');
     }
 }
 
@@ -399,6 +488,12 @@ function buildMenuBar() {
     if (dashBtn && dashPanel) {
         dashPanel.dataset.trigger = 'dashboard-menu-btn';
         bindPanelEvents(dashPanel);
+        repoSyncStatusEl = dashPanel.querySelector('#menu-repo-sync-status');
+        repoSyncCheckButton = dashPanel.querySelector('#menu-repo-check-btn');
+        repoSyncRestoreButton = dashPanel.querySelector('#menu-repo-restore-btn');
+        repoSyncCheckButton?.addEventListener('click', () => refreshRepoSyncStatus(true));
+        repoSyncRestoreButton?.addEventListener('click', restoreMissingFilesFromRepo);
+        updateRepoSyncControls();
         dashBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             const isOpen = dashPanel.classList.contains('open');
@@ -460,6 +555,7 @@ function toggleLegendOverlay() {
 function onConfigMutated(detail) {
     applyWorkingConfig();
     updateDirtyUI();
+    updateRepoSyncControls();
     const p0 = detail?.p0;
     const p1 = detail?.p1;
     if (p0 === 'chart' || (p0 === 'ui' && p1 === 'activity')) {
@@ -572,6 +668,7 @@ async function init() {
         updateDirtyUI();
         buildDiskArraysMenu(lastTopology, lastHostname);
         hydrateMissingMenuDefaults();
+        refreshRepoSyncStatus(false);
     } catch (error) {
         console.error('[menu] init failed', error);
         if (statusEl) statusEl.textContent = 'Config unavailable';
