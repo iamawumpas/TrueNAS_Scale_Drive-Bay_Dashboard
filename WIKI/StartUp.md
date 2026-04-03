@@ -10,6 +10,8 @@ What it does:
 - Sleeps 1 second.
 - Launches `service.py` with `nohup python3 service.py > /dev/null 2>&1 &` so it runs in the background.
 
+`service.py` is a thin entry point that imports background threads and the HTTP handler from `py/server.py`. All runtime logic lives in the `py/` package; `start_up.sh` never needs to reference those sub-modules directly.
+
 When the front-end requests a configuration-triggered restart (for example when changing the listening port) the server calls this script via `subprocess` to perform the restart.
 
 If you prefer system-managed startup, create an Init/Shutdown script in the TrueNAS UI or a systemd unit that runs `start_up.sh` on boot instead of relying on `nohup`.

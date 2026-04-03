@@ -22,3 +22,4 @@ This page collects pointers for manual edits and references to the canonical gui
    - Release history and features: [CHANGELOG.md](../CHANGELOG.md)
    - Primary configuration reference: [CONFIG_GUIDE.md](../CONFIG_GUIDE.md)
    - Styling and theming: [CUSTOMIZATION_GUIDE.md](../CUSTOMIZATION_GUIDE.md)
+   - File and code map: [How_it_works.md](../How_it_works.md)

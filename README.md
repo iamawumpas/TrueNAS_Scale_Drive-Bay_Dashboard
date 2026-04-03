@@ -1,5 +1,5 @@
 # TrueNAS Scale Drive-Bay Dashboard
-**version v23.3**
+**version v25.0**
 
 
 ## Documentation / Wiki
@@ -171,100 +171,117 @@ This dashboard **only works with ZFS**. It does NOT support ext4, btrfs, LVM, or
 ---
 
 ## What do the files do?
-### `start_up.sh`
-Stops the service on TrueNAS (if running), clears stale caches, and (re)launches the Python daemon.
 
-### `service.py`
-Main daemon that interrogates TrueNAS and your HBA to identify:
-* Used ports
-* Disk serial numbers
-* Breakout slot positions (see **Logic**)
-* Formatted disk capacity (not vdev capacity)
-* Drive status and activity
-* Pool names and drive-to-pool mapping
+> For a detailed breakdown of every file, the code inside it, and how files connect to each other, see [How_it_works.md](How_it_works.md).
 
-It also hosts the web dashboard on **port 8010** by default (configurable).
+### Entry points
 
-### `zfs_logic.py`
-Helper logic for drive and pool discovery used by `service.py`.
+#### `start_up.sh`
+Stops any running instance of `service.py`, clears Python caches, and relaunches the daemon in the background. Used both for manual starts and by the front-end restart trigger.
 
-### `app.js`
-Client entry point that fetches `/data`, renders chassis and bays, and drives live updates.
+#### `service.py`
+Thin Python startup script. Imports and starts the three background threads and HTTP server defined in `py/server.py`. This file is the only thing `start_up.sh` launches.
 
-### `MenuSystem.js`
-Builds the configuration menus, handles input, previews changes, and saves to `config.json`.
+#### `index.html`
+Static HTML shell. Loads CSS files and scripts in dependency order, then bootstraps the dashboard. `MenuSystem.js` is loaded as an ES module.
 
-### `Chassis.js`
-Generates chassis markup and container layout for each device.
+---
 
-### `Bay.js`
-Generates bay markup for each drive slot.
+### Backend modules (`py/`)
 
-### `DiskInfo.js`
-Formats disk metadata (capacity, pool, serial, index) for display.
+#### `py/server.py`
+HTTP request handler, background I/O monitor thread, topology scanner thread, and pool activity history thread. Hosts all JSON endpoints (`/data`, `/pool-activity`, `/save-config`, `/reset-config`, `/trigger-restart`, etc.).
 
-### `LEDManager.js`
-Maps disk states to LED classes for consistent status colors.
+#### `py/topology.py`
+Hardware discovery logic: PCI controller scanning, SAS phy and enclosure slot detection, sas2ircu/sas3ircu/storcli integration, `/dev/disk/by-path` parsing, and disk-to-bay-slot mapping.
 
-### `ActivityMonitor.js`
-Fetches pool activity data and renders the read/write charts.
+#### `py/config.py`
+Config file loading, default config generation, and style config serving. Owns `DEFAULT_CONFIG_JSON` and `DEFAULT_CONFIG` dictionaries.
 
-### `index.html`
-Static HTML shell that loads the dashboard scripts and styles.
+#### `zfs_logic.py`
+ZFS layer — uses TrueNAS `midclt` API as primary source and falls back to `zpool status` parsing. Returns pool states and per-disk ZFS state/error info.
 
-### `style.css`
-Base styling for overall layout and global theme variables.
+---
 
-### `Base.css`
-Common typography and shared UI styling.
+### Frontend runtime
 
-### `Chassis.css`
-Styling for chassis containers and layout framing.
+#### `app.js`
+Main orchestrator. Starts the polling loop, calls `fetchDataWithRetry`, delegates rendering to `js/renderer.js`, applies CSS variables via `js/styleVars.js`, and manages Activity Monitor lifecycle.
 
-### `Bay.css`
-Styling for bays, including size, grill pattern, and labels.
+#### `MenuSystem.js`
+Menu orchestrator. Wires up all menu panel interactions, delegates state to `js/configStore.js`, live preview to `js/stylePreview.js`, and panel markup to `js/menuBuilder.js`.
 
-### `LEDs.css`
-LED indicator styles and animations.
+#### `ActivityMonitor.js`
+Polls `/pool-activity` and `/data`. Renders per-pool read/write charts using Chart.js and applies FAULTED/DEGRADED state overlays.
 
-### `Menu.css`
-Menu layout and form control styling.
+---
 
-### `ActivityMonitor.css`
-Styles for the activity monitor cards and charts.
+### Frontend modules (`js/`)
 
-### `livereload.js`
-Optional dev helper for auto-refresh during local development.
+#### `js/data.js`
+Fetch layer. Handles timeout-wrapped `fetch`, retry with back-off, last-good-payload caching, and topology guard helpers.
 
-### `config.json`
-Primary configuration store, auto-generated on first run if missing.
+#### `js/renderer.js`
+DOM builder and incremental differ. Builds enclosure and bay HTML, applies per-chassis CSS variables, and only replaces DOM nodes whose content has changed.
 
-### `config.json.backup`
-Local backup copy of the configuration (optional).
+#### `js/topology.js`
+Grid resolution, bay ordering, disk info formatting, and status-to-CSS-class mapping. Reads geometry constants from `geometry.js`.
 
-### `CONFIG_GUIDE.md`
-Detailed reference for configuration keys and examples.
+#### `js/styleVars.js`
+CSS custom property injector. Applies global `config.ui` values and per-device override values to `:root` style.
 
-### `CUSTOMIZATION_GUIDE.md`
-Tips for theming, fonts, colors, and layout tweaks.
+#### `js/configStore.js`
+In-memory config state (original snapshot + working copy). Provides deep-clone, path-based read/write, dirty flag, and value normalization helpers for menu controls.
 
-### `Developer_Notes.md`
-Implementation notes and internal architecture notes.
+#### `js/stylePreview.js`
+Live preview helpers called by `MenuSystem.js` while the menu is open. Applies activity monitor, chart, and chassis style changes to CSS variables without saving.
 
-### `CHANGELOG.md`
-Version history and feature highlights.
+#### `js/menuBuilder.js`
+Pure HTML builders for every menu panel. Generates Disk Arrays per-enclosure controls, font pickers, color inputs, slider rows, and dropdown options.
 
-### `LICENSE`
-Project license.
+#### `js/utils.js`
+Shared primitives used across both runtime and menu modules: `clampInt`, `mixHex`, grill SVG builders, decoration texture helpers, and CSS-variable application utilities.
 
-### `image.png`
-README screenshot (you will update this).
+---
 
-### `.gitignore`
-Git ignore rules for generated and local-only files.
+### Shared JS files
 
-### `__pycache__/`
-Python bytecode cache directory (generated at runtime).
+#### `geometry.js`
+Chassis bay geometry presets and reference dimension constants consumed by `js/topology.js` and `js/renderer.js`.
+
+#### `scratchTexture.js`
+Deterministic, seeded decoration (scratch/grill) texture generator shared between chassis rendering and menu preview.
+
+#### `DiskInfo.js`
+Legacy helper retained for compatibility. Active disk info formatting is handled by `js/topology.js`.
+
+#### `livereload.js`
+Dev-only helper: polls `/livereload-status` and refreshes the browser when file modification timestamps change.
+
+---
+
+### Styles
+
+| File | Purpose |
+|---|---|
+| `style.css` | Core chassis, bay, LED, and layout styles |
+| `Base.css` | Shared typography and baseline visual defaults |
+| `ActivityMonitor.css` | Activity monitor card, chart, and state overlay styles |
+| `Menu.css` | Top menu, dropdown panels, controls, and modal styles |
+
+---
+
+### Configuration and documentation
+
+| File | Purpose |
+|---|---|
+| `config.json` | Primary runtime configuration (auto-generated if missing) |
+| `style-config.json` | Style-only config served by `/style-config` endpoint |
+| `CONFIG_GUIDE.md` | Canonical reference for all `config.json` keys |
+| `CUSTOMIZATION_GUIDE.md` | Theming, fonts, colors, and layout examples |
+| `How_it_works.md` | Detailed per-file code map with inter-file connection diagram |
+| `Developer_Notes.md` | Architecture notes and implementation details |
+| `CHANGELOG.md` | Version history and feature highlights |
 
 ---
 

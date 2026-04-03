@@ -1,32 +1,83 @@
 # Python scripts overview
 
-This project contains two primary Python components:
+As of **v25.0** the backend is split into a `py/` package. `service.py` is the only startup entry point.
 
-- `service.py` — main daemon and web server
-  - Hosts a simple HTTP server (based on `http.server`) that serves the UI assets and several JSON endpoints used by the front-end:
-    - `GET /data` — returns `hostname`, `topology` (detected controllers and disks), and `config` information used to render the UI.
-    - `GET /style-config` — returns the `config.json` styling payload (fonts, colors, font sizes) used to set CSS variables.
-    - `GET /pool-activity` — returns history arrays used by `ActivityMonitor.js` to draw per-pool read/write graphs.
-    - `GET /livereload-status` — returns file modification times for development auto-reload checks.
-    - `GET /trigger-restart` — triggers `start_up.sh` to restart the service and returns the new port.
-    - `GET /ircu-debug` — returns a diagnostic payload for HBA/enclosure discovery and mapping.
-    - `POST /save-config` — accepts a full `config.json` payload and saves it to disk.
-    - `POST /reset-config` — rewrites `config.json` from defaults and reloads in-memory config.
-  - Contains background threads that scan topology, monitor I/O activity, and collect pool activity history. If `config.json` is missing or invalid the service will regenerate defaults from `DEFAULT_CONFIG_JSON`.
+---
 
-- `zfs_logic.py` — ZFS helper
-  - Provides `get_zfs_topology(uuid_to_dev_map)` which uses a dual-method detection system:
-    - **Primary**: TrueNAS Scale API via `midclt call pool.query` for comprehensive pool, disk, and error information
-    - **Fallback**: Parses `zpool status -v -p` output when API is unavailable
-  - Returns a tuple: `(zfs_map, pool_states)` containing disk mappings and pool-level states (ONLINE, DEGRADED, FAULTED, SUSPENDED)
-  - Detects all disk states: ONLINE, DEGRADED, FAULTED, UNAVAIL, REMOVED, OFFLINE, RESILVERING
-  - Parses disk errors: READ, WRITE, and CHECKSUM counts
-  - Also provides `get_api_status()` to report API availability for monitoring purposes
-  - Used by `service.py` to build the topology mapping and pool state information.
+## `service.py` — startup entry point
+
+Imports background threads and the HTTP handler from `py.server` and starts the TCP server. This file is launched directly by `start_up.sh` and by any automated init/systemd script.
+
+```
+service.py
+  └─ imports from py/server.py: FastHandler, get_port,
+       io_monitor_thread, topology_scanner_thread, pool_activity_monitor_thread
+```
+
+---
+
+## `py/server.py` — HTTP server and background threads
+
+Contains the full HTTP request handler class and three runtime threads:
+
+- **`io_monitor_thread`** — Reads `/proc/diskstats` at 100 ms intervals. Compares sector counts frame-to-frame to set a boolean activity flag per device. Feeds the blue Activity LED on the front-end.
+- **`topology_scanner_thread`** — Periodically calls hardware discovery from `py/topology.py` and ZFS mapping from `zfs_logic.py`. Writes results into `GLOBAL_DATA["topology"]`.
+- **`pool_activity_monitor_thread`** — Samples per-pool I/O counters and appends readings to the rolling `pool_activity_history` deques consumed by the Activity Monitor charts.
+
+**Endpoints served:**
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/data` | Returns `hostname`, `topology`, and `config` payload for the front-end render loop |
+| `GET` | `/pool-activity` | Returns rolling read/write history for all pools |
+| `GET` | `/style-config` | Returns the styling portion of `config.json` |
+| `GET` | `/livereload-status` | Returns file modification timestamps for dev auto-reload |
+| `GET` | `/trigger-restart` | Runs `start_up.sh` via subprocess and returns the new port |
+| `GET` | `/ircu-debug` | Returns HBA/enclosure discovery diagnostic payload |
+| `POST` | `/save-config` | Accepts full `config.json` payload and writes to disk |
+| `POST` | `/reset-config` | Regenerates `config.json` from defaults and reloads in-memory config |
+
+---
+
+## `py/topology.py` — hardware discovery
+
+All physical controller and bay detection logic:
+
+- **`normalize_pci_address`** — Normalises PCI address strings from various vendor formats (sas2ircu Bus:Dev:Func hex notation, dash-separated, colon-separated) into Linux canonical `DDDD:BB:DD.F` form.
+- **`find_enclosure_slot_count`** — Reads `/sys/class/enclosure` to count physical slots on an attached backplane.
+- **`count_controller_ports`** — Counts SAS phy ports via sysfs for fallback capacity detection.
+- **`get_controller_capacity`** — Determines max bay count via enclosure detection, sas2ircu/sas3ircu/storcli, or sysfs phy count.
+- **`is_virtual_storage_controller`** — Filters out virtual/emulated controllers so they are not presented as drive chassis.
+- **`get_ircu_slot_topology`** — Maps adapter slot numbers to logical drives using sas2ircu/sas3ircu `DISPLAY` output.
+- **`build_serial_to_dev_map`** — Builds a serial-number-to-block-device map from `/dev/disk/by-id`.
+
+---
+
+## `py/config.py` — config persistence
+
+- Owns `DEFAULT_CONFIG` and `DEFAULT_CONFIG_JSON` dictionaries (used to regenerate defaults).
+- **`load_config()`** — Reads `config.json`, falls back to defaults if missing or invalid JSON.
+- **`load_style_config()`** — Returns the styling-only subset served by `/style-config`.
+- Sets `BASE_DIR` and `CONFIG_FILE` paths relative to the repo root so imports work regardless of working directory.
+
+---
+
+## `zfs_logic.py` — ZFS state layer
+
+Not part of the `py/` package (retained at the repo root for compatibility).
+
+- **`get_zfs_topology(uuid_to_dev_map)`** — Dual-method detection:
+  - **Primary:** `midclt call pool.query` for full TrueNAS API pool and disk data.
+  - **Fallback:** Parses `zpool status -v -p` output when API is unavailable.
+  - Returns `(zfs_map, pool_states)` covering all ZFS disk states and per-disk READ/WRITE/CHECKSUM error counts.
+- **`get_api_status()`** — Reports API availability; used to trigger the front-end warning banner.
+
+---
 
 Notes:
-- `MenuSystem.js` uses `/save-config` for persistent writes and `/reset-config` for reset-to-default workflows.
-- `start_up.sh` is used by `/trigger-restart` for port/network restart requests.
-- The default port is read from `config.json` (`network.port`) and defaults to `8010` if missing.
+- `start_up.sh` is also called by `GET /trigger-restart` via subprocess for port/network restart requests.
+- The default port is read from `config.json` (`network.port`) and defaults to `8010` if missing or invalid.
+- If `config.json` is deleted or corrupt, `py/config.py` regenerates it from `DEFAULT_CONFIG` on next load.
 
-For implementation details see: [service.py](../service.py) and [zfs_logic.py](../zfs_logic.py).
+For implementation details see: [service.py](../service.py), [py/server.py](../py/server.py), [py/topology.py](../py/topology.py), [py/config.py](../py/config.py), and [zfs_logic.py](../zfs_logic.py).
+
