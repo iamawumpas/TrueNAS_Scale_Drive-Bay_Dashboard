@@ -1,5 +1,18 @@
 # Storage Dashboard - Change Log
 
+## Version 25.1:
+* **Texture Utility File Rename**
+    * Renamed shared texture utility file from `scratchTexture.js` to `DecorationTexture.js`.
+    * Updated script loading in `index.html` to reference `DecorationTexture.js`.
+    * Kept runtime global compatibility via `window.DashboardDecorationTexture`.
+* **Code and Documentation Reference Alignment**
+    * Updated runtime comments and developer notes to use `DecorationTexture.js` naming.
+    * Updated README and architecture documentation (`How_it_works.md`) to reflect the new file name.
+    * Updated local wiki pages and GitHub wiki pages so file maps and script-order references match runtime.
+* **Scratch Prefix Cleanup Standardization**
+    * Replaced remaining `scratch*` naming references with `decoration*` terminology across documentation and changelog entries where applicable.
+    * Verified there are no remaining `scratchTexture.js`, `DashboardScratchTexture`, or `scratch*` references in tracked source and docs.
+
 ## Version 25.0:
 * **Major Frontend Refactor to Modular Architecture**
     * Split large runtime logic from `app.js` into focused modules under `js/` (`data.js`, `topology.js`, `styleVars.js`, `renderer.js`, `utils.js`).
