@@ -51,7 +51,7 @@ body {
     border: 1px solid var(--chassis-card-border, var(--chassis-border, #2f3d52));
     background-color: var(--enc-chassis-bg, var(--chassis-card-bg, #14181f));
     background-image:
-        var(--enc-chassis-scratches, none),
+        var(--enc-chassis-decorations, none),
         linear-gradient(115deg,
             var(--enc-chassis-gradient-start, var(--enc-chassis-bg, var(--chassis-card-bg, #14181f))) 0%,
             var(--enc-chassis-gradient-mid-a, var(--enc-chassis-bg, var(--chassis-card-bg, #14181f))) 30%,

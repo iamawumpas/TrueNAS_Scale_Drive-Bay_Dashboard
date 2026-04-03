@@ -40,8 +40,8 @@
 		return [parseInt(clean.slice(0, 2), 16), parseInt(clean.slice(2, 4), 16), parseInt(clean.slice(4, 6), 16)];
 	}
 
-	const buildRandomScratchTexture = (window.DashboardScratchTexture && typeof window.DashboardScratchTexture.buildRandomScratchTexture === 'function')
-		? window.DashboardScratchTexture.buildRandomScratchTexture
+	const buildRandomDecorationTexture = (window.DashboardDecorationTexture && typeof window.DashboardDecorationTexture.buildRandomDecorationTexture === 'function')
+		? window.DashboardDecorationTexture.buildRandomDecorationTexture
 		: () => 'none';
 
 	function mixHex(hex, amount) {
@@ -140,17 +140,17 @@
 		setOrClear('--activity-server-name-variant', serverStyles.includes('smallcaps') ? 'small-caps' : 'normal');
 		const subtextColor = mixHex(String(serverName.color || '#ffffff'), -0.30);
 		setOrClear('--activity-subtext-color-derived', subtextColor);
-		const scratchLevel = Number(activity.scratch_level ?? 50);
-		const scratchDensity = Number(activity.scratch_density ?? 50);
-		const scratchIntensity = Number(activity.scratch_intensity ?? 50);
-		const scratchOpacity = (sliderToUnit(scratchLevel) * sliderToUnit(scratchIntensity) * 0.09);
-		const scratchTexture = buildRandomScratchTexture(
-			scratchLevel,
-			scratchDensity,
-			scratchIntensity
+		const decorationLevel = Number(activity.decoration_level ?? 50);
+		const decorationDensity = Number(activity.decoration_density ?? 50);
+		const decorationIntensity = Number(activity.decoration_intensity ?? 50);
+		const decorationOpacity = (sliderToUnit(decorationLevel) * sliderToUnit(decorationIntensity) * 0.09);
+		const decorationTexture = buildRandomDecorationTexture(
+			decorationLevel,
+			decorationDensity,
+			decorationIntensity
 		);
-		rootStyle.setProperty('--activity-chassis-stripe', `rgba(255,255,255,${scratchOpacity.toFixed(4)})`);
-		rootStyle.setProperty('--activity-random-scratches', scratchTexture);
+		rootStyle.setProperty('--activity-chassis-stripe', `rgba(255,255,255,${decorationOpacity.toFixed(4)})`);
+		rootStyle.setProperty('--activity-random-decorations', decorationTexture);
 
 		if (chartColors.readColor) {
 			rootStyle.setProperty('--chart-read-color', String(chartColors.readColor));
@@ -362,26 +362,26 @@
 			applyTextStyleOverride(el, 'disk-size', bayDev.disk_size);
 			applyTextStyleOverride(el, 'disk-temp', bayDev.drive_temperature);
 
-			const hasScratchOverride =
-				chassisDev.scratch_level !== undefined ||
-				chassisDev.scratch_density !== undefined ||
-				chassisDev.scratch_intensity !== undefined;
+			const hasDecorationOverride =
+				chassisDev.decoration_level !== undefined ||
+				chassisDev.decoration_density !== undefined ||
+				chassisDev.decoration_intensity !== undefined;
 
-			if (hasScratchOverride) {
-				const scratchLevel = Number(chassisDev.scratch_level ?? 50);
-				const scratchDensity = Number(chassisDev.scratch_density ?? 50);
-				const scratchIntensity = Number(chassisDev.scratch_intensity ?? 50);
-				const scratchOpacity = (sliderToUnit(scratchLevel) * sliderToUnit(scratchIntensity) * 0.09);
-				const scratchTexture = buildRandomScratchTexture(
-					scratchLevel,
-					scratchDensity,
-					scratchIntensity
+			if (hasDecorationOverride) {
+				const decorationLevel = Number(chassisDev.decoration_level ?? 50);
+				const decorationDensity = Number(chassisDev.decoration_density ?? 50);
+				const decorationIntensity = Number(chassisDev.decoration_intensity ?? 50);
+				const decorationOpacity = (sliderToUnit(decorationLevel) * sliderToUnit(decorationIntensity) * 0.09);
+				const decorationTexture = buildRandomDecorationTexture(
+					decorationLevel,
+					decorationDensity,
+					decorationIntensity
 				);
-				el.style.setProperty('--enc-chassis-stripe', `rgba(255,255,255,${scratchOpacity.toFixed(4)})`);
-				el.style.setProperty('--enc-chassis-scratches', scratchTexture);
+				el.style.setProperty('--enc-chassis-stripe', `rgba(255,255,255,${decorationOpacity.toFixed(4)})`);
+				el.style.setProperty('--enc-chassis-decorations', decorationTexture);
 			} else {
 				el.style.removeProperty('--enc-chassis-stripe');
-				el.style.removeProperty('--enc-chassis-scratches');
+				el.style.removeProperty('--enc-chassis-decorations');
 			}
 		});
 	}
@@ -667,9 +667,9 @@
 		};
 
 		const literalDefaults = {
-			'chassis|scratch_level': 50,
-			'chassis|scratch_density': 50,
-			'chassis|scratch_intensity': 50,
+			'chassis|decoration_level': 50,
+			'chassis|decoration_density': 50,
+			'chassis|decoration_intensity': 50,
 			'bay|layout': 'vertical',
 			'bay|fill_order': 'left_to_right',
 			'bay|grill_shape': 'round'
@@ -1136,9 +1136,9 @@
 				<div class="panel-section">
 					<div class="panel-section-title">Chassis</div>
 					${buildColorRow('Colour', ['ui', 'activity', 'chassis_color'])}
-					${buildSliderRow('Scratch Level', ['ui', 'activity', 'scratch_level'])}
-					${buildSliderRow('Scratch Density', ['ui', 'activity', 'scratch_density'])}
-					${buildSliderRow('Scratch Intensity', ['ui', 'activity', 'scratch_intensity'])}
+					${buildSliderRow('Decoration Level', ['ui', 'activity', 'decoration_level'])}
+					${buildSliderRow('Decoration Density', ['ui', 'activity', 'decoration_density'])}
+					${buildSliderRow('Decoration Intensity', ['ui', 'activity', 'decoration_intensity'])}
 					<div class="panel-subsection">
 						<div class="panel-subsection-title">Server Name</div>
 						${buildFontRow('Font Name', ['ui', 'activity', 'server_name', 'font'])}
@@ -1491,9 +1491,9 @@
 								${buildColorRow('Subtitle Colour', ['devices', key, 'chassis', 'pci_address', 'color'])}
 							</div>
 							${buildColorRow('Colour', ['devices', key, 'chassis', 'color'])}
-							${buildSliderRow('Scratch Level', ['devices', key, 'chassis', 'scratch_level'])}
-							${buildSliderRow('Scratch Density', ['devices', key, 'chassis', 'scratch_density'])}
-							${buildSliderRow('Scratch Intensity', ['devices', key, 'chassis', 'scratch_intensity'])}
+							${buildSliderRow('Decoration Level', ['devices', key, 'chassis', 'decoration_level'])}
+							${buildSliderRow('Decoration Density', ['devices', key, 'chassis', 'decoration_density'])}
+							${buildSliderRow('Decoration Intensity', ['devices', key, 'chassis', 'decoration_intensity'])}
 						</div>
 						<div class="panel-section">
 							<div class="panel-section-title">Drive Bay</div>

@@ -167,9 +167,9 @@
             "title_color": "#f28a02",
             "legend_color": "#ffffff",
             "chassis_color": "#3f1818",
-            "scratch_level": 23,
-            "scratch_density": 18,
-            "scratch_intensity": 14,
+            "decoration_level": 23,
+            "decoration_density": 18,
+            "decoration_intensity": 14,
             "server_name": {
                 "color": "#ffffff",
                 "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
@@ -317,92 +317,136 @@
         "0000:00:10.0-e2": {
             "chassis": {
                 "rack_units": 2,
-                "scratch_level": 32,
-                "color": "#13022c",
-                "scratch_density": 100,
-                "scratch_intensity": 100
+                "decoration_level": 28,
+                "color": "#230453",
+                "decoration_density": 100,
+                "decoration_intensity": 100,
+                "server_name": {
+                    "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+                    "color": "#ffffff",
+                    "style": [
+                        "bold",
+                        "smallcaps"
+                    ]
+                },
+                "pci_address": {
+                    "color": "#666666"
+                }
             },
             "bay": {
                 "gap_px": 6,
                 "layout": "horizontal",
                 "grid_cols": 4,
                 "grid_rows": 3,
-                "fill_order": "row_major_ltr",
+                "fill_order": "left_to_right",
                 "drive_sequence": "horizontal",
                 "drive_temperature": {
                     "size": "15px",
-                    "color": "#00ffff"
+                    "color": "#00ffff",
+                    "font": "Arial, Helvetica, sans-serif",
+                    "style": [
+                        "bold"
+                    ]
                 },
                 "disk_size": {
                     "color": "#006eff",
                     "size": "12px",
                     "style": [
                         "normal"
-                    ]
+                    ],
+                    "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif"
                 },
                 "disk_serial": {
                     "color": "#ffff00",
                     "size": "12px",
                     "style": [
                         "normal"
-                    ]
+                    ],
+                    "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif"
                 },
                 "disk_index": {
                     "color": "#f27de8",
                     "size": "12px",
                     "style": [
                         "normal"
-                    ]
+                    ],
+                    "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif"
                 },
                 "disk_pool": {
                     "style": [
                         "normal"
                     ],
                     "color": "#ffffff",
-                    "size": "12px"
-                }
+                    "size": "12px",
+                    "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif"
+                },
+                "grill_shape": "round",
+                "grill_size_scale": 50
             }
         },
         "0000:00:10.0-da": {
             "chassis": {
-                "color": "#0c2400",
-                "scratch_level": 8,
-                "scratch_density": 98,
-                "scratch_intensity": 32
+                "color": "#0a4652",
+                "decoration_level": 18,
+                "decoration_density": 100,
+                "decoration_intensity": 53,
+                "server_name": {
+                    "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+                    "color": "#ffffff",
+                    "style": [
+                        "bold",
+                        "smallcaps"
+                    ]
+                },
+                "pci_address": {
+                    "color": "#666666"
+                }
             },
             "bay": {
                 "disk_pool": {
                     "size": "10px",
                     "style": [
                         "normal"
-                    ]
+                    ],
+                    "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+                    "color": "#ffffff"
                 },
                 "disk_index": {
                     "size": "10px",
                     "style": [
                         "normal"
-                    ]
+                    ],
+                    "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
+                    "color": "#00ffff"
                 },
                 "disk_serial": {
                     "size": "10px",
                     "color": "#ffff00",
                     "style": [
                         "normal"
-                    ]
+                    ],
+                    "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif"
                 },
                 "disk_size": {
                     "size": "10px",
                     "color": "#ff00ff",
                     "style": [
                         "normal"
-                    ]
+                    ],
+                    "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif"
                 },
                 "drive_temperature": {
                     "size": "13px",
                     "style": [
                         "bold"
-                    ]
-                }
+                    ],
+                    "font": "Arial, Helvetica, sans-serif",
+                    "color": "#64a0ce"
+                },
+                "layout": "vertical",
+                "fill_order": "left_to_right",
+                "grill_shape": "round",
+                "grill_size_scale": 50
             }
         }
     }

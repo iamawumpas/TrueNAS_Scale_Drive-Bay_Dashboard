@@ -1,10 +1,10 @@
 (function () {
     'use strict';
 
-    const scratchTextureCache = new Map();
-    const MAX_SCRATCH_CACHE_ENTRIES = 48;
+    const decorationTextureCache = new Map();
+    const MAX_DECORATION_CACHE_ENTRIES = 48;
 
-    function clampScratch(v) {
+    function clampDecoration(v) {
         return Math.max(0, Math.min(100, Number(v) || 0));
     }
 
@@ -29,34 +29,34 @@
         return Math.floor(rand() * (max - min + 1)) + min;
     }
 
-    function pickScratchAngleWith(rand) {
+    function pickDecorationAngleWith(rand) {
         const roll = rand();
         if (roll < 0.55) return randomIntWith(rand, -18, 18);
         if (roll < 0.85) return randomIntWith(rand, -28, 28);
         return randomIntWith(rand, -40, 40);
     }
 
-    function buildRandomScratchTexture(levelRaw, densityRaw, intensityRaw) {
-        const level = clampScratch(levelRaw);
-        const density = clampScratch(densityRaw);
-        const intensity = clampScratch(intensityRaw);
+    function buildRandomDecorationTexture(levelRaw, densityRaw, intensityRaw) {
+        const level = clampDecoration(levelRaw);
+        const density = clampDecoration(densityRaw);
+        const intensity = clampDecoration(intensityRaw);
         const key = `${level}|${density}|${intensity}`;
 
-        if (scratchTextureCache.has(key)) {
-            return scratchTextureCache.get(key);
+        if (decorationTextureCache.has(key)) {
+            return decorationTextureCache.get(key);
         }
 
         if (level <= 0) {
-            scratchTextureCache.set(key, 'none');
+            decorationTextureCache.set(key, 'none');
             return 'none';
         }
 
-        const rand = createSeededRandom(`scratch|${key}`);
+        const rand = createSeededRandom(`decoration|${key}`);
         const levelUnit = level / 100;
         const densityUnit = density / 100;
         const intensityUnit = intensity / 100;
 
-        const totalScratchCount = Math.max(1, Math.round(levelUnit * (8 + densityUnit * 32)));
+        const totalDecorationCount = Math.max(1, Math.round(levelUnit * (8 + densityUnit * 32)));
 
         let deepMin = 0;
         let deepMax = 0;
@@ -75,22 +75,22 @@
         const deepScaleByLevel = Math.max(0, levelUnit);
         deepMin = Math.round(deepMin * deepScaleByLevel);
         deepMax = Math.round(deepMax * deepScaleByLevel);
-        const deepCount = Math.min(totalScratchCount, deepMax > 0 ? randomIntWith(rand, deepMin, Math.max(deepMin, deepMax)) : 0);
+        const deepCount = Math.min(totalDecorationCount, deepMax > 0 ? randomIntWith(rand, deepMin, Math.max(deepMin, deepMax)) : 0);
 
         const layers = [];
         const lightAlpha = 0.04 + intensityUnit * 0.08;
         const deepAlpha = 0.14 + intensityUnit * 0.22;
-        const clusterCount = Math.max(0, Math.round(totalScratchCount * 0.18));
+        const clusterCount = Math.max(0, Math.round(totalDecorationCount * 0.18));
         const clusterAnchors = Array.from({ length: clusterCount }, () => ({
             start: randomIntWith(rand, 8, 88),
-            angle: pickScratchAngleWith(rand)
+            angle: pickDecorationAngleWith(rand)
         }));
 
-        for (let i = 0; i < totalScratchCount; i += 1) {
+        for (let i = 0; i < totalDecorationCount; i += 1) {
             const isDeep = i < deepCount;
             const useCluster = clusterAnchors.length > 0 && rand() < 0.55;
             const anchor = useCluster ? clusterAnchors[randomIntWith(rand, 0, clusterAnchors.length - 1)] : null;
-            const angle = anchor ? Math.max(-40, Math.min(40, anchor.angle + randomIntWith(rand, -6, 6))) : pickScratchAngleWith(rand);
+            const angle = anchor ? Math.max(-40, Math.min(40, anchor.angle + randomIntWith(rand, -6, 6))) : pickDecorationAngleWith(rand);
             const start = anchor ? Math.max(3, Math.min(95, anchor.start + randomIntWith(rand, -7, 7))) : randomIntWith(rand, 3, 95);
             const width = isDeep ? 2 : 1;
             const extraLength = isDeep ? randomIntWith(rand, 0, 2) : randomIntWith(rand, 0, 1);
@@ -100,17 +100,17 @@
         }
 
         const texture = layers.length > 0 ? layers.join(', ') : 'none';
-        scratchTextureCache.set(key, texture);
+        decorationTextureCache.set(key, texture);
 
-        if (scratchTextureCache.size > MAX_SCRATCH_CACHE_ENTRIES) {
-            const oldestKey = scratchTextureCache.keys().next().value;
-            scratchTextureCache.delete(oldestKey);
+        if (decorationTextureCache.size > MAX_DECORATION_CACHE_ENTRIES) {
+            const oldestKey = decorationTextureCache.keys().next().value;
+            decorationTextureCache.delete(oldestKey);
         }
 
         return texture;
     }
 
-    window.DashboardScratchTexture = {
-        buildRandomScratchTexture
+    window.DashboardDecorationTexture = {
+        buildRandomDecorationTexture
     };
 })();

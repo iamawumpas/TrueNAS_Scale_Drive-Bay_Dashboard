@@ -188,8 +188,8 @@ function buildGrillImageCss(shape, holeColor, grillPx) {
     }
 }
 
-const buildRandomScratchTexture = (window.DashboardScratchTexture && typeof window.DashboardScratchTexture.buildRandomScratchTexture === 'function')
-    ? window.DashboardScratchTexture.buildRandomScratchTexture
+const buildRandomDecorationTexture = (window.DashboardDecorationTexture && typeof window.DashboardDecorationTexture.buildRandomDecorationTexture === 'function')
+    ? window.DashboardDecorationTexture.buildRandomDecorationTexture
     : () => 'none';
 
 function normalizeTopologyKey(topologyKey, pciRaw) {
@@ -727,7 +727,7 @@ function applyUiVariables(config, hostname) {
         rootStyle.setProperty('--activity-chassis-gradient-end', mixHex(base, -0.32));
     }
 
-    // Scratch controls: random scratch generation with intensity-driven deep 2x width scratches.
+    // Decoration controls: random decoration generation with intensity-driven deep 2x width lines.
     const clampSlider = (v) => Math.max(0, Math.min(100, Number(v ?? 50)));
     const curveCentered = (v, power = 1.7) => {
         const t = (clampSlider(v) - 50) / 50;
@@ -736,17 +736,17 @@ function applyUiVariables(config, hostname) {
     const sliderToUnit = (v) => (curveCentered(v) + 1) / 2;
     const sliderToScale = (v) => Math.max(0.15, 1 + curveCentered(v) * 1.5);
 
-    const scratchLevel = Number(ui.activity?.scratch_level ?? 50);
-    const scratchDensity = Number(ui.activity?.scratch_density ?? 50);
-    const scratchIntensity = Number(ui.activity?.scratch_intensity ?? 50);
-    const scratchOpacity = (sliderToUnit(scratchLevel) * sliderToUnit(scratchIntensity) * 0.09);
-    const scratchTexture = buildRandomScratchTexture(
-        scratchLevel,
-        scratchDensity,
-        scratchIntensity
+    const decorationLevel = Number(ui.activity?.decoration_level ?? 50);
+    const decorationDensity = Number(ui.activity?.decoration_density ?? 50);
+    const decorationIntensity = Number(ui.activity?.decoration_intensity ?? 50);
+    const decorationOpacity = (sliderToUnit(decorationLevel) * sliderToUnit(decorationIntensity) * 0.09);
+    const decorationTexture = buildRandomDecorationTexture(
+        decorationLevel,
+        decorationDensity,
+        decorationIntensity
     );
-    rootStyle.setProperty('--activity-chassis-stripe', `rgba(255,255,255,${scratchOpacity.toFixed(4)})`);
-    rootStyle.setProperty('--activity-random-scratches', scratchTexture);
+    rootStyle.setProperty('--activity-chassis-stripe', `rgba(255,255,255,${decorationOpacity.toFixed(4)})`);
+    rootStyle.setProperty('--activity-random-decorations', decorationTexture);
 
     // Chart typography scale CSS vars (0-100 scale; 50 = ×1.0; 0 = ×0.25 min; 100 = ×2.5)
     const typography = chart.typography || {};
@@ -863,26 +863,26 @@ function applyDeviceVariables(config) {
         applyTextStyleOverride(el, 'disk-size', bayDev.disk_size);
         applyTextStyleOverride(el, 'disk-temp', bayDev.drive_temperature);
 
-        const hasScratchOverride =
-            chassisDev.scratch_level !== undefined ||
-            chassisDev.scratch_density !== undefined ||
-            chassisDev.scratch_intensity !== undefined;
+        const hasDecorationOverride =
+            chassisDev.decoration_level !== undefined ||
+            chassisDev.decoration_density !== undefined ||
+            chassisDev.decoration_intensity !== undefined;
 
-        if (hasScratchOverride) {
-            const scratchLevel = Number(chassisDev.scratch_level ?? 50);
-            const scratchDensity = Number(chassisDev.scratch_density ?? 50);
-            const scratchIntensity = Number(chassisDev.scratch_intensity ?? 50);
-            const scratchOpacity = (sliderToUnit(scratchLevel) * sliderToUnit(scratchIntensity) * 0.09);
-            const scratchTexture = buildRandomScratchTexture(
-                scratchLevel,
-                scratchDensity,
-                scratchIntensity
+        if (hasDecorationOverride) {
+            const decorationLevel = Number(chassisDev.decoration_level ?? 50);
+            const decorationDensity = Number(chassisDev.decoration_density ?? 50);
+            const decorationIntensity = Number(chassisDev.decoration_intensity ?? 50);
+            const decorationOpacity = (sliderToUnit(decorationLevel) * sliderToUnit(decorationIntensity) * 0.09);
+            const decorationTexture = buildRandomDecorationTexture(
+                decorationLevel,
+                decorationDensity,
+                decorationIntensity
             );
-            el.style.setProperty('--enc-chassis-stripe', `rgba(255,255,255,${scratchOpacity.toFixed(4)})`);
-            el.style.setProperty('--enc-chassis-scratches', scratchTexture);
+            el.style.setProperty('--enc-chassis-stripe', `rgba(255,255,255,${decorationOpacity.toFixed(4)})`);
+            el.style.setProperty('--enc-chassis-decorations', decorationTexture);
         } else {
             el.style.removeProperty('--enc-chassis-stripe');
-            el.style.removeProperty('--enc-chassis-scratches');
+            el.style.removeProperty('--enc-chassis-decorations');
         }
     });
 }
@@ -963,15 +963,19 @@ function render(data) {
 
     const chassisEntries = Object.entries(topology);
     const chassisCount = Math.max(1, chassisEntries.length);
-    const canvasStyle = window.getComputedStyle(canvas);
-    const gapPx = parseFloat(canvasStyle.columnGap || canvasStyle.gap || '16') || 16;
-    
+
     // Use container width instead of viewport width for better iframe support
     const dashboardContainer = document.getElementById('dashboard-wrapper');
     const containerWidth = dashboardContainer?.clientWidth || window.innerWidth;
     const availableWidthPx = Math.max(320, canvas.clientWidth || Math.floor(containerWidth * 0.98));
-    const perChassisWidthPx = Math.max(320, Math.floor((availableWidthPx - (gapPx * (chassisCount - 1))) / chassisCount));
-    const nineteenInMaxPx = Math.max(320, Math.floor((DASHBOARD_SCENE_REFERENCE_WIDTH_PX - gapPx) / 2));
+    const canvasStyle = window.getComputedStyle(canvas);
+    const gapPx = parseFloat(canvasStyle.columnGap || canvasStyle.gap || '16') || 16;
+    // 1 chassis: 95% of container. 2+ chassis: fill row as two columns (max 2 per row).
+    const perChassisWidthPx = chassisCount === 1
+        ? Math.max(320, Math.floor(availableWidthPx * 0.95))
+        : Math.max(320, Math.floor((availableWidthPx - gapPx) / 2));
+    // Keep the 19-inch clamp path, but scale the effective cap to the per-layout target width.
+    const nineteenInMaxPx = perChassisWidthPx;
 
     const sceneScale = Number(computeDashboardSceneScale(availableWidthPx).toFixed(3));
     document.documentElement.style.setProperty('--dashboard-scene-scale', String(sceneScale));

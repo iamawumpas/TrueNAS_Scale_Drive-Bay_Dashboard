@@ -9,7 +9,7 @@ This page collects pointers for manual edits and references to the canonical gui
 2. Visual/theming options are defined under `config.ui`, `config.chart`, and `config.devices`.
    - `ui`: global dashboard/chassis/bay/menu/legend/activity styling and typography.
    - `chart`: activity monitor graph colors, dimensions, and typography scales.
-   - `devices.<enclosure-key>`: per-enclosure overrides (chassis color/scratches, bay orientation/order/grill, and per-bay text styles).
+   - `devices.<enclosure-key>`: per-enclosure overrides (chassis color/decorations, bay orientation/order/grill, and per-bay text styles).
    - See [CUSTOMIZATION_GUIDE.md](../CUSTOMIZATION_GUIDE.md) for examples.
 
 3. To force a restart after changing the listening port or other network settings, the front-end triggers `GET /trigger-restart`. The server will run `start_up.sh` to perform the restart — you can also run `start_up.sh` manually.

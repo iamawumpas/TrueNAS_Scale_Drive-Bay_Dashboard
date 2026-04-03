@@ -1,5 +1,18 @@
 # Storage Dashboard - Change Log
 
+## Version 24.9:
+* **Chassis Container Fill Scaling**
+    * Single-chassis layouts now scale to 95% of the available container width with height and bay geometry adjusting proportionally.
+    * Two-or-more chassis layouts now each fill half the available row width (accounting for the inter-card gap) so both cards fill the full row with no excess whitespace.
+    * Odd-count chassis (3, 5, …) continue to center the last card on its own row via existing flex-wrap layout behavior.
+    * The 19-inch rack-width clamp is retained throughout; it is now scaled to match the per-layout target width so proportional chassis sizing is preserved.
+    * Gap is read from the live computed canvas style so customized `--dashboard-gap` values are respected automatically.
+* **"Scratch" Renamed to "Decoration" Across All Files**
+    * Renamed all user-visible menu labels: `Scratch Level / Density / Intensity` → `Decoration Level / Density / Intensity` in Activity Monitor and per-enclosure Disk Arrays panels.
+    * Renamed all `config.json` keys: `scratch_level / scratch_density / scratch_intensity` → `decoration_level / decoration_density / decoration_intensity`.
+    * Renamed internal JS identifiers, CSS variables (`--activity-random-scratches`, `--enc-chassis-scratches`), and the shared texture utility (`DashboardScratchTexture` → `DashboardDecorationTexture`) for consistency.
+    * Updated `WIKI/ManualConfiguration.md` and the GitHub-hosted wiki to reflect the new terminology.
+
 ## Version 24.8:
 * **Drive-Bay Container Transparency for Scratch Visibility**
     * Made the shared drive-bay holder container transparent so chassis scratch textures remain visible behind bay grids.
