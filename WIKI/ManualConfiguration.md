@@ -10,7 +10,7 @@ This page collects pointers for manual edits and references to the canonical gui
    - `ui`: global dashboard/chassis/bay/menu/legend/activity styling and typography.
    - `chart`: activity monitor graph colors, dimensions, and typography scales.
    - `devices.<enclosure-key>`: per-enclosure overrides (chassis color/decorations, bay orientation/order/grill, and per-bay text styles).
-   - See [CUSTOMIZATION_GUIDE.md](../CUSTOMIZATION_GUIDE.md) for examples.
+   - See [CUSTOMIZATION_GUIDE.md](../CUSTOMIZATION_GUIDE.md) for menu-first workflow and manual override examples.
 
 3. To force a restart after changing the listening port or other network settings, the front-end triggers `GET /trigger-restart`. The server will run `start_up.sh` to perform the restart — you can also run `start_up.sh` manually.
 
@@ -21,5 +21,5 @@ This page collects pointers for manual edits and references to the canonical gui
 5. Where to look for up-to-date guidance:
    - Release history and features: [CHANGELOG.md](../CHANGELOG.md)
    - Primary configuration reference: [CONFIG_GUIDE.md](../CONFIG_GUIDE.md)
-   - Styling and theming: [CUSTOMIZATION_GUIDE.md](../CUSTOMIZATION_GUIDE.md)
+   - Styling and theming workflow: [CUSTOMIZATION_GUIDE.md](../CUSTOMIZATION_GUIDE.md)
    - File and code map: [How_it_works.md](../How_it_works.md)

@@ -50,7 +50,7 @@ Where to look for authoritative references:
 
 - The live `config.json` in the repository root is canonical.
 - `service.py` contains `DEFAULT_CONFIG_JSON` used to rebuild the file when missing.
-- `CUSTOMIZATION_GUIDE.md` contains friendly examples for themes and accessibility.
+- `CUSTOMIZATION_GUIDE.md` documents the menu-first workflow plus advanced manual override examples.
 
 Troubleshooting:
 

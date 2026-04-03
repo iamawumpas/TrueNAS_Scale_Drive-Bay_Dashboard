@@ -12,7 +12,7 @@ I've moved detailed installation, file-overview, startup, and configuration note
 - [Python scripts overview](WIKI/PythonScripts.md)
 - [Manual configuration & references](WIKI/ManualConfiguration.md)
 
-Also see: [CONFIG_GUIDE.md](CONFIG_GUIDE.md), [CUSTOMIZATION_GUIDE.md](CUSTOMIZATION_GUIDE.md), and [CHANGELOG.md](CHANGELOG.md) for canonical references.
+Also see: [CONFIG_GUIDE.md](CONFIG_GUIDE.md), [CUSTOMIZATION_GUIDE.md](CUSTOMIZATION_GUIDE.md) (menu-first workflow + advanced manual overrides), and [CHANGELOG.md](CHANGELOG.md) for canonical references.
 
 
 A self-hosted dashboard that visualizes TrueNAS Scale drive layout, status, and activity in a chassis-style view.
@@ -278,7 +278,7 @@ Dev-only helper: polls `/livereload-status` and refreshes the browser when file 
 | `config.json` | Primary runtime configuration (auto-generated if missing) |
 | `style-config.json` | Style-only config served by `/style-config` endpoint |
 | `CONFIG_GUIDE.md` | Canonical reference for all `config.json` keys |
-| `CUSTOMIZATION_GUIDE.md` | Theming, fonts, colors, and layout examples |
+| `CUSTOMIZATION_GUIDE.md` | Menu-first customization workflow with manual override examples |
 | `How_it_works.md` | Detailed per-file code map with inter-file connection diagram |
 | `Developer_Notes.md` | Architecture notes and implementation details |
 | `CHANGELOG.md` | Version history and feature highlights |

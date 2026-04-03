@@ -113,7 +113,7 @@ This page describes the current front-end and back-end file responsibilities as 
 - `config.json` — Primary runtime config. Auto-generated with defaults if missing. Edited via the UI or manually.
 - `style-config.json` — Style-only config payload served by the `/style-config` endpoint.
 - `CONFIG_GUIDE.md` — Canonical reference for all `config.json` keys.
-- `CUSTOMIZATION_GUIDE.md` — Theming, fonts, colors, and layout examples.
+- `CUSTOMIZATION_GUIDE.md` — Menu-first customization workflow with manual override examples.
 - `How_it_works.md` — Detailed per-file code map with inter-file connection descriptions.
 - `Developer_Notes.md` — Architecture and implementation notes.
 - `CHANGELOG.md` — Version history.

@@ -1,240 +1,120 @@
 # Dashboard Customization Guide
 
-## Overview
+This guide is current for the **menu-driven configuration workflow**.
 
-The TrueNAS Scale Drive Bay Assignment Dashboard is now fully customizable through the `config.json` file. All font, font size, font style, and color settings have been moved from hardcoded CSS/JS values into a centralized configuration file.
+## Recommended workflow (menu-first)
 
-## File Structure
+Use the in-app top menu for nearly all customization:
 
-### Configuration File
-- **`config.json`** - Main configuration file for all styling and theming
+1. Open the dashboard in your browser.
+2. Use menu panels to adjust dashboard, activity monitor, and per-enclosure disk array styling.
+3. Observe live preview changes immediately.
+4. Click **SAVE** to persist changes to `config.json` via `POST /save-config`.
+5. Use **REVERT** to discard unsaved edits or **RESET ALL** to regenerate defaults via `POST /reset-config`.
 
-### Code Files
-- **`service.py`** - Python backend that serves the dashboard and loads config.json
-- **`app.js`** - JavaScript that applies config.json settings to the dashboard
-- **`Base.css`** - CSS variables (dynamically updated from config.json)
-- **`Bay.css`** - Drive bay styling (uses CSS variables)
-- **`Chassis.css`** - Chassis enclosure styling (uses CSS variables)
-- **`LEDs.css`** - LED indicators styling (uses CSS variables)
+Most style changes do not require a service restart.
 
-## How to Customize
+## What the menu controls write
 
-### 1. Edit config.json
+Menu edits are persisted into these `config.json` sections:
 
-Simply open `config.json` in any text editor and modify the values:
+- `ui`: global dashboard/chassis/bay/menu/legend/activity styling and typography.
+- `chart`: activity monitor chart colors, dimensions, and typography.
+- `devices.<enclosure-key>`: per-enclosure overrides (chassis color/decoration, bay orientation/order/grill, and per-bay text style).
+
+For the authoritative full schema, use `CONFIG_GUIDE.md`.
+
+## When to edit config.json manually
+
+Manual edits are still useful for:
+
+- Bulk updates across many devices.
+- Search/replace operations for repeated style values.
+- Recovery or migration tasks.
+- Network port changes when preparing scripted deployments.
+
+After manual edits:
+
+- Refresh the browser for style updates.
+- If you changed `network.port`, run `start_up.sh` or use `/trigger-restart`.
+
+## Practical customization examples
+
+### High readability theme
 
 ```json
 {
-  "fonts": {
-    "default": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
-    "monospace": "Courier New, monospace"
+  "ui": {
+    "server_name": { "color": "#ffffff", "size": "3.0rem", "style": ["bold"] },
+    "disk_serial": { "color": "#ffff66", "size": "1.2rem" },
+    "disk_size": { "color": "#ff99ff", "size": "1.1rem" }
   },
-  "fontSizes": {
-    "legendTitle": "1.25rem",
-    "legend": "0.75rem",
-    "serverName": "2.8rem",
-    "pciAddress": "1.1rem",
-    "bayId": "0.8cqw",
-    "diskSerial": "1.1cqw",
-    "diskSize": "1.1cqw",
-    "diskPool": "1.1cqw",
-    "diskIndex": "1.1cqw"
-  },
-  "fontStyles": {
-    "bold": "bold",
-    "italic": "italic",
-    "underline": "underline",
-    "smallCaps": "small-caps",
-    "allCaps": "uppercase"
-  },
-  "colors": {
-    "serverName": "#ffffff",
-    "pciAddress": "#666666",
-    "legend": "#cccccc",
-    "legendTitle": "rgba(255, 255, 255, 0.9)",
-    "bayId": "#ffaa00",
-    "diskSerial": "#ffff00",
-    "diskSize": "#ff00ff",
-    "diskPool": "#ffffff",
-    "diskIndex": "#00ffff",
-    "chassisBgBase": "#1a1a1a",
-    "chassisBorder": "#333333",
-    "chassisShadow": "rgba(0,0,0,0.8)",
-    "bayBgBase": "#121212",
-    "bayBorder": "#333333",
-    "bayTopBorder": "#444444",
-    "ledAllocatedHealthy": "#00ff00",
-    "ledAllocatedOffline": "#555555",
-    "ledError": "#ffaa00",
-    "ledFaulted": "#ff0000",
-    "ledResilvering": "#ffffff",
-    "ledUnallocated": "#a000ff",
-    "ledUnallocError": "#ffaa00",
-    "ledUnallocFault": "#ff0000",
-    "ledActivity": "#008cff"
+  "chart": {
+    "colors": {
+      "readColor": "#00d9ff",
+      "writeColor": "#ffb347"
+    }
   }
 }
 ```
 
-### 2. Save the File
+### Per-enclosure bay layout override
 
-After making changes, save `config.json`. The dashboard will automatically reload with your new settings on the next refresh.
-
-### 3. Rebuild config.json (if needed)
-
-If you accidentally corrupt or delete `config.json`, the service will automatically regenerate it with default values from the hardcoded defaults in `service.py`.
-
-## Customization Options
-
-### Fonts
-
-**`fonts.default`** - Default font family used throughout the dashboard
-- Used by: Server name, legend, bay labels, disk info
-- Example: `"Arial, Helvetica, sans-serif"`
-
-**`fonts.monospace`** - Monospace font for technical information
-- Used by: PCI addresses
-- Example: `"Consolas, Monaco, monospace"`
-
-### Font Sizes
-
-All font sizes can be specified in:
-- `rem` - Relative to root font size (responsive)
-- `cqw` - Relative to container width (scales with container, better for embedded/iframe contexts)
-- `px` - Fixed pixel size (not responsive)
-
-**Key Elements:**
-- `serverName` - Main hostname display (default: `2.8rem`)
-- `pciAddress` - PCI address text (default: `1.1rem`)
-- `legendTitle` - Legend box title (default: `1.25rem`)
-- `legend` - Legend items (default: `0.75rem`)
-- `bayId` - Bay number labels (default: `0.8cqw`)
-- `diskSerial` - Disk serial numbers (default: `1.1cqw`)
-- `diskSize` - Disk capacity (default: `1.1cqw`)
-- `diskPool` - Pool name (default: `1.1cqw`)
-- `diskIndex` - Pool index (default: `1.1cqw`)
-
-### Colors
-
-All colors can be specified as:
-- Hex codes: `#ffffff`, `#ff0000`
-- RGB/RGBA: `rgb(255, 255, 255)`, `rgba(255, 255, 255, 0.9)`
-
-**Text Colors:**
-- `serverName` - Hostname text color
-- `pciAddress` - PCI address text color
-- `legend` - Legend item text color
-- `legendTitle` - Legend title color
-- `bayId` - Bay label color
-- `diskSerial` - Serial number color
-- `diskSize` - Disk size color
-- `diskPool` - Pool name color
-- `diskIndex` - Pool index color
-
-**Background & Border Colors:**
-- `chassisBgBase` - Chassis background color
-- `chassisBorder` - Chassis border color
-- `chassisShadow` - Chassis shadow color
-- `bayBgBase` - Drive bay background color
-- `bayBorder` - Drive bay border color
-- `bayTopBorder` - Drive bay top border color
-
-**LED Status Colors:**
-- `ledAllocatedHealthy` - Healthy allocated drive (default: green)
-- `ledAllocatedOffline` - Offline allocated drive (default: grey)
-- `ledError` - Drive with errors (default: orange)
-- `ledFaulted` - Faulted drive (default: red)
-- `ledResilvering` - Resilvering drive (default: white)
-- `ledUnallocated` - Unallocated drive (default: purple)
-- `ledUnallocError` - Unallocated drive with errors (default: orange)
-- `ledUnallocFault` - Unallocated faulted drive (default: red)
-- `ledActivity` - Drive activity indicator (default: blue)
-
-## Example Customizations
-
-### Dark Blue Theme
 ```json
 {
-  "colors": {
-    "chassisBgBase": "#0a1628",
-    "chassisBorder": "#1e3a5f",
-    "bayBgBase": "#0d1b2a",
-    "bayBorder": "#1e3a5f",
-    "serverName": "#e0f4ff",
-    "diskSerial": "#00d9ff",
-    "diskSize": "#a855f7",
-    "diskPool": "#ffffff"
+  "devices": {
+    "0000:00:10.0": {
+      "bay": {
+        "layout": "horizontal",
+        "fill_order": "row_major_ltr",
+        "height": "44"
+      }
+    }
   }
 }
 ```
 
-### High Contrast Theme
+### Decoration and grill tuning
+
 ```json
 {
-  "colors": {
-    "serverName": "#ffffff",
-    "diskSerial": "#ffff00",
-    "diskSize": "#00ffff",
-    "diskPool": "#00ff00",
-    "chassisBgBase": "#000000",
-    "bayBgBase": "#111111"
+  "devices": {
+    "0000:00:10.0": {
+      "chassis": {
+        "decoration_level": 35,
+        "decoration_density": 45,
+        "decoration_intensity": 30
+      },
+      "bay": {
+        "grill_shape": "hexagonal",
+        "grill_size": 62
+      }
+    }
   }
 }
 ```
 
-### Larger Text for Accessibility
-```json
-{
-  "fontSizes": {
-    "serverName": "3.5rem",
-    "bayId": "1.2vw",
-    "diskSerial": "1.5vw",
-    "diskSize": "1.5vw",
-    "diskPool": "1.5vw"
-  }
-}
-```
+## Runtime behavior and resilience
 
-## Technical Details
-
-### How It Works
-
-1. **Backend (service.py)**
-   - Contains hardcoded `DEFAULT_CONFIG_JSON` for rebuilding
-   - Loads `config.json` on startup and serves it via `/style-config` endpoint
-   - Automatically merges new defaults if config structure changes
-
-2. **Frontend (app.js)**
-   - Fetches `/style-config` on every update cycle
-   - Applies all settings to CSS variables dynamically
-   - Changes take effect immediately without page reload
-
-3. **CSS Files**
-   - Use CSS variables (e.g., `var(--server-name-color)`)
-   - Variables are set dynamically by JavaScript from config.json
-   - Fallback defaults in Base.css ensure functionality if config fails
-
-### Configuration Persistence
-
-- Changes to `config.json` persist across server restarts
-- If `config.json` is deleted, it will be recreated with defaults
-- Modular design keeps individual JS and CSS files maintainable
-- No need to edit code files to customize appearance
+- The server reads and serves config from `config.json`.
+- If `config.json` is missing or invalid JSON, defaults are regenerated automatically.
+- The UI applies config through CSS variables and modular render helpers.
 
 ## Troubleshooting
 
-### Dashboard not reflecting changes
-1. Clear browser cache (Ctrl+F5)
-2. Check browser console for errors
-3. Verify `config.json` is valid JSON (use a JSON validator)
+### Changes do not appear
 
-### config.json won't save
-1. Check file permissions
-2. Ensure JSON syntax is valid (no trailing commas, proper quotes)
+1. Hard refresh the browser (Ctrl+F5).
+2. Confirm you clicked **SAVE** in the menu.
+3. Validate `config.json` syntax if edited manually.
 
-### Reset to defaults
-Delete `config.json` and restart the service. The file will be automatically regenerated with default values.
+### Bad config after manual edits
 
-## Support
+1. Restore from backup if available.
+2. Or delete `config.json` and restart `service.py` to regenerate defaults.
 
-For issues or questions, refer to the main README.md or project documentation.
+## Related documents
+
+- `CONFIG_GUIDE.md` — authoritative key-by-key schema reference.
+- `WIKI/ManualConfiguration.md` — manual editing and restart notes.
+- `How_it_works.md` — file-level architecture and data flow.

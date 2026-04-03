@@ -1,5 +1,17 @@
 # Storage Dashboard - Change Log
 
+## Version 25.2:
+* **Customization Guide Modernization (Menu-First Workflow)**
+    * Rewrote `CUSTOMIZATION_GUIDE.md` to reflect the current in-app menu workflow (`SAVE`, `REVERT`, `RESET ALL`) as the primary customization path.
+    * Added practical, current examples for global styling, per-enclosure layout overrides, and decoration/grill tuning.
+    * Clarified when manual `config.json` editing is still useful (bulk edits, migration, scripted deployment, recovery).
+* **Documentation Reference Alignment**
+    * Updated `README.md`, `CONFIG_GUIDE.md`, and local wiki pages to describe `CUSTOMIZATION_GUIDE.md` as menu-first guidance plus advanced manual overrides.
+    * Removed outdated wording that implied manual config editing as the default customization workflow.
+* **GitHub Wiki Consistency Update**
+    * Synced `Installation.md`, `FileOverview.md`, and `ManualConfiguration.md` in the GitHub wiki repository.
+    * Normalized wiki links so customization references resolve correctly in the GitHub wiki context.
+
 ## Version 25.1:
 * **Texture Utility File Rename**
     * Renamed shared texture utility file from `scratchTexture.js` to `DecorationTexture.js`.
