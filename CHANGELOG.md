@@ -1,5 +1,19 @@
 # Storage Dashboard - Change Log
 
+## Version 25.0:
+* **Major Frontend Refactor to Modular Architecture**
+    * Split large runtime logic from `app.js` into focused modules under `js/` (`data.js`, `topology.js`, `styleVars.js`, `renderer.js`, `utils.js`).
+    * Rewrote `app.js` as a thin orchestration layer for polling, rendering, and Activity Monitor lifecycle management.
+    * Added incremental DOM-diff rendering in `js/renderer.js` to avoid full chassis rebuilds when only disk state changes.
+* **Menu System Refactor and Separation of Concerns**
+    * Reworked `MenuSystem.js` into a thinner controller and extracted dedicated modules for state, preview styling, and panel markup generation.
+    * Added `js/configStore.js`, `js/stylePreview.js`, and `js/menuBuilder.js` for improved maintainability and clearer ownership of menu logic.
+    * Updated script loading so `MenuSystem.js` runs as an ES module.
+* **Backend Service Refactor While Preserving Entry Point**
+    * Split backend logic from `service.py` into `py/topology.py`, `py/config.py`, and `py/server.py` while keeping `service.py` as the startup entry point used by `start_up.sh`.
+    * Added `py/__init__.py` to support package-style imports for extracted server modules.
+    * Kept existing `/data`, `/save-config`, `/reset-config`, and activity endpoints intact through the refactor.
+
 ## Version 24.9:
 * **Chassis Container Fill Scaling**
     * Single-chassis layouts now scale to 95% of the available container width with height and bay geometry adjusting proportionally.
