@@ -42,7 +42,7 @@ This page describes the current front-end and back-end file responsibilities as 
 ## Front-end runtime
 
 - `index.html`
-  - Static shell that loads CSS files and scripts. `MenuSystem.js` is loaded as `type="module"`. Script order: `livereload.js`, `ActivityMonitor.js`, `scratchTexture.js`, `geometry.js`, `DiskInfo.js`, `MenuSystem.js` (module), `app.js`.
+  - Static shell that loads CSS files and scripts. `MenuSystem.js` is loaded as `type="module"`. Script order: `livereload.js`, `ActivityMonitor.js`, `DecorationTexture.js`, `geometry.js`, `DiskInfo.js`, `MenuSystem.js` (module), `app.js`.
 
 - `app.js`
   - Main orchestrator and polling loop. Imports from `js/data.js`, `js/renderer.js`, and `js/styleVars.js`. Calls `fetchDataWithRetry`, applies UI CSS variables, delegates chassis+bay rendering, and manages Activity Monitor lifecycle events.
@@ -88,7 +88,7 @@ This page describes the current front-end and back-end file responsibilities as 
 - `geometry.js`
   - Chassis bay geometry presets (`CHASSIS_BAY_PRESETS`) and reference scene dimensions (`GEOMETRY_DEFAULTS`). Consumed by `js/topology.js` and `js/renderer.js`.
 
-- `scratchTexture.js`
+- `DecorationTexture.js`
   - Deterministic seeded decoration texture generator (`DashboardDecorationTexture`). Shared between chassis rendering and menu live preview so identical slider settings always produce the same texture.
 
 - `DiskInfo.js`

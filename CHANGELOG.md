@@ -21,15 +21,15 @@
     * Odd-count chassis (3, 5, …) continue to center the last card on its own row via existing flex-wrap layout behavior.
     * The 19-inch rack-width clamp is retained throughout; it is now scaled to match the per-layout target width so proportional chassis sizing is preserved.
     * Gap is read from the live computed canvas style so customized `--dashboard-gap` values are respected automatically.
-* **"Scratch" Renamed to "Decoration" Across All Files**
-    * Renamed all user-visible menu labels: `Scratch Level / Density / Intensity` → `Decoration Level / Density / Intensity` in Activity Monitor and per-enclosure Disk Arrays panels.
-    * Renamed all `config.json` keys: `scratch_level / scratch_density / scratch_intensity` → `decoration_level / decoration_density / decoration_intensity`.
-    * Renamed internal JS identifiers, CSS variables (`--activity-random-scratches`, `--enc-chassis-scratches`), and the shared texture utility (`DashboardScratchTexture` → `DashboardDecorationTexture`) for consistency.
+* **"Decoration" Naming Standardization Across All Files**
+    * Standardized user-visible menu labels to `Decoration Level / Density / Intensity` in Activity Monitor and per-enclosure Disk Arrays panels.
+    * Standardized `config.json` keys to `decoration_level / decoration_density / decoration_intensity`.
+    * Standardized internal JS identifiers, CSS variables (`--activity-random-decorations`, `--enc-chassis-decorations`), and the shared texture utility (`DashboardDecorationTexture`) for consistency.
     * Updated `WIKI/ManualConfiguration.md` and the GitHub-hosted wiki to reflect the new terminology.
 
 ## Version 24.8:
-* **Drive-Bay Container Transparency for Scratch Visibility**
-    * Made the shared drive-bay holder container transparent so chassis scratch textures remain visible behind bay grids.
+* **Drive-Bay Container Transparency for Decoration Visibility**
+    * Made the shared drive-bay holder container transparent so chassis decoration textures remain visible behind bay grids.
     * Applied via the common `.chassis-body` style path, covering both horizontal and vertically aligned chassis layouts.
     * Preserved existing bay shell, latch, LED, and metadata styling while removing the opaque underlay.
 
@@ -57,15 +57,15 @@
     * Final adjustments were limited to vertical info-panel geometry in `style.css` with no horizontal rendering changes.
 
 ## Version 24.5:
-* **Scratch Pattern Stability Fix (Mirror/Live Refresh Safe)**
-    * Fixed chassis scratch patterns changing during normal dashboard data refresh and mirror access.
-    * Kept scratch textures stable unless scratch sliders (`level`, `density`, `intensity`) are changed.
-* **Deterministic Scratch Generation Standardization**
-    * Switched scratch generation to deterministic seeded output keyed by slider values, eliminating random cross-refresh variation.
-    * Ensured Activity and Disk Arrays chassis paths resolve to the same scratch texture for identical slider settings.
-* **Shared Scratch Utility Cleanup**
-    * Added shared `scratchTexture.js` as the single source of truth for scratch texture generation.
-    * Removed duplicated scratch generator implementations from `app.js` and `MenuSystem.js`.
+* **Decoration Pattern Stability Fix (Mirror/Live Refresh Safe)**
+    * Fixed chassis decoration patterns changing during normal dashboard data refresh and mirror access.
+    * Kept decoration textures stable unless decoration sliders (`level`, `density`, `intensity`) are changed.
+* **Deterministic Decoration Generation Standardization**
+    * Switched decoration generation to deterministic seeded output keyed by slider values, eliminating random cross-refresh variation.
+    * Ensured Activity and Disk Arrays chassis paths resolve to the same decoration texture for identical slider settings.
+* **Shared Decoration Utility Cleanup**
+    * Added shared `DecorationTexture.js` as the single source of truth for decoration texture generation.
+    * Removed duplicated decoration generator implementations from `app.js` and `MenuSystem.js`.
     * Updated script load order in `index.html` so shared utility is available before menu and app runtime logic.
 
 ## Version 24.4:
@@ -245,7 +245,7 @@
 ## Version 23.4:
 * **Activity Monitor Styling Controls Expansion**
     * Added Activity Monitor `Server Name` controls for font family, style combinations, and color with live preview support.
-    * Added random scratch controls (level, density, intensity) for the Activity Monitor chassis finish.
+    * Added random decoration controls (level, density, intensity) for the Activity Monitor chassis finish.
     * Added graph typography controls for title, legend text, and y-axis label sizing.
     * Added derived subheading color behavior so the Activity Monitor subtitle tracks as a darker shade of server-name color.
 * **Dashboard Menu Rebuild and Dropdown Behavior**
@@ -254,7 +254,7 @@
     * Added robust live-preview synchronization across menu controls and chart recreation triggers.
 * **Disk Arrays Dynamic Per-Enclosure Controls (Phase 1/2/Chassis Wiring)**
     * Added dynamic `Disk Arrays` menu generation based on discovered enclosures.
-    * Added per-enclosure `Chassis` settings (color, scratch controls, server-name typography/color, enclosure ID subtitle color).
+    * Added per-enclosure `Chassis` settings (color, decoration controls, server-name typography/color, enclosure ID subtitle color).
     * Added per-enclosure `Drive Bay` controls including door color plus grill shape and size scaling.
     * Wired per-enclosure settings to `config.json` under `devices.<enclosure-key>.*` with live preview and render-path support.
 * **Reset-to-Defaults Workflow and Kiosk-Safe UX**

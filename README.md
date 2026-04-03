@@ -249,8 +249,8 @@ Shared primitives used across both runtime and menu modules: `clampInt`, `mixHex
 #### `geometry.js`
 Chassis bay geometry presets and reference dimension constants consumed by `js/topology.js` and `js/renderer.js`.
 
-#### `scratchTexture.js`
-Deterministic, seeded decoration (scratch/grill) texture generator shared between chassis rendering and menu preview.
+#### `DecorationTexture.js`
+Deterministic, seeded decoration (texture/grill) generator shared between chassis rendering and menu preview.
 
 #### `DiskInfo.js`
 Legacy helper retained for compatibility. Active disk info formatting is handled by `js/topology.js`.

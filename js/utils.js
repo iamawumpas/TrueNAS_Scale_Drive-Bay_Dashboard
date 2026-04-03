@@ -83,7 +83,7 @@ export function applyStyleConfig(rootStyle, prefix, configBlock) {
     });
 }
 
-// Decoration texture proxy — resolved at runtime from the global loaded by scratchTexture.js
+// Decoration texture proxy — resolved at runtime from the global loaded by DecorationTexture.js
 export function getDecorationTextureFn() {
     return (window.DashboardDecorationTexture &&
         typeof window.DashboardDecorationTexture.buildRandomDecorationTexture === 'function')

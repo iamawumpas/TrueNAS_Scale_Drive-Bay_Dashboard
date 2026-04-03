@@ -179,7 +179,7 @@ Static shell. No logic of its own.
 **Script load order (important):**
 1. `livereload.js` — dev helper (first so it can catch errors in everything else).
 2. `ActivityMonitor.js` — defines `window.activityMonitor` which `app.js` references.
-3. `scratchTexture.js` — defines `window.DashboardDecorationTexture` shared by renderer and preview.
+3. `DecorationTexture.js` — defines `window.DashboardDecorationTexture` shared by renderer and preview.
 4. `geometry.js` — defines `window.GEOMETRY_DEFAULTS` and `window.CHASSIS_BAY_PRESETS`.
 5. `DiskInfo.js` — legacy helper (no-op at runtime, retained for compatibility).
 6. `MenuSystem.js` — loaded as `type="module"`. Imports `js/configStore.js`, `js/stylePreview.js`, `js/menuBuilder.js`.
@@ -367,8 +367,8 @@ Defines two globals attached to `window`:
 
 ---
 
-### `scratchTexture.js`
-Defines `window.DashboardDecorationTexture`. Generates a `<canvas>` data URL with deterministic pseudo-random line scratches seeded by the three decoration slider values (level, density, intensity). The same seed always produces the same output so the texture does not change on every poll cycle.
+### `DecorationTexture.js`
+Defines `window.DashboardDecorationTexture`. Generates a `<canvas>` data URL with deterministic pseudo-random decoration lines seeded by the three decoration slider values (level, density, intensity). The same seed always produces the same output so the texture does not change on every poll cycle.
 
 **Connects to**: `js/styleVars.js` and `js/stylePreview.js` via `getDecorationTextureFn()` from `js/utils.js`.
 

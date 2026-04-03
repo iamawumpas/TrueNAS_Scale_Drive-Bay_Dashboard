@@ -61,7 +61,7 @@ The system is highly configurable via `config.json`. `py/config.py` owns default
 - **Capacity Conversion**: Raw bytes from `lsblk -b` converted to Terabytes ($1024^4$) for a clean `X.XTB` display.
 - **I/O Monitoring**: `io_monitor_thread` in `py/server.py` snapshots `/proc/diskstats` and tracks delta sector counts, setting the `active` flag that drives the blue Activity LED.
 - **Incremental Rendering**: `js/renderer.js` builds a per-chassis model string and compares it to the previous render cycle. Only DOM nodes whose model differs are replaced, preventing full chassis rebuilds on every poll tick.
-- **Decoration Textures**: `scratchTexture.js` generates deterministic seeded canvas textures keyed to slider values. Both the live dashboard and menu preview use the same generator so previews match the rendered output exactly.
+- **Decoration Textures**: `DecorationTexture.js` generates deterministic seeded canvas textures keyed to slider values. Both the live dashboard and menu preview use the same generator so previews match the rendered output exactly.
 - **LED Logic**:
   - **Green**: Online and healthy in a ZFS pool.
   - **Purple**: Physical disk present but not allocated to any pool.
