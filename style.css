@@ -136,7 +136,7 @@ body {
 .chassis-body {
     padding: calc(5px * var(--dashboard-scene-scale, 1));
     border-radius: calc(8px * var(--dashboard-scene-scale, 1));
-    background: var(--enc-chassis-bg-body, var(--chassis-body-bg, var(--chassis-bg-base, #0d121a)));
+    background: transparent;
     height: var(--chassis-body-height, 120px);
     box-sizing: border-box;
     overflow: hidden;

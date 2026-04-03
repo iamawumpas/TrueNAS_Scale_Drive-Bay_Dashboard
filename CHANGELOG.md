@@ -1,5 +1,11 @@
 # Storage Dashboard - Change Log
 
+## Version 24.8:
+* **Drive-Bay Container Transparency for Scratch Visibility**
+    * Made the shared drive-bay holder container transparent so chassis scratch textures remain visible behind bay grids.
+    * Applied via the common `.chassis-body` style path, covering both horizontal and vertically aligned chassis layouts.
+    * Preserved existing bay shell, latch, LED, and metadata styling while removing the opaque underlay.
+
 ## Version 24.7:
 * **Menu and Submenu Flow Reordering**
     * Reorganized top-level menu flow and subsection ordering for a more logical customization sequence.
