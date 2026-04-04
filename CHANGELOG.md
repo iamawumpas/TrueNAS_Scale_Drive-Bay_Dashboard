@@ -1,5 +1,14 @@
 # Storage Dashboard - Change Log
 
+## Version 26.4:
+* **Dashboard Menu Subsection Typography Controls**
+    * Added `Subsection Menu` controls under Dashboard Menu with end-to-end support for `Font Size` and `Font Style`.
+    * Wired new config paths `ui.menu.subsection_name.size` and `ui.menu.subsection_name.style` through menu builders, config defaults, and live CSS variable preview.
+    * Updated submenu title styling to use dedicated subsection typography variables with section-title fallback behavior.
+* **Dropdown Background Color Alignment**
+    * Updated dropdown panel background behavior so it follows the main Menu background color.
+    * Retained legacy `dropdown_background` config key for backward compatibility while removing its visual precedence.
+
 ## Version 26.3:
 * **Repository Sync Toggle Menu-Reload Fix**
     * Fixed issue where toggling "Allow manual update checks and downloading and restoring of missing file(s)" caused the menu to close.

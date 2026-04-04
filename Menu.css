@@ -374,12 +374,12 @@
 }
 
 .panel-subsection-title {
-    font-size: var(--menu-section-title-size, 10pt);
-    font-weight: var(--menu-section-title-weight, 700);
-    font-style: var(--menu-section-title-style, normal);
+    font-size: var(--menu-subsection-title-size, var(--menu-section-title-size, 10pt));
+    font-weight: var(--menu-subsection-title-weight, var(--menu-section-title-weight, 700));
+    font-style: var(--menu-subsection-title-style, var(--menu-section-title-style, normal));
     color: var(--menu-section-title-color, #64c8ff);
-    text-transform: var(--menu-section-title-transform, uppercase);
-    font-variant: var(--menu-section-title-variant, normal);
+    text-transform: var(--menu-subsection-title-transform, var(--menu-section-title-transform, uppercase));
+    font-variant: var(--menu-subsection-title-variant, var(--menu-section-title-variant, normal));
     letter-spacing: 0.06em;
     margin-bottom: 6px;
     opacity: 0.85;

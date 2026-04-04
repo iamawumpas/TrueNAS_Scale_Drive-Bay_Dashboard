@@ -104,9 +104,14 @@ export function applyActivityVariables(config) {
 export function applyMenuVariables(config) {
     const menu = config?.ui?.menu || {};
     const sectionName = menu.section_name || {};
+    const subsectionName = menu.subsection_name || {};
     const hasSectionNameStyle = Array.isArray(sectionName.style);
     const sectionNameStyles = Array.isArray(sectionName.style)
         ? sectionName.style.map(v => String(v).toLowerCase())
+        : [];
+    const hasSubsectionNameStyle = Array.isArray(subsectionName.style);
+    const subsectionNameStyles = Array.isArray(subsectionName.style)
+        ? subsectionName.style.map(v => String(v).toLowerCase())
         : [];
     const controls = menu.controls || {};
     const buttons = menu.buttons || {};
@@ -133,7 +138,12 @@ export function applyMenuVariables(config) {
         '--menu-section-title-style': hasSectionNameStyle ? (sectionNameStyles.includes('italic') ? 'italic' : 'normal') : undefined,
         '--menu-section-title-transform': hasSectionNameStyle ? (sectionNameStyles.includes('allcaps') ? 'uppercase' : 'none') : undefined,
         '--menu-section-title-variant': hasSectionNameStyle ? (sectionNameStyles.includes('smallcaps') ? 'small-caps' : 'normal') : undefined,
-        '--menu-dropdown-bg': menu.dropdown_background,
+        '--menu-subsection-title-size': subsectionName.size,
+        '--menu-subsection-title-weight': hasSubsectionNameStyle ? (subsectionNameStyles.includes('bold') ? '700' : '400') : undefined,
+        '--menu-subsection-title-style': hasSubsectionNameStyle ? (subsectionNameStyles.includes('italic') ? 'italic' : 'normal') : undefined,
+        '--menu-subsection-title-transform': hasSubsectionNameStyle ? (subsectionNameStyles.includes('allcaps') ? 'uppercase' : 'none') : undefined,
+        '--menu-subsection-title-variant': hasSubsectionNameStyle ? (subsectionNameStyles.includes('smallcaps') ? 'small-caps' : 'normal') : undefined,
+        '--menu-dropdown-bg': menu.background,
         '--menu-dropdown-border': menu.dropdown_border,
         '--menu-dropdown-shadow': menu.dropdown_shadow,
         '--menu-control-bg': controls.background,

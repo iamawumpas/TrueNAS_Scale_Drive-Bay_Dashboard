@@ -257,6 +257,10 @@ DEFAULT_CONFIG = {
                 "size": "10pt",
                 "style": ["bold", "allcaps"]
             },
+            "subsection_name": {
+                "size": "10pt",
+                "style": ["bold", "allcaps"]
+            },
             "dropdown_background": "#1a1a1a",
             "dropdown_border": "#555555",
             "dropdown_shadow": "rgba(0, 0, 0, 0.8)",

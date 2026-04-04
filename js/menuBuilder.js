@@ -197,6 +197,11 @@ export function buildDashboardPanel() {
                     ${buildPxSliderRow('Font Size', ['ui', 'menu', 'section_name', 'size'], 8, 24, 1)}
                     ${buildStyleCheckboxRow('Font Style', ['ui', 'menu', 'section_name', 'style'])}
                 </div>
+                <div class="panel-subsection">
+                    <div class="panel-subsection-title">Subsection Menu</div>
+                    ${buildPxSliderRow('Font Size', ['ui', 'menu', 'subsection_name', 'size'], 8, 24, 1)}
+                    ${buildStyleCheckboxRow('Font Style', ['ui', 'menu', 'subsection_name', 'style'])}
+                </div>
                 ${buildColorRow('Control Background Colour', ['ui', 'menu', 'controls', 'background'])}
                 ${buildColorRow('Control Highlight Colour', ['ui', 'menu', 'controls', 'focus_border'])}
                 ${buildSliderRow('Dropdown Transparency', ['ui', 'menu', 'dropdown_opacity'])}
