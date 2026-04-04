@@ -1,5 +1,14 @@
 # Storage Dashboard - Change Log
 
+## Version 26.3:
+* **Repository Sync Toggle Menu-Reload Fix**
+    * Fixed issue where toggling "Allow manual update checks and downloading and restoring of missing file(s)" caused the menu to close.
+    * Updated repo-sync enable endpoint to apply runtime state without rewriting `config.json`, preventing dev live-reload refresh from being triggered.
+    * Preserved immediate toggle behavior for Repository Sync actions while keeping menu interactions stable.
+* **Version Format Compatibility Update**
+    * Updated local version parsing to support `v.26.3` style values in addition to `v26.3` and `v26.3.0` style tags.
+    * Ensures local version reporting and update comparison remain reliable across accepted version formats.
+
 ## Version 26.2:
 * **Repository Sync Menu UX and Wrapping Improvements**
     * Updated Repository Sync permission text layout so long text fits panel width and wraps cleanly.

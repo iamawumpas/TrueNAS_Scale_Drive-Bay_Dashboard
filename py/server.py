@@ -32,6 +32,7 @@ REPO_SYNC_TIMEOUT_SECS = 12
 ALERT_MUTE_SECONDS = 300
 ALERT_MUTE_UNTIL_TS = 0.0
 LOCAL_VERSION_FILE = 'VERSION'
+REPO_SYNC_ENABLED_OVERRIDE = None
 
 # Critical runtime and startup files that can be restored if accidentally deleted.
 REPO_SYNC_TRACKED_FILES = [
@@ -55,6 +56,8 @@ def _nested_get(obj, path, fallback=None):
 
 
 def _repo_sync_enabled(config):
+    if REPO_SYNC_ENABLED_OVERRIDE is not None:
+        return bool(REPO_SYNC_ENABLED_OVERRIDE)
     return bool(_nested_get(config or {}, ['ui', 'menu', 'repo_sync', 'enabled'], False))
 
 
@@ -77,8 +80,11 @@ def _github_text(url):
 
 def _parse_semver(tag):
     value = str(tag or '').strip().lower()
-    if value.startswith('v'):
+    if value.startswith('v.'):
+        value = value[2:]
+    elif value.startswith('v'):
         value = value[1:]
+    value = value.lstrip('.')
     parts = value.split('.')
     if len(parts) not in (2, 3):
         return None
@@ -577,7 +583,7 @@ def topology_scanner_thread():
 class FastHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         # Handle POST requests for saving configuration
-        global CONFIG_MTIME, CONFIG_CACHE, ALERT_MUTE_UNTIL_TS
+        global CONFIG_MTIME, CONFIG_CACHE, ALERT_MUTE_UNTIL_TS, REPO_SYNC_ENABLED_OVERRIDE
         path = self.path.split('?')[0]
 
         if path == '/alerts-mute-5m':
@@ -623,7 +629,10 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
                 payload = json.loads(body)
                 enabled = bool(payload.get('enabled', False))
 
-                config = load_config() or {}
+                # Runtime-only override to avoid writing config.json, which triggers dev live-reload.
+                REPO_SYNC_ENABLED_OVERRIDE = enabled
+
+                config = GLOBAL_DATA.get('config') if isinstance(GLOBAL_DATA.get('config'), dict) else (load_config() or {})
                 if 'ui' not in config or not isinstance(config.get('ui'), dict):
                     config['ui'] = {}
                 if 'menu' not in config['ui'] or not isinstance(config['ui'].get('menu'), dict):
@@ -631,20 +640,13 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
                 if 'repo_sync' not in config['ui']['menu'] or not isinstance(config['ui']['menu'].get('repo_sync'), dict):
                     config['ui']['menu']['repo_sync'] = {}
                 config['ui']['menu']['repo_sync']['enabled'] = enabled
-
-                os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
-                with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-                    json.dump(config, f, indent=4)
-
-                CONFIG_MTIME = 0
-                CONFIG_CACHE = None
-                GLOBAL_DATA['config'] = load_config()
+                GLOBAL_DATA['config'] = config
 
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.send_header('Cache-Control', 'no-store')
                 self.end_headers()
-                self.wfile.write(json.dumps({'status': 'success', 'enabled': enabled}).encode())
+                self.wfile.write(json.dumps({'status': 'success', 'enabled': enabled, 'persisted': False}).encode())
             except Exception as ex:
                 self.send_response(500)
                 self.send_header('Content-type', 'application/json')
