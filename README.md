@@ -91,6 +91,10 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
    * **Disk Fault/Error**
    * **Degraded Pool**
    * **TrueNAS Services** STOPPED
+ 
+* **Github Updates
+   * ability to update the dashboard from the GUI instead of uploading the repo manually to the scripts folder
+   * ability to repair/replace missing files from the scripts folder
 
 ---
 
