@@ -16,7 +16,7 @@ Also see: [CONFIG_GUIDE.md](CONFIG_GUIDE.md), [CUSTOMIZATION_GUIDE.md](CUSTOMIZA
 
 
 A self-hosted dashboard that visualizes TrueNAS Scale drive layout, status, and activity in a chassis-style view.
-![Dashboard](<img width="1886" height="648" alt="image" src="https://github.com/user-attachments/assets/847a9c69-4a2c-4fda-854e-cd62c88df6c0" />
+![Dashboard](<image.png>
 )
 
 ---
