@@ -1,5 +1,19 @@
 # Storage Dashboard - Change Log
 
+## Version 27.0:
+* **TrueNAS Services Monitoring (Auto-Start Scope)**
+    * Added backend service discovery using TrueNAS API (`midclt call service.query`).
+    * Implemented filtering to track only services configured to Start Automatically.
+    * Exposed tracked service status payload in `/data` with running/stopped state and query diagnostics.
+* **New Services Menu and Status Panel**
+    * Added new `Services` menu item to the left of `Legend` in the top menu bar.
+    * Added services dropdown panel listing tracked service names and live `Running` / `Stopped` status badges.
+    * Added in-panel status note showing tracking scope and query error feedback.
+* **Service Stop Alarm Integration and Visual Attention**
+    * Integrated stopped tracked-service detection into existing global alert logic.
+    * Services menu label now turns red and blinks once per second when one or more tracked services are stopped.
+    * Services menu visual alert clears automatically when all tracked auto-start services return to running state.
+
 ## Version 26.6:
 * **Menu Font Controls Integrated into Main Menu Section**
     * Merged font-size and font-style controls directly into the Dashboard Menu section (removed separate Menu Font subsection block).

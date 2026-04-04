@@ -14,6 +14,13 @@ GLOBAL_DATA = {
     "hostname": socket.gethostname(),
     "config": {},
     "pool_activity_history": {},
+    "services": {
+        "tracked": [],
+        "stopped": [],
+        "hasStopped": False,
+        "source": "unknown",
+        "error": None
+    },
     "alerts": {
         "poolDegraded": False,
         "diskFaultOrErrors": False,
@@ -284,6 +291,8 @@ def _compute_alerts_from_global_state():
     pool_degraded = any(str(state or '').upper() != 'ONLINE' for state in pool_states.values())
     disk_fault_or_errors = False
     high_temperature = False
+    services_payload = GLOBAL_DATA.get("services") or {}
+    services_stopped = bool(services_payload.get("hasStopped", False))
 
     for enclosure in topology.values():
         for disk in enclosure.get("disks", []):
@@ -316,11 +325,14 @@ def _compute_alerts_from_global_state():
         names.append('Disk Fault/Error Alert')
     if high_temperature:
         names.append('High Temperature Alert')
+    if services_stopped:
+        names.append('Services Stopped Alert')
 
     return {
         "poolDegraded": pool_degraded,
         "diskFaultOrErrors": disk_fault_or_errors,
         "highTemperature": high_temperature,
+        "servicesStopped": services_stopped,
         "activeCount": len(names),
         "activeNames": names
     }
@@ -406,6 +418,54 @@ def get_diskstats_for_pools():
     except:
         return {}
 
+
+def _read_enabled_services_status():
+    try:
+        output = subprocess.check_output(
+            ['midclt', 'call', 'service.query'],
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=5
+        )
+        rows = json.loads(output)
+        tracked = []
+        for row in rows if isinstance(rows, list) else []:
+            if not isinstance(row, dict):
+                continue
+
+            enabled = bool(row.get('enable', False))
+            if not enabled:
+                continue
+
+            name = str(row.get('service') or row.get('id') or 'unknown')
+            state = str(row.get('state') or 'UNKNOWN').upper()
+            running = state == 'RUNNING'
+            tracked.append({
+                'name': name,
+                'state': state,
+                'running': running,
+                'enabled': True
+            })
+
+        tracked.sort(key=lambda item: item.get('name', '').lower())
+        stopped = [item['name'] for item in tracked if not item.get('running', False)]
+
+        return {
+            'tracked': tracked,
+            'stopped': stopped,
+            'hasStopped': len(stopped) > 0,
+            'source': 'truenas-api',
+            'error': None
+        }
+    except Exception as ex:
+        return {
+            'tracked': [],
+            'stopped': [],
+            'hasStopped': False,
+            'source': 'truenas-api',
+            'error': str(ex)
+        }
+
 def pool_activity_monitor_thread():
     """Monitor per-pool read/write activity with smoothing"""
     POLL_INTERVAL = 0.05   # 10Hz sampling (50ms)
@@ -483,6 +543,7 @@ def topology_scanner_thread():
             GLOBAL_DATA["pool_states"] = pool_states  # Store pool states for frontend
             GLOBAL_DATA["api_status"] = get_api_status()  # Store API status
             GLOBAL_DATA["_last_zfs_map"] = zfs_map  # Retained for /ircu-debug diagnostic endpoint
+            GLOBAL_DATA["services"] = _read_enabled_services_status()
             
             new_topology = {}
             controller_capacity = {}
@@ -869,11 +930,19 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
                 "topology": {}, 
                 "config": GLOBAL_DATA.get("config", {}),
                 "pool_states": GLOBAL_DATA.get("pool_states", {}),
+                "services": GLOBAL_DATA.get("services", {
+                    "tracked": [],
+                    "stopped": [],
+                    "hasStopped": False,
+                    "source": "unknown",
+                    "error": None
+                }),
                 "api_status": GLOBAL_DATA.get("api_status", {"available": True, "error_message": ""}),
                 "alerts": GLOBAL_DATA.get("alerts", {
                     "poolDegraded": False,
                     "diskFaultOrErrors": False,
                     "highTemperature": False,
+                    "servicesStopped": False,
                     "activeCount": 0,
                     "activeNames": [],
                     "muteActive": False,

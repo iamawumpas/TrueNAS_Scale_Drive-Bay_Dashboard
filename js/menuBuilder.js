@@ -351,6 +351,24 @@ export function buildMenuBarMarkup() {
                 </div>
             </div>
             <div class="menu-right-group">
+                <div class="menu-dropdown-wrapper">
+                    <button class="menu-button" id="services-menu-btn" type="button">Services</button>
+                    <div class="dropdown-panel" id="services-panel">
+                        <div class="panel-section">
+                            <div class="panel-section-title">Services</div>
+                            <div class="menu-reset-note" id="services-status-note">Loading services...</div>
+                            <table class="services-table" id="services-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="services-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
                 <button class="menu-button legend-menu-btn" id="legend-menu-btn" type="button">Legend</button>
                 <div class="menu-buttons">
                     <button class="save-btn" id="menu-save-btn" disabled>SAVE</button>

@@ -28,6 +28,9 @@ import {
 let saveButton = null;
 let revertButton = null;
 let legendButton = null;
+let servicesButton = null;
+let servicesStatusNote = null;
+let servicesTableBody = null;
 let legendBackdrop = null;
 let statusEl = null;
 let alertsStatusEl = null;
@@ -635,10 +638,24 @@ function buildMenuBar() {
     saveButton = document.getElementById('menu-save-btn');
     revertButton = document.getElementById('menu-revert-btn');
     legendButton = document.getElementById('legend-menu-btn');
+    servicesButton = document.getElementById('services-menu-btn');
 
     saveButton?.addEventListener('click', saveConfig);
     revertButton?.addEventListener('click', revertConfig);
     legendButton?.addEventListener('click', toggleLegendOverlay);
+
+    const servicesPanel = document.getElementById('services-panel');
+    if (servicesButton && servicesPanel) {
+        servicesPanel.dataset.trigger = 'services-menu-btn';
+        servicesStatusNote = servicesPanel.querySelector('#services-status-note');
+        servicesTableBody = servicesPanel.querySelector('#services-table-body');
+        servicesButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = servicesPanel.classList.contains('open');
+            closeAllDropdowns();
+            if (!isOpen) openDropdown(servicesPanel, servicesButton);
+        });
+    }
 
     const dashBtn = document.getElementById('dashboard-menu-btn');
     const dashPanel = document.getElementById('dashboard-panel');
@@ -792,6 +809,8 @@ function handleDashboardDataUpdate(event) {
     const payload = event?.detail?.data;
     if (!payload || typeof payload !== 'object') return;
 
+    updateServicesMenu(payload.services);
+
     lastAlertsPayload = payload.alerts || null;
     updateAlertsMuteControls(lastAlertsPayload);
 
@@ -812,6 +831,39 @@ function handleDashboardDataUpdate(event) {
     }
 }
 
+function updateServicesMenu(servicesPayload) {
+    const payload = servicesPayload && typeof servicesPayload === 'object' ? servicesPayload : {};
+    const tracked = Array.isArray(payload.tracked) ? payload.tracked : [];
+    const hasStopped = Boolean(payload.hasStopped);
+    const hasError = !!payload.error;
+
+    if (servicesButton) {
+        servicesButton.classList.toggle('services-alert-blink', hasStopped);
+        servicesButton.classList.toggle('services-alert-red', hasStopped);
+    }
+
+    if (servicesStatusNote) {
+        if (hasError) {
+            servicesStatusNote.textContent = `Service query error: ${payload.error}`;
+        } else {
+            servicesStatusNote.textContent = `Tracking ${tracked.length} auto-start service(s).`;
+        }
+    }
+
+    if (!servicesTableBody) return;
+    if (tracked.length === 0) {
+        servicesTableBody.innerHTML = '<tr><td colspan="2">No auto-start services found.</td></tr>';
+        return;
+    }
+
+    servicesTableBody.innerHTML = tracked.map((svc) => {
+        const running = Boolean(svc.running);
+        const statusClass = running ? 'running' : 'stopped';
+        const statusText = running ? 'Running' : 'Stopped';
+        return `<tr><td>${svc.name}</td><td><span class="services-status-pill ${statusClass}">${statusText}</span></td></tr>`;
+    }).join('');
+}
+
 async function init() {
     buildMenuBar();
     ensureLegendOverlayShell();
@@ -828,6 +880,7 @@ async function init() {
         lastTopology = payload?.topology || {};
         lastHostname = payload?.hostname || '';
         lastAlertsPayload = payload?.alerts || null;
+        updateServicesMenu(payload?.services || null);
 
         applyWorkingConfig();
         updateDirtyUI();

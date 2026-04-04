@@ -498,6 +498,51 @@
     filter: brightness(1.08);
 }
 
+.menu-button.services-alert-red {
+    color: #ff3f3f;
+}
+
+.menu-button.services-alert-blink {
+    animation: services-alert-blink 1s linear infinite;
+}
+
+@keyframes services-alert-blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0.3; }
+}
+
+.services-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 9.5pt;
+}
+
+.services-table th,
+.services-table td {
+    padding: 6px 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: left;
+}
+
+.services-status-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 8.5pt;
+}
+
+.services-status-pill.running {
+    color: #8df28d;
+    border: 1px solid #49c949;
+}
+
+.services-status-pill.stopped {
+    color: #ff9b9b;
+    border: 1px solid #d05a5a;
+}
+
 .menu-status {
     color: var(--menu-label-color, #cccccc);
 }
