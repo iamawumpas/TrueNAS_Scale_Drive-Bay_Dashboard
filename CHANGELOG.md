@@ -1,5 +1,16 @@
 # Storage Dashboard - Change Log
 
+## Version 27.1:
+* **Menu Interaction Refinements**
+    * Updated menu switching behavior so opening one menu item closes any other open menu/dropdown.
+    * Added consistent cross-menu close behavior between standard dropdowns and the Legend panel.
+* **Legend Overlay Simplification**
+    * Removed dark backdrop overlay activation when opening the Legend panel.
+    * Preserved Legend popup toggle behavior without dimming the rest of the dashboard.
+* **Services Panel Sizing Tuning**
+    * Adjusted Services dropdown sizing to shrink-wrap content instead of using excess panel width.
+    * Kept responsive maximum width constraints for smaller screens.
+
 ## Version 27.0:
 * **TrueNAS Services Monitoring (Auto-Start Scope)**
     * Added backend service discovery using TrueNAS API (`midclt call service.query`).

@@ -76,6 +76,7 @@ function closeAllDropdowns() {
 }
 
 function openDropdown(panel, trigger) {
+    closeLegendOverlay();
     syncPanelValues(panel);
     panel.classList.add('open');
     trigger.classList.add('active');
@@ -711,13 +712,11 @@ function openLegendOverlay() {
     if (!legend) return;
     ensureLegendOverlayShell();
     legend.classList.add('legend-overlay-active');
-    legendBackdrop.classList.add('active');
 }
 
 function closeLegendOverlay() {
     const legend = document.getElementById('legend-chassis');
     if (legend) legend.classList.remove('legend-overlay-active');
-    if (legendBackdrop) legendBackdrop.classList.remove('active');
 }
 
 function toggleLegendOverlay() {
@@ -727,6 +726,7 @@ function toggleLegendOverlay() {
         closeLegendOverlay();
         return;
     }
+    closeAllDropdowns();
     openLegendOverlay();
 }
 
