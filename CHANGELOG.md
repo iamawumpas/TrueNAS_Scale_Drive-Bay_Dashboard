@@ -1,5 +1,13 @@
 # Storage Dashboard - Change Log
 
+## Version 27.2:
+* **Kiosk-Safe Modal Confirmations**
+    * Replaced browser-native confirmation popups with dashboard modal confirmations for actions that require approval.
+    * Added reusable in-app modal behavior for `Download Update`, `Restore Files`, and `Reset Settings` workflows.
+* **Browser Compatibility Improvement**
+    * Removed dependency on blocked browser `window.confirm` dialogs so confirmation prompts work in restricted browser environments.
+    * Preserved existing action safety by requiring explicit user confirmation via in-dashboard modals.
+
 ## Version 27.1:
 * **Menu Interaction Refinements**
     * Updated menu switching behavior so opening one menu item closes any other open menu/dropdown.

@@ -45,6 +45,95 @@ let lastHostname = null;
 let lastDiskArraysMenuSignature = '';
 let responsiveSliderRefreshTimer = null;
 let isResetInProgress = false;
+let menuModalBackdrop = null;
+let menuModalResolve = null;
+let menuModalPreviousFocus = null;
+
+function ensureMenuModalShell() {
+    if (menuModalBackdrop) return;
+
+    menuModalBackdrop = document.createElement('div');
+    menuModalBackdrop.id = 'menu-modal-backdrop';
+    menuModalBackdrop.innerHTML = `
+        <div class="menu-modal" role="dialog" aria-modal="true" aria-labelledby="menu-modal-title" aria-describedby="menu-modal-message">
+            <div id="menu-modal-title" class="menu-modal-title">Confirm Action</div>
+            <div id="menu-modal-message" class="menu-modal-message"></div>
+            <div class="menu-modal-actions">
+                <button type="button" id="menu-modal-cancel" class="menu-modal-btn menu-modal-btn-secondary">Cancel</button>
+                <button type="button" id="menu-modal-confirm" class="menu-modal-btn menu-modal-btn-primary">OK</button>
+            </div>
+        </div>
+    `;
+
+    menuModalBackdrop.addEventListener('click', (event) => {
+        if (event.target === menuModalBackdrop) {
+            closeMenuModal(false);
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (!menuModalBackdrop?.classList.contains('active')) return;
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closeMenuModal(false);
+            return;
+        }
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            closeMenuModal(true);
+        }
+    });
+
+    document.body.appendChild(menuModalBackdrop);
+}
+
+function closeMenuModal(result) {
+    if (!menuModalBackdrop) return;
+    menuModalBackdrop.classList.remove('active');
+    const resolve = menuModalResolve;
+    menuModalResolve = null;
+    if (menuModalPreviousFocus?.focus) {
+        menuModalPreviousFocus.focus({ preventScroll: true });
+    }
+    menuModalPreviousFocus = null;
+    if (resolve) resolve(Boolean(result));
+}
+
+function showMenuConfirm(message, options = {}) {
+    ensureMenuModalShell();
+    if (!menuModalBackdrop) return Promise.resolve(false);
+
+    if (menuModalResolve) {
+        closeMenuModal(false);
+    }
+
+    const title = options.title || 'Confirm Action';
+    const confirmText = options.confirmText || 'OK';
+    const cancelText = options.cancelText || 'Cancel';
+
+    const titleEl = document.getElementById('menu-modal-title');
+    const messageEl = document.getElementById('menu-modal-message');
+    const confirmBtn = document.getElementById('menu-modal-confirm');
+    const cancelBtn = document.getElementById('menu-modal-cancel');
+
+    if (!titleEl || !messageEl || !confirmBtn || !cancelBtn) return Promise.resolve(false);
+
+    titleEl.textContent = title;
+    messageEl.textContent = String(message || '');
+    confirmBtn.textContent = confirmText;
+    cancelBtn.textContent = cancelText;
+
+    confirmBtn.onclick = () => closeMenuModal(true);
+    cancelBtn.onclick = () => closeMenuModal(false);
+
+    menuModalPreviousFocus = document.activeElement;
+    menuModalBackdrop.classList.add('active');
+    confirmBtn.focus({ preventScroll: true });
+
+    return new Promise((resolve) => {
+        menuModalResolve = resolve;
+    });
+}
 
 function setPreviewConfig(config) {
     window.__previewConfig__ = deepClone(config || {});
@@ -508,7 +597,11 @@ async function downloadAndInstallRepositoryUpdate() {
         return;
     }
 
-    const confirmed = window.confirm('Download and install the latest repository update now?');
+    const confirmed = await showMenuConfirm('Download and install the latest repository update now?', {
+        title: 'Repository Update',
+        confirmText: 'Download Update',
+        cancelText: 'Cancel'
+    });
     if (!confirmed) return;
 
     try {
@@ -550,7 +643,11 @@ async function restoreMissingFilesFromRepo() {
         return;
     }
 
-    const confirmed = window.confirm('Restore missing tracked runtime files from GitHub main branch?');
+    const confirmed = await showMenuConfirm('Restore missing tracked runtime files from GitHub main branch?', {
+        title: 'Restore Missing Files',
+        confirmText: 'Restore Files',
+        cancelText: 'Cancel'
+    });
     if (!confirmed) return;
 
     try {
@@ -782,7 +879,11 @@ function revertConfig() {
 
 async function resetConfigToDefaults() {
     if (isResetInProgress) return;
-    const confirmed = window.confirm('Reset all dashboard customizations to default settings?');
+    const confirmed = await showMenuConfirm('Reset all dashboard customizations to default settings?', {
+        title: 'Reset Dashboard Settings',
+        confirmText: 'Reset Settings',
+        cancelText: 'Cancel'
+    });
     if (!confirmed) return;
 
     try {
