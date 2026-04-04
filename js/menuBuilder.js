@@ -202,6 +202,16 @@ export function buildDashboardPanel() {
                 ${buildSliderRow('Dropdown Transparency', ['ui', 'menu', 'dropdown_opacity'])}
             </div>
             <div class="panel-section">
+                <div class="panel-section-title">Alerts</div>
+                <div class="menu-control-row menu-action-row alerts-mute-row">
+                    <div class="menu-ctrl-label">Silence active alarms</div>
+                    <div class="menu-ctrl-right">
+                        <button class="menu-action-btn" id="menu-alerts-mute-btn" type="button" disabled>MUTE</button>
+                    </div>
+                </div>
+                <div class="menu-reset-note" id="menu-alerts-status">No active alerts.</div>
+            </div>
+            <div class="panel-section">
                 <div class="panel-section-title">Reset</div>
                 <div class="menu-control-row menu-action-row">
                     <div class="menu-ctrl-label">Restore all defaults</div>

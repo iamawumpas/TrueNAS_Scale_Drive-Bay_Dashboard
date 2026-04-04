@@ -66,14 +66,24 @@ function updateAlertUi(alerts) {
     const normalized = alerts && typeof alerts === 'object' ? alerts : {};
     const activeNames = Array.isArray(normalized.activeNames) ? normalized.activeNames : [];
     const activeCount = Number(normalized.activeCount || activeNames.length || 0);
+    const muteRemainingSec = Number(normalized.muteRemainingSec || 0);
+    const muteActive = muteRemainingSec > 0;
     const banner = ensureAlertBanner();
 
     if (activeCount > 0) {
         if (banner) {
             banner.style.display = 'block';
-            banner.textContent = `Active Alerts (${activeCount}/3): ${activeNames.join(' | ')}`;
+            if (muteActive) {
+                banner.textContent = `Active Alerts (${activeCount}/3): ${activeNames.join(' | ')} | Muted ${muteRemainingSec}s`;
+            } else {
+                banner.textContent = `Active Alerts (${activeCount}/3): ${activeNames.join(' | ')}`;
+            }
         }
-        startAlertBeepLoop();
+        if (muteActive) {
+            stopAlertBeepLoop();
+        } else {
+            startAlertBeepLoop();
+        }
         return;
     }
 

@@ -446,6 +446,11 @@
     word-break: break-word;
 }
 
+#menu-alerts-status {
+    margin-top: 8px;
+    word-break: break-word;
+}
+
 .menu-item {
     display: inline-flex;
     align-items: center;

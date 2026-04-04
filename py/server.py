@@ -19,7 +19,9 @@ GLOBAL_DATA = {
         "diskFaultOrErrors": False,
         "highTemperature": False,
         "activeCount": 0,
-        "activeNames": []
+        "activeNames": [],
+        "muteActive": False,
+        "muteRemainingSec": 0
     }
 }
 
@@ -27,6 +29,8 @@ GITHUB_OWNER = 'iamawumpas'
 GITHUB_REPO = 'TrueNAS_Scale_Drive-Bay_Dashboard'
 GITHUB_BRANCH = 'main'
 REPO_SYNC_TIMEOUT_SECS = 12
+ALERT_MUTE_SECONDS = 300
+ALERT_MUTE_UNTIL_TS = 0.0
 
 # Critical runtime and startup files that can be restored if accidentally deleted.
 REPO_SYNC_TRACKED_FILES = [
@@ -200,6 +204,21 @@ def _to_int_or_zero(value):
         return 0
 
 
+def _alert_mute_remaining_sec():
+    remaining = ALERT_MUTE_UNTIL_TS - time.time()
+    if remaining <= 0:
+        return 0
+    return int(remaining + 0.999)
+
+
+def _with_alert_mute_state(alerts):
+    mute_remaining = _alert_mute_remaining_sec()
+    payload = dict(alerts or {})
+    payload['muteActive'] = mute_remaining > 0
+    payload['muteRemainingSec'] = mute_remaining
+    return payload
+
+
 def _compute_alerts_from_global_state():
     pool_states = GLOBAL_DATA.get("pool_states") or {}
     topology = GLOBAL_DATA.get("topology") or {}
@@ -268,10 +287,10 @@ def alert_monitor_thread():
 
     while True:
         try:
-            alerts = _compute_alerts_from_global_state()
+            alerts = _with_alert_mute_state(_compute_alerts_from_global_state())
             GLOBAL_DATA["alerts"] = alerts
 
-            if alerts.get("activeCount", 0) > 0:
+            if alerts.get("activeCount", 0) > 0 and not alerts.get('muteActive', False):
                 now = time.time()
                 if (now - last_beep_at) >= beep_interval_secs:
                     _host_beep_once()
@@ -506,8 +525,44 @@ def topology_scanner_thread():
 class FastHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         # Handle POST requests for saving configuration
-        global CONFIG_MTIME, CONFIG_CACHE
+        global CONFIG_MTIME, CONFIG_CACHE, ALERT_MUTE_UNTIL_TS
         path = self.path.split('?')[0]
+
+        if path == '/alerts-mute-5m':
+            try:
+                current_alerts = _compute_alerts_from_global_state()
+                if current_alerts.get('activeCount', 0) <= 0:
+                    payload = _with_alert_mute_state(current_alerts)
+                    self.send_response(409)
+                    self.send_header('Content-type', 'application/json')
+                    self.send_header('Cache-Control', 'no-store')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        'status': 'error',
+                        'message': 'No active alerts to mute.',
+                        'alerts': payload
+                    }).encode())
+                    return
+
+                ALERT_MUTE_UNTIL_TS = time.time() + ALERT_MUTE_SECONDS
+                payload = _with_alert_mute_state(current_alerts)
+                GLOBAL_DATA['alerts'] = payload
+
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'status': 'success',
+                    'muteSeconds': ALERT_MUTE_SECONDS,
+                    'alerts': payload
+                }).encode())
+            except Exception as ex:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(ex)}).encode())
+            return
 
         if path == '/repo-sync-repair':
             try:
@@ -667,7 +722,9 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
                     "diskFaultOrErrors": False,
                     "highTemperature": False,
                     "activeCount": 0,
-                    "activeNames": []
+                    "activeNames": [],
+                    "muteActive": False,
+                    "muteRemainingSec": 0
                 })
             }
             for pci, data in GLOBAL_DATA["topology"].items():

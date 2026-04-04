@@ -1,5 +1,19 @@
 # Storage Dashboard - Change Log
 
+## Version 26.1:
+* **Dashboard Alerts Menu Section**
+    * Added a new `Alerts` section in the Dashboard menu above `Reset`.
+    * Added `MUTE` action button to silence active alarm beeps for 5 minutes.
+    * Added alerts status text line in-menu to show current alert/mute state.
+* **5-Minute Unified Mute (Host + Dashboard)**
+    * Added backend `/alerts-mute-5m` endpoint and mute countdown state shared through `/data`.
+    * Host-side repeating alarm beeps are now suppressed during active mute countdown.
+    * Dashboard-side repeating alarm beeps are now suppressed during active mute countdown.
+* **Mute Button State Logic and Countdown Label**
+    * `MUTE` button is disabled when no alerts are active.
+    * `MUTE` button is enabled when alerts are active and no countdown is running.
+    * `MUTE` button is disabled while mute countdown is active and shows live `MUTED MM:SS` text.
+
 ## Version 26.0:
 * **Named Dashboard Alert Triggers (No Severity Levels)**
     * Added three binary alert triggers for attention-only monitoring: `Pool Health Alert`, `Disk Fault/Error Alert`, and `High Temperature Alert`.

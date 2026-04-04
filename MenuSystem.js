@@ -30,9 +30,12 @@ let revertButton = null;
 let legendButton = null;
 let legendBackdrop = null;
 let statusEl = null;
+let alertsStatusEl = null;
+let alertsMuteButton = null;
 let repoSyncStatusEl = null;
 let repoSyncCheckButton = null;
 let repoSyncRestoreButton = null;
+let lastAlertsPayload = null;
 let lastTopology = null;
 let lastHostname = null;
 let lastDiskArraysMenuSignature = '';
@@ -239,6 +242,7 @@ function syncPanelValues(panel) {
     });
 
     if (panel.id === 'dashboard-panel') {
+        updateAlertsMuteControls(lastAlertsPayload);
         updateRepoSyncControls();
     }
 }
@@ -346,6 +350,59 @@ function repoSyncEnabled() {
 
 function setRepoSyncStatusText(text) {
     if (repoSyncStatusEl) repoSyncStatusEl.textContent = text;
+}
+
+function formatMuteCountdown(totalSeconds) {
+    const sec = Math.max(0, Number(totalSeconds) || 0);
+    const mm = String(Math.floor(sec / 60)).padStart(2, '0');
+    const ss = String(sec % 60).padStart(2, '0');
+    return `${mm}:${ss}`;
+}
+
+function setAlertsStatusText(text) {
+    if (alertsStatusEl) alertsStatusEl.textContent = text;
+}
+
+function updateAlertsMuteControls(alerts) {
+    const payload = alerts && typeof alerts === 'object' ? alerts : {};
+    const activeCount = Number(payload.activeCount || 0);
+    const muteRemainingSec = Number(payload.muteRemainingSec || 0);
+
+    if (!alertsMuteButton) return;
+
+    if (activeCount <= 0) {
+        alertsMuteButton.disabled = true;
+        alertsMuteButton.textContent = 'MUTE';
+        setAlertsStatusText('No active alerts.');
+        return;
+    }
+
+    if (muteRemainingSec > 0) {
+        alertsMuteButton.disabled = true;
+        alertsMuteButton.textContent = `MUTED ${formatMuteCountdown(muteRemainingSec)}`;
+        setAlertsStatusText(`Alerts muted: ${formatMuteCountdown(muteRemainingSec)} remaining.`);
+        return;
+    }
+
+    alertsMuteButton.disabled = false;
+    alertsMuteButton.textContent = 'MUTE';
+    setAlertsStatusText('Alerts active. Click MUTE to silence host/dashboard beeps for 5 minutes.');
+}
+
+async function muteAlertsForFiveMinutes() {
+    try {
+        setAlertsStatusText('Applying 5-minute alert mute...');
+        const response = await fetch('/alerts-mute-5m', { method: 'POST' });
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload?.message || ('Mute failed with HTTP ' + response.status));
+        }
+        lastAlertsPayload = payload.alerts || null;
+        updateAlertsMuteControls(lastAlertsPayload);
+    } catch (error) {
+        console.error('[menu] alerts mute failed', error);
+        updateAlertsMuteControls(lastAlertsPayload);
+    }
 }
 
 function updateRepoSyncControls() {
@@ -491,8 +548,12 @@ function buildMenuBar() {
         repoSyncStatusEl = dashPanel.querySelector('#menu-repo-sync-status');
         repoSyncCheckButton = dashPanel.querySelector('#menu-repo-check-btn');
         repoSyncRestoreButton = dashPanel.querySelector('#menu-repo-restore-btn');
+        alertsStatusEl = dashPanel.querySelector('#menu-alerts-status');
+        alertsMuteButton = dashPanel.querySelector('#menu-alerts-mute-btn');
         repoSyncCheckButton?.addEventListener('click', () => refreshRepoSyncStatus(true));
         repoSyncRestoreButton?.addEventListener('click', restoreMissingFilesFromRepo);
+        alertsMuteButton?.addEventListener('click', muteAlertsForFiveMinutes);
+        updateAlertsMuteControls(lastAlertsPayload);
         updateRepoSyncControls();
         dashBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -631,6 +692,9 @@ function handleDashboardDataUpdate(event) {
     const payload = event?.detail?.data;
     if (!payload || typeof payload !== 'object') return;
 
+    lastAlertsPayload = payload.alerts || null;
+    updateAlertsMuteControls(lastAlertsPayload);
+
     const topology = payload.topology;
     if (topology && typeof topology === 'object' && Object.keys(topology).length > 0) {
         lastTopology = topology;
@@ -663,9 +727,11 @@ async function init() {
         initConfig(config);
         lastTopology = payload?.topology || {};
         lastHostname = payload?.hostname || '';
+        lastAlertsPayload = payload?.alerts || null;
 
         applyWorkingConfig();
         updateDirtyUI();
+        updateAlertsMuteControls(lastAlertsPayload);
         buildDiskArraysMenu(lastTopology, lastHostname);
         hydrateMissingMenuDefaults();
         refreshRepoSyncStatus(false);
