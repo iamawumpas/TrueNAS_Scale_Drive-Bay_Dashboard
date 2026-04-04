@@ -60,7 +60,7 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
 * **Activity:** Real-time read/write activity via a blue "blinky" LED.
 * **Status Indicators (Allocated Disks):**
     * **Green:** Drive is healthy and functioning normally in a pool
-    * **Green/Gray [Blinking]:** Drive is allocated but marked OFFLINE by TrueNAS
+    * **Green [Blinking]:** Drive is allocated but marked OFFLINE by TrueNAS
     * **Orange:** Drive has READ/WRITE/CHECKSUM errors but still functioning
     * **White:** Drive is currently resilvering/repairing/replacing
     * **Red:** Drive is FAULTED, UNAVAIL, REMOVED, or in a FAULTED/SUSPENDED pool
@@ -70,10 +70,27 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
     * **Purple/Orange [Blinking]:** Spare drive with READ/WRITE/CHECKSUM errors
     * **Purple/Red [Blinking]:** Spare drive is FAULTED, UNAVAIL, or REMOVED
 
+* **Drive Information Panel:**
+   * Disk Serial Number
+   * Disk Capacity
+   * Pool Name (that the disk belongs to)
+   * Disk Position (in the pool)
+   * Disk Temperature
+     
 * **Pool Activity Monitor:**
     * **Normal:** Real-time read/write activity charts for each pool
     * **DEGRADED Pool:** Orange "DEGRADED" overlay on chart (pool still functioning)
     * **FAULTED/SUSPENDED Pool:** Red box with "FAULTED" text replaces chart (pool I/O suspended)
+
+* **TrueNAS Services Status:**
+   * **Lists** all Autostart at Boot services and their status
+   * Creates an **alert** if any of the services are Stopped
+ 
+* **Alerts**
+   * **Disk Temperature** > 40&degC
+   * **Disk Fault/Error**
+   * **Degraded Pool**
+   * **TrueNAS Services** STOPPED
 
 ---
 
