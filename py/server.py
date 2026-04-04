@@ -31,6 +31,7 @@ GITHUB_BRANCH = 'main'
 REPO_SYNC_TIMEOUT_SECS = 12
 ALERT_MUTE_SECONDS = 300
 ALERT_MUTE_UNTIL_TS = 0.0
+LOCAL_VERSION_FILE = 'VERSION'
 
 # Critical runtime and startup files that can be restored if accidentally deleted.
 REPO_SYNC_TRACKED_FILES = [
@@ -39,7 +40,8 @@ REPO_SYNC_TRACKED_FILES = [
     'service.py', 'start_up.sh', 'zfs_logic.py',
     'js/utils.js', 'js/data.js', 'js/topology.js', 'js/styleVars.js', 'js/renderer.js',
     'js/configStore.js', 'js/stylePreview.js', 'js/menuBuilder.js',
-    'py/__init__.py', 'py/config.py', 'py/topology.py', 'py/server.py'
+    'py/__init__.py', 'py/config.py', 'py/topology.py', 'py/server.py',
+    'CHANGELOG.md', 'VERSION'
 ]
 
 
@@ -78,20 +80,33 @@ def _parse_semver(tag):
     if value.startswith('v'):
         value = value[1:]
     parts = value.split('.')
-    if len(parts) != 3:
+    if len(parts) not in (2, 3):
         return None
     try:
-        return tuple(int(p) for p in parts)
+        nums = [int(p) for p in parts]
+        if len(nums) == 2:
+            nums.append(0)
+        return tuple(nums)
     except Exception:
         return None
 
 
 def _read_local_version():
+    version_path = os.path.join(BASE_DIR, LOCAL_VERSION_FILE)
+    try:
+        with open(version_path, 'r', encoding='utf-8') as fh:
+            raw = fh.read().strip()
+            if raw:
+                if _parse_semver(raw):
+                    return raw if str(raw).startswith('v') else f'v{raw}'
+    except Exception:
+        pass
+
     changelog_path = os.path.join(BASE_DIR, 'CHANGELOG.md')
     try:
         with open(changelog_path, 'r', encoding='utf-8') as fh:
             for line in fh:
-                match = re.match(r'^##\s+Version\s+([0-9]+\.[0-9]+\.[0-9]+):\s*$', line.strip())
+                match = re.match(r'^##\s+Version\s+([0-9]+\.[0-9]+(?:\.[0-9]+)?):\s*$', line.strip())
                 if match:
                     return f"v{match.group(1)}"
     except Exception:
@@ -141,6 +156,43 @@ def _restore_missing_tracked_files(ref=GITHUB_BRANCH):
         except Exception as ex:
             failed[rel] = str(ex)
     return restored, failed
+
+
+def _download_and_install_tracked_files(ref):
+    fetched = {}
+    failed = {}
+
+    # Download everything first so we only restart after complete + verified installation.
+    for rel in REPO_SYNC_TRACKED_FILES:
+        try:
+            raw_url = f'https://raw.githubusercontent.com/{GITHUB_OWNER}/{GITHUB_REPO}/{ref}/{rel}'
+            fetched[rel] = _github_text(raw_url)
+        except Exception as ex:
+            failed[rel] = str(ex)
+
+    if failed:
+        return [], failed
+
+    installed = []
+    for rel, content in fetched.items():
+        try:
+            out_path = os.path.join(BASE_DIR, rel)
+            out_dir = os.path.dirname(out_path)
+            if out_dir:
+                os.makedirs(out_dir, exist_ok=True)
+            with open(out_path, 'w', encoding='utf-8', newline='\n') as fh:
+                fh.write(content)
+
+            # Verify file contents after write.
+            with open(out_path, 'r', encoding='utf-8') as verify_fh:
+                if verify_fh.read() != content:
+                    raise RuntimeError('verification mismatch after write')
+
+            installed.append(rel)
+        except Exception as ex:
+            failed[rel] = str(ex)
+
+    return installed, failed
 
 
 def _repo_sync_status_payload(config):
@@ -564,6 +616,42 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({'status': 'error', 'message': str(ex)}).encode())
             return
 
+        if path == '/repo-sync-enabled':
+            content_length = int(self.headers.get('Content-Length', 0))
+            try:
+                body = self.rfile.read(content_length).decode('utf-8') if content_length > 0 else '{}'
+                payload = json.loads(body)
+                enabled = bool(payload.get('enabled', False))
+
+                config = load_config() or {}
+                if 'ui' not in config or not isinstance(config.get('ui'), dict):
+                    config['ui'] = {}
+                if 'menu' not in config['ui'] or not isinstance(config['ui'].get('menu'), dict):
+                    config['ui']['menu'] = {}
+                if 'repo_sync' not in config['ui']['menu'] or not isinstance(config['ui']['menu'].get('repo_sync'), dict):
+                    config['ui']['menu']['repo_sync'] = {}
+                config['ui']['menu']['repo_sync']['enabled'] = enabled
+
+                os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+                with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(config, f, indent=4)
+
+                CONFIG_MTIME = 0
+                CONFIG_CACHE = None
+                GLOBAL_DATA['config'] = load_config()
+
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'success', 'enabled': enabled}).encode())
+            except Exception as ex:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(ex)}).encode())
+            return
+
         if path == '/repo-sync-repair':
             try:
                 config = load_config()
@@ -610,6 +698,69 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode())
+            return
+
+        if path == '/repo-sync-update':
+            try:
+                config = load_config()
+                if not _repo_sync_enabled(config):
+                    self.send_response(403)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        "status": "error",
+                        "message": "Repository sync is disabled in Dashboard > Reset > Repository Sync"
+                    }).encode())
+                    return
+
+                status_payload = _repo_sync_status_payload(config)
+                if not status_payload.get('updateAvailable'):
+                    self.send_response(409)
+                    self.send_header('Content-type', 'application/json')
+                    self.send_header('Cache-Control', 'no-store')
+                    self.end_headers()
+                    status_payload.update({
+                        'status': 'noop',
+                        'message': 'No newer repository version is available.'
+                    })
+                    self.wfile.write(json.dumps(status_payload).encode())
+                    return
+
+                target_ref = status_payload.get('remoteVersion') or GITHUB_BRANCH
+                installed, failed = _download_and_install_tracked_files(target_ref)
+                post_payload = _repo_sync_status_payload(config)
+                post_payload.update({
+                    'status': 'success' if not failed else 'partial',
+                    'installed': installed,
+                    'failed': failed,
+                    'targetRef': target_ref,
+                    'startup_initiated': False
+                })
+
+                # Trigger restart only after complete successful download + verification.
+                if not failed and installed:
+                    try:
+                        startup_script = os.path.join(BASE_DIR, 'start_up.sh')
+                        if os.path.exists(startup_script):
+                            subprocess.Popen(['bash', startup_script])
+                            print(f"Startup script initiated after update install from {target_ref}")
+                            post_payload['startup_initiated'] = True
+                        else:
+                            print('Warning: start_up.sh not found for post-update restart')
+                    except Exception as startup_err:
+                        post_payload['status'] = 'partial'
+                        post_payload['failed']['start_up.sh'] = str(startup_err)
+
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                self.wfile.write(json.dumps(post_payload).encode())
+            except Exception as ex:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "error", "message": str(ex)}).encode())
             return
 
         if path == '/reset-config':

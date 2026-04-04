@@ -404,12 +404,18 @@
     justify-content: flex-start;
 }
 
+.repo-sync-toggle-row .menu-style-options {
+    width: 100%;
+    max-width: 100%;
+}
+
 .repo-sync-option {
     display: grid;
     grid-template-columns: auto 1fr;
     column-gap: 8px;
     align-items: start;
     width: 100%;
+    min-width: 0;
 }
 
 .repo-sync-option input[type="checkbox"] {
@@ -420,6 +426,7 @@
 .repo-sync-option span {
     white-space: normal;
     overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .repo-sync-action-row {

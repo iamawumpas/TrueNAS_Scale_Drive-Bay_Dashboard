@@ -36,6 +36,7 @@ let repoSyncStatusEl = null;
 let repoSyncCheckButton = null;
 let repoSyncRestoreButton = null;
 let lastAlertsPayload = null;
+let lastRepoSyncStatusPayload = null;
 let lastTopology = null;
 let lastHostname = null;
 let lastDiskArraysMenuSignature = '';
@@ -329,6 +330,34 @@ function bindPanelEvents(panel) {
     panel.querySelectorAll('input[type="checkbox"][data-path]').forEach(input => {
         input.addEventListener('change', () => {
             const path = input.dataset.path.split('|');
+            const joined = path.join('|');
+            if (joined === 'ui|menu|repo_sync|enabled') {
+                const desired = Boolean(input.checked);
+                const previous = Boolean(getNestedValue(workingConfig, path));
+
+                // Keep menu clean: update silently and persist immediately via backend endpoint.
+                setConfigValueSilent(path, desired);
+                applyWorkingConfig();
+                updateDirtyUI();
+                updateRepoSyncControls();
+
+                setRepoSyncEnabledImmediate(desired).then((ok) => {
+                    if (ok) {
+                        refreshRepoSyncStatus(false);
+                        return;
+                    }
+
+                    // Revert on persistence failure.
+                    setConfigValueSilent(path, previous);
+                    input.checked = previous;
+                    applyWorkingConfig();
+                    updateDirtyUI();
+                    updateRepoSyncControls();
+                    setRepoSyncStatusText('Failed to update repo-sync setting.');
+                });
+                return;
+            }
+
             setConfigValue(path, Boolean(input.checked));
             updateRepoSyncControls();
         });
@@ -405,9 +434,28 @@ async function muteAlertsForFiveMinutes() {
     }
 }
 
+async function setRepoSyncEnabledImmediate(enabled) {
+    try {
+        const response = await fetch('/repo-sync-enabled', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: Boolean(enabled) })
+        });
+        if (!response.ok) throw new Error('Repo-sync toggle save failed with HTTP ' + response.status);
+        return true;
+    } catch (error) {
+        console.error('[menu] repo sync toggle persist failed', error);
+        return false;
+    }
+}
+
 function updateRepoSyncControls() {
     const enabled = repoSyncEnabled();
-    if (repoSyncCheckButton) repoSyncCheckButton.disabled = !enabled;
+    const updateAvailable = Boolean(lastRepoSyncStatusPayload?.updateAvailable);
+    if (repoSyncCheckButton) {
+        repoSyncCheckButton.disabled = !enabled;
+        repoSyncCheckButton.textContent = updateAvailable ? 'DOWNLOAD UPDATE' : 'CHECK UPDATES';
+    }
     if (repoSyncRestoreButton) repoSyncRestoreButton.disabled = !enabled;
     if (!enabled) {
         setRepoSyncStatusText('Repo sync disabled. Enable and SAVE to allow checks/restores.');
@@ -433,11 +481,55 @@ async function refreshRepoSyncStatus(userInitiated = false) {
         const response = await fetch('/repo-sync-status', { cache: 'no-store' });
         if (!response.ok) throw new Error('Status check failed with HTTP ' + response.status);
         const payload = await response.json();
+        lastRepoSyncStatusPayload = payload;
         setRepoSyncStatusText(formatRepoStatus(payload));
+        updateRepoSyncControls();
     } catch (error) {
         console.error('[menu] repo sync status failed', error);
         setRepoSyncStatusText('Repository status check failed.');
     }
+}
+
+async function downloadAndInstallRepositoryUpdate() {
+    if (!repoSyncEnabled()) {
+        setRepoSyncStatusText('Repo sync disabled. Enable and SAVE first.');
+        return;
+    }
+
+    const confirmed = window.confirm('Download and install the latest repository update now?');
+    if (!confirmed) return;
+
+    try {
+        setRepoSyncStatusText('Downloading and verifying update from repository...');
+        const response = await fetch('/repo-sync-update', { method: 'POST' });
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload?.message || (`Update failed with HTTP ${response.status}`));
+        }
+
+        lastRepoSyncStatusPayload = payload;
+        const installedCount = Array.isArray(payload.installed) ? payload.installed.length : 0;
+        const failedCount = payload.failed ? Object.keys(payload.failed).length : 0;
+        let status = `Update install complete. Installed ${installedCount} file(s).`;
+        if (failedCount > 0) status += ` Failed ${failedCount} file(s).`;
+        if (payload.startup_initiated) {
+            status += ' Restart triggered.';
+        }
+        status += ` ${formatRepoStatus(payload)}`;
+        setRepoSyncStatusText(status);
+        updateRepoSyncControls();
+    } catch (error) {
+        console.error('[menu] repo update install failed', error);
+        setRepoSyncStatusText('Repository update install failed.');
+    }
+}
+
+async function handleRepoPrimaryAction() {
+    if (lastRepoSyncStatusPayload?.updateAvailable) {
+        await downloadAndInstallRepositoryUpdate();
+        return;
+    }
+    await refreshRepoSyncStatus(true);
 }
 
 async function restoreMissingFilesFromRepo() {
@@ -550,7 +642,7 @@ function buildMenuBar() {
         repoSyncRestoreButton = dashPanel.querySelector('#menu-repo-restore-btn');
         alertsStatusEl = dashPanel.querySelector('#menu-alerts-status');
         alertsMuteButton = dashPanel.querySelector('#menu-alerts-mute-btn');
-        repoSyncCheckButton?.addEventListener('click', () => refreshRepoSyncStatus(true));
+        repoSyncCheckButton?.addEventListener('click', handleRepoPrimaryAction);
         repoSyncRestoreButton?.addEventListener('click', restoreMissingFilesFromRepo);
         alertsMuteButton?.addEventListener('click', muteAlertsForFiveMinutes);
         updateAlertsMuteControls(lastAlertsPayload);

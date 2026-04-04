@@ -1,5 +1,20 @@
 # Storage Dashboard - Change Log
 
+## Version 26.2:
+* **Repository Sync Menu UX and Wrapping Improvements**
+    * Updated Repository Sync permission text layout so long text fits panel width and wraps cleanly.
+    * Kept Repository Sync actions responsive while preserving the existing menu container bounds.
+* **Local Version Resolution Hardening**
+    * Added explicit local `VERSION` file support for reporting installed dashboard version.
+    * Updated version parsing to support both `vX.Y` and `vX.Y.Z` formats.
+    * Prevents `Local unknown` display when using two-part release tags.
+* **Repository Update Install Workflow**
+    * Added dynamic primary action behavior: `CHECK UPDATES` changes to `DOWNLOAD UPDATE` when an update is available.
+    * Added backend update installation endpoint that downloads tracked files, verifies writes, and only triggers `start_up.sh` after complete successful install.
+* **Non-Dirty Repo Sync Controls**
+    * Repository Sync enable/disable checkbox now persists immediately through backend endpoint without activating `SAVE`/`REVERT` dirty state.
+    * Repository status checks and update checks remain non-dirty actions and do not activate `SAVE`/`REVERT`.
+
 ## Version 26.1:
 * **Dashboard Alerts Menu Section**
     * Added a new `Alerts` section in the Dashboard menu above `Reset`.
