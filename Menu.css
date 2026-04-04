@@ -19,6 +19,10 @@
     color: var(--menu-text-color, #ffffff);
     font-family: var(--menu-font-family, Calibri, Candara, Segoe UI, Optima, Arial, sans-serif);
     font-size: calc(var(--menu-font-size, 12pt) * var(--menu-scene-scale, 1));
+    font-weight: var(--menu-font-weight, 400);
+    font-style: var(--menu-font-style, normal);
+    text-transform: var(--menu-font-transform, none);
+    font-variant: var(--menu-font-variant, normal);
     opacity: var(--menu-opacity, 1);
     min-height: calc(48px * var(--menu-scene-scale, 1));
     container-type: inline-size;
@@ -67,6 +71,10 @@
     color: var(--menu-text-color, #ffffff);
     font-family: var(--menu-font-family, Calibri, Candara, Segoe UI, Optima, Arial, sans-serif);
     font-size: calc(11pt * var(--menu-scene-scale, 1));
+    font-weight: var(--menu-font-weight, 400);
+    font-style: var(--menu-font-style, normal);
+    text-transform: var(--menu-font-transform, none);
+    font-variant: var(--menu-font-variant, normal);
     opacity: var(--menu-dropdown-opacity, 1);
 }
 
@@ -75,7 +83,9 @@
 }
 
 .menu-button.active {
-    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-thickness: calc(1px * var(--menu-scene-scale, 1));
+    text-underline-offset: calc(2px * var(--menu-scene-scale, 1));
 }
 
 /* ── Panel sections ───────────────────────────────────────── */
@@ -476,13 +486,16 @@
     padding: calc(6px * var(--menu-scene-scale, 1)) calc(10px * var(--menu-scene-scale, 1));
     border-radius: 0;
     font-family: var(--menu-font-family, Calibri, Candara, Segoe UI, Optima, Arial, sans-serif);
-    font-size: calc(11pt * var(--menu-scene-scale, 1));
+    font-size: calc(var(--menu-font-size, 12pt) * var(--menu-scene-scale, 1));
     cursor: pointer;
-    font-weight: 400;
+    font-weight: var(--menu-font-weight, 400);
+    font-style: var(--menu-font-style, normal);
+    text-transform: var(--menu-font-transform, none);
+    font-variant: var(--menu-font-variant, normal);
 }
 
 .menu-button:hover {
-    font-weight: 700;
+    filter: brightness(1.08);
 }
 
 .menu-status {

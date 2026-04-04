@@ -103,6 +103,10 @@ export function applyActivityVariables(config) {
 
 export function applyMenuVariables(config) {
     const menu = config?.ui?.menu || {};
+    const hasMenuStyle = Array.isArray(menu.style);
+    const menuStyles = hasMenuStyle
+        ? menu.style.map(v => String(v).toLowerCase())
+        : [];
     const sectionName = menu.section_name || {};
     const subsectionName = menu.subsection_name || {};
     const hasSectionNameStyle = Array.isArray(sectionName.style);
@@ -131,6 +135,10 @@ export function applyMenuVariables(config) {
         '--menu-dropdown-opacity': dropdownOpacity,
         '--menu-font-family': menu.font,
         '--menu-font-size': menu.size,
+        '--menu-font-weight': hasMenuStyle ? (menuStyles.includes('bold') ? '700' : '400') : undefined,
+        '--menu-font-style': hasMenuStyle ? (menuStyles.includes('italic') ? 'italic' : 'normal') : undefined,
+        '--menu-font-transform': hasMenuStyle ? (menuStyles.includes('allcaps') ? 'uppercase' : 'none') : undefined,
+        '--menu-font-variant': hasMenuStyle ? (menuStyles.includes('smallcaps') ? 'small-caps' : 'normal') : undefined,
         '--menu-label-color': menu.label_color,
         '--menu-section-title-color': sectionName.color || menu.section_title_color,
         '--menu-section-title-size': sectionName.size,

@@ -15,6 +15,10 @@ export function applyUiVariables(config, hostname) {
     const rootStyle = document.documentElement.style;
     const ui = config?.ui || {};
     const menu = ui.menu || {};
+    const hasMenuStyle = Array.isArray(menu.style);
+    const menuStyles = hasMenuStyle
+        ? menu.style.map(v => String(v).toLowerCase())
+        : [];
     const sectionName = menu.section_name || {};
     const hasSectionNameStyle = Array.isArray(sectionName.style);
     const sectionNameStyles = hasSectionNameStyle
@@ -102,6 +106,10 @@ export function applyUiVariables(config, hostname) {
         '--menu-opacity': menu.opacity,
         '--menu-font-family': menu.font,
         '--menu-font-size': menu.size,
+        '--menu-font-weight': hasMenuStyle ? (menuStyles.includes('bold') ? '700' : '400') : undefined,
+        '--menu-font-style': hasMenuStyle ? (menuStyles.includes('italic') ? 'italic' : 'normal') : undefined,
+        '--menu-font-transform': hasMenuStyle ? (menuStyles.includes('allcaps') ? 'uppercase' : 'none') : undefined,
+        '--menu-font-variant': hasMenuStyle ? (menuStyles.includes('smallcaps') ? 'small-caps' : 'normal') : undefined,
         '--menu-label-color': menu.label_color,
         '--menu-section-title-color': sectionName.color || menu.section_title_color,
         '--menu-section-title-size': sectionName.size,

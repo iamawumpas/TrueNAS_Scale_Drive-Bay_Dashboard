@@ -1,5 +1,16 @@
 # Storage Dashboard - Change Log
 
+## Version 26.6:
+* **Menu Font Controls Integrated into Main Menu Section**
+    * Merged font-size and font-style controls directly into the Dashboard Menu section (removed separate Menu Font subsection block).
+    * Bound controls end-to-end to `ui.menu.size` and `ui.menu.style` so menu typography updates are reflected in both live preview and runtime rendering.
+* **Menu Bar Font Style Activation Fix**
+    * Removed hardcoded bold overrides on menu button hover/active states that masked configured menu font style values.
+    * Updated active-state highlighting to use underline/brightness effects so configured Bold/Italic/AllCaps/SmallCaps settings remain visible.
+* **Menu Typography Runtime Consistency Improvements**
+    * Added/extended runtime and preview variable mapping for menu typography and defaults (`ui.menu.style`) across config and style pipelines.
+    * Ensured menu font controls apply consistently to top menu bar and dropdown panel text styling.
+
 ## Version 26.5:
 * **Menu Runtime Styling Consistency Fixes**
     * Fixed runtime CSS variable application so dropdown/submenu background color reliably follows the configured Menu background color.

@@ -250,6 +250,7 @@ DEFAULT_CONFIG = {
             "opacity": "1",
             "font": "Calibri, Candara, Segoe UI, Optima, Arial, sans-serif",
             "size": "12pt",
+            "style": ["normal"],
             "label_color": "#cccccc",
             "section_title_color": "#64c8ff",
             "section_name": {

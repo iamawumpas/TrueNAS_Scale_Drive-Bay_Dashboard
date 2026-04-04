@@ -191,16 +191,13 @@ export function buildDashboardPanel() {
                 ${buildColorRow('Background Color', ['ui', 'menu', 'background'])}
                 ${buildColorRow('Text Color', ['ui', 'menu', 'text'])}
                 ${buildFontRow('Font', ['ui', 'menu', 'font'])}
+                ${buildPxSliderRow('Font Size', ['ui', 'menu', 'size'], 8, 24, 1)}
+                ${buildStyleCheckboxRow('Font Style', ['ui', 'menu', 'style'])}
                 <div class="panel-subsection">
                     <div class="panel-subsection-title">Section Name</div>
                     ${buildColorRow('Colour', ['ui', 'menu', 'section_name', 'color'])}
                     ${buildPxSliderRow('Font Size', ['ui', 'menu', 'section_name', 'size'], 8, 24, 1)}
                     ${buildStyleCheckboxRow('Font Style', ['ui', 'menu', 'section_name', 'style'])}
-                </div>
-                <div class="panel-subsection">
-                    <div class="panel-subsection-title">Subsection Menu</div>
-                    ${buildPxSliderRow('Font Size', ['ui', 'menu', 'subsection_name', 'size'], 8, 24, 1)}
-                    ${buildStyleCheckboxRow('Font Style', ['ui', 'menu', 'subsection_name', 'style'])}
                 </div>
                 ${buildColorRow('Control Background Colour', ['ui', 'menu', 'controls', 'background'])}
                 ${buildColorRow('Control Highlight Colour', ['ui', 'menu', 'controls', 'focus_border'])}
