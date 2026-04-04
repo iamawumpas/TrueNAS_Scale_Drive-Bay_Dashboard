@@ -258,7 +258,7 @@ DEFAULT_CONFIG = {
                 "style": ["bold", "allcaps"]
             },
             "subsection_name": {
-                "size": "10pt",
+                "size": "10px",
                 "style": ["bold", "allcaps"]
             },
             "dropdown_background": "#1a1a1a",
@@ -381,6 +381,52 @@ def _strip_legacy_layout_overrides(config_obj):
 
     return config_obj
 
+
+def _convert_pt_to_px(value):
+    if not isinstance(value, str):
+        return value
+    raw = value.strip()
+    if not raw.lower().endswith('pt'):
+        return value
+    num_part = raw[:-2].strip()
+    try:
+        pt_val = float(num_part)
+    except Exception:
+        return value
+
+    # CSS conversion: 1pt = 1.3333px at 96 DPI.
+    px_val = round(pt_val * (4.0 / 3.0), 2)
+    if float(px_val).is_integer():
+        px_val = int(px_val)
+    return f"{px_val}px"
+
+
+def _normalize_menu_typography_units(config_obj):
+    if not isinstance(config_obj, dict):
+        return config_obj
+
+    ui = config_obj.get('ui')
+    if not isinstance(ui, dict):
+        return config_obj
+
+    menu = ui.get('menu')
+    if not isinstance(menu, dict):
+        return config_obj
+
+    def walk(node):
+        if isinstance(node, dict):
+            for key, val in list(node.items()):
+                if key == 'size':
+                    node[key] = _convert_pt_to_px(val)
+                else:
+                    walk(val)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(menu)
+    return config_obj
+
 def load_config():
     global CONFIG_MTIME, CONFIG_CACHE
 
@@ -397,6 +443,7 @@ def load_config():
             data = json.load(f)
         merged = _deep_merge_dict(DEFAULT_CONFIG, data)
         merged = _strip_legacy_layout_overrides(merged)
+        merged = _normalize_menu_typography_units(merged)
 
         # If new defaults were added, rewrite config.json so users
         # can see and edit the new options directly.

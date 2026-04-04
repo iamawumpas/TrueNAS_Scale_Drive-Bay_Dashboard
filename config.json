@@ -242,6 +242,13 @@
                     "smallcaps"
                 ]
             },
+            "subsection_name": {
+                "size": "10px",
+                "style": [
+                    "bold",
+                    "smallcaps"
+                ]
+            },
             "dropdown_background": "#1a1a1a",
             "dropdown_border": "#555555",
             "dropdown_shadow": "rgba(0, 0, 0, 0.8)",

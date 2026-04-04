@@ -1,5 +1,16 @@
 # Storage Dashboard - Change Log
 
+## Version 26.5:
+* **Menu Runtime Styling Consistency Fixes**
+    * Fixed runtime CSS variable application so dropdown/submenu background color reliably follows the configured Menu background color.
+    * Added runtime menu typography variable mapping to keep section/subsection style rendering consistent across live updates.
+* **Subsection Menu Control Reliability**
+    * Added missing `ui.menu.subsection_name` defaults to active configuration payloads for immediate control availability.
+    * Fixed slider value parsing so legacy typography values no longer produce `NaNpx` in the Dashboard Menu panel.
+* **Typography Unit Migration for Menu Settings**
+    * Added backend one-time normalization converting legacy `pt` values to `px` for `ui.menu` typography size fields during config load.
+    * Ensures stable slider behavior and persistent compatibility for older menu typography configurations.
+
 ## Version 26.4:
 * **Dashboard Menu Subsection Typography Controls**
     * Added `Subsection Menu` controls under Dashboard Menu with end-to-end support for `Font Size` and `Font Style`.

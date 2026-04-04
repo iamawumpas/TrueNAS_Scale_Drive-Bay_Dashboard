@@ -208,9 +208,17 @@ function syncPanelValues(panel) {
                 num = Math.round(((pxVal - mapMin) / span) * 100);
                 displayText = `${Math.round(pxVal)}px`;
             } else {
-                num = val !== undefined
-                    ? (isPx ? Number(String(val).replace('px', '')) : Number(val))
-                    : (isPx ? 10 : 50);
+                if (val !== undefined) {
+                    if (isPx) {
+                        const parsed = Number(String(val).replace('px', '').replace('pt', ''));
+                        num = Number.isFinite(parsed) ? parsed : 10;
+                    } else {
+                        const parsed = Number(val);
+                        num = Number.isFinite(parsed) ? parsed : 50;
+                    }
+                } else {
+                    num = isPx ? 10 : 50;
+                }
                 displayText = isPx ? `${num}px` : String(num);
             }
 

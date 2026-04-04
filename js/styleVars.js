@@ -14,6 +14,18 @@ import {
 export function applyUiVariables(config, hostname) {
     const rootStyle = document.documentElement.style;
     const ui = config?.ui || {};
+    const menu = ui.menu || {};
+    const sectionName = menu.section_name || {};
+    const hasSectionNameStyle = Array.isArray(sectionName.style);
+    const sectionNameStyles = hasSectionNameStyle
+        ? sectionName.style.map(v => String(v).toLowerCase())
+        : [];
+    const subsectionName = menu.subsection_name || {};
+    const hasSubsectionNameStyle = Array.isArray(subsectionName.style);
+    const subsectionNameStyles = hasSubsectionNameStyle
+        ? subsectionName.style.map(v => String(v).toLowerCase())
+        : [];
+    const menuControls = menu.controls || {};
     const leds = config?.ui?.led_colors;
 
     applyConfigMap(rootStyle, {
@@ -82,7 +94,34 @@ export function applyUiVariables(config, hostname) {
         '--pool-degraded-border': ui.pool?.degraded_border,
         '--pool-state-text-color': ui.pool?.state_text_color,
         '--pool-state-text-bg': ui.pool?.state_text_bg,
-        '--pool-state-text-shadow': ui.pool?.state_text_shadow
+        '--pool-state-text-shadow': ui.pool?.state_text_shadow,
+        '--menu-bg-color': menu.background,
+        '--menu-border-color': menu.border,
+        '--menu-text-color': menu.text,
+        '--menu-button-text': menu.button_text,
+        '--menu-opacity': menu.opacity,
+        '--menu-font-family': menu.font,
+        '--menu-font-size': menu.size,
+        '--menu-label-color': menu.label_color,
+        '--menu-section-title-color': sectionName.color || menu.section_title_color,
+        '--menu-section-title-size': sectionName.size,
+        '--menu-section-title-weight': hasSectionNameStyle ? (sectionNameStyles.includes('bold') ? '700' : '400') : undefined,
+        '--menu-section-title-style': hasSectionNameStyle ? (sectionNameStyles.includes('italic') ? 'italic' : 'normal') : undefined,
+        '--menu-section-title-transform': hasSectionNameStyle ? (sectionNameStyles.includes('allcaps') ? 'uppercase' : 'none') : undefined,
+        '--menu-section-title-variant': hasSectionNameStyle ? (sectionNameStyles.includes('smallcaps') ? 'small-caps' : 'normal') : undefined,
+        '--menu-subsection-title-size': subsectionName.size,
+        '--menu-subsection-title-weight': hasSubsectionNameStyle ? (subsectionNameStyles.includes('bold') ? '700' : '400') : undefined,
+        '--menu-subsection-title-style': hasSubsectionNameStyle ? (subsectionNameStyles.includes('italic') ? 'italic' : 'normal') : undefined,
+        '--menu-subsection-title-transform': hasSubsectionNameStyle ? (subsectionNameStyles.includes('allcaps') ? 'uppercase' : 'none') : undefined,
+        '--menu-subsection-title-variant': hasSubsectionNameStyle ? (subsectionNameStyles.includes('smallcaps') ? 'small-caps' : 'normal') : undefined,
+        '--menu-dropdown-bg': menu.background,
+        '--menu-dropdown-border': menu.dropdown_border,
+        '--menu-dropdown-shadow': menu.dropdown_shadow,
+        '--menu-dropdown-opacity': menu.dropdown_opacity !== undefined ? (0.5 + (Number(menu.dropdown_opacity) / 100) * 0.5) : 1.0,
+        '--menu-control-bg': menuControls.background,
+        '--menu-control-border': menuControls.border,
+        '--menu-control-text': menuControls.text,
+        '--menu-control-focus-border': menuControls.focus_border
     });
 
     applyStyleConfig(rootStyle, 'server-name', ui.server_name);
