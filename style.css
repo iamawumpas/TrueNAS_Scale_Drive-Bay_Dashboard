@@ -20,6 +20,20 @@ body {
     container-type: inline-size;
 }
 
+#dashboard-alert-strip {
+    border: 1px solid rgba(255, 91, 91, 0.75);
+    background: linear-gradient(180deg, rgba(102, 17, 17, 0.92) 0%, rgba(65, 9, 9, 0.92) 100%);
+    color: #ffe7e7;
+    border-radius: calc(8px * var(--dashboard-scene-scale, 1));
+    padding: calc(8px * var(--dashboard-scene-scale, 1)) calc(12px * var(--dashboard-scene-scale, 1));
+    margin: 0 auto calc(10px * var(--dashboard-scene-scale, 1));
+    font-size: calc(0.92rem * var(--dashboard-scene-scale, 1));
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    width: min(100%, 980px);
+    box-sizing: border-box;
+}
+
 #top-row {
     display: flex;
     flex-wrap: wrap;

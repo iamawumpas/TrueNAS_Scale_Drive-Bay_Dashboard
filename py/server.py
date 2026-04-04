@@ -13,7 +13,14 @@ GLOBAL_DATA = {
     "io_activity": {},
     "hostname": socket.gethostname(),
     "config": {},
-    "pool_activity_history": {}
+    "pool_activity_history": {},
+    "alerts": {
+        "poolDegraded": False,
+        "diskFaultOrErrors": False,
+        "highTemperature": False,
+        "activeCount": 0,
+        "activeNames": []
+    }
 }
 
 GITHUB_OWNER = 'iamawumpas'
@@ -177,6 +184,102 @@ def get_io_snapshot():
                 activity[dev] = r + w
     except: pass
     return activity
+
+
+def _to_float_or_none(value):
+    try:
+        return float(value)
+    except Exception:
+        return None
+
+
+def _to_int_or_zero(value):
+    try:
+        return int(value)
+    except Exception:
+        return 0
+
+
+def _compute_alerts_from_global_state():
+    pool_states = GLOBAL_DATA.get("pool_states") or {}
+    topology = GLOBAL_DATA.get("topology") or {}
+
+    pool_degraded = any(str(state or '').upper() != 'ONLINE' for state in pool_states.values())
+    disk_fault_or_errors = False
+    high_temperature = False
+
+    for enclosure in topology.values():
+        for disk in enclosure.get("disks", []):
+            if disk.get("status") != "PRESENT":
+                continue
+
+            disk_state = str(disk.get("state") or '').upper()
+            if disk_state in ('FAULTED', 'OFFLINE', 'UNAVAIL', 'REMOVED'):
+                disk_fault_or_errors = True
+
+            read_errors = _to_int_or_zero(disk.get("read_errors"))
+            write_errors = _to_int_or_zero(disk.get("write_errors"))
+            cksum_errors = _to_int_or_zero(disk.get("cksum_errors"))
+            if (read_errors + write_errors + cksum_errors) > 0:
+                disk_fault_or_errors = True
+
+            temperature_c = _to_float_or_none(disk.get("temperature_c"))
+            if temperature_c is not None and temperature_c > 40.0:
+                high_temperature = True
+
+            if disk_fault_or_errors and high_temperature:
+                break
+        if disk_fault_or_errors and high_temperature:
+            break
+
+    names = []
+    if pool_degraded:
+        names.append('Pool Health Alert')
+    if disk_fault_or_errors:
+        names.append('Disk Fault/Error Alert')
+    if high_temperature:
+        names.append('High Temperature Alert')
+
+    return {
+        "poolDegraded": pool_degraded,
+        "diskFaultOrErrors": disk_fault_or_errors,
+        "highTemperature": high_temperature,
+        "activeCount": len(names),
+        "activeNames": names
+    }
+
+
+def _host_beep_once():
+    try:
+        if shutil.which('beep'):
+            subprocess.Popen(['beep', '-f', '1400', '-l', '120'])
+            return True
+        # Console bell fallback for environments without the beep utility.
+        print('\a', end='', flush=True)
+        return True
+    except Exception:
+        return False
+
+
+def alert_monitor_thread():
+    beep_interval_secs = 2.0
+    poll_interval_secs = 1.0
+    last_beep_at = 0.0
+
+    while True:
+        try:
+            alerts = _compute_alerts_from_global_state()
+            GLOBAL_DATA["alerts"] = alerts
+
+            if alerts.get("activeCount", 0) > 0:
+                now = time.time()
+                if (now - last_beep_at) >= beep_interval_secs:
+                    _host_beep_once()
+                    last_beep_at = now
+        except Exception as e:
+            print(f"Alert monitor error: {e}")
+
+        time.sleep(poll_interval_secs)
 
 def io_monitor_thread():
     last_io, cooldowns = {}, {}
@@ -383,7 +486,11 @@ def topology_scanner_thread():
                         z = lookup_zfs_disk_entry(zfs_map, dev_name)
                         new_topology[pci_key]["disks"][bay_num] = {
                             "status": "PRESENT", "sn": sn, "size_bytes": size, "dev_name": dev_name,
-                            "pool_name": z["pool"], "pool_idx": z["idx"], "state": z["state"], "temperature_c": z.get("temperature_c")
+                            "pool_name": z["pool"], "pool_idx": z["idx"], "state": z["state"],
+                            "temperature_c": z.get("temperature_c"),
+                            "read_errors": z.get("read_errors", 0),
+                            "write_errors": z.get("write_errors", 0),
+                            "cksum_errors": z.get("cksum_errors", 0)
                         }
 
             for pci_key, data in new_topology.items():
@@ -554,7 +661,14 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
                 "topology": {}, 
                 "config": GLOBAL_DATA.get("config", {}),
                 "pool_states": GLOBAL_DATA.get("pool_states", {}),
-                "api_status": GLOBAL_DATA.get("api_status", {"available": True, "error_message": ""})
+                "api_status": GLOBAL_DATA.get("api_status", {"available": True, "error_message": ""}),
+                "alerts": GLOBAL_DATA.get("alerts", {
+                    "poolDegraded": False,
+                    "diskFaultOrErrors": False,
+                    "highTemperature": False,
+                    "activeCount": 0,
+                    "activeNames": []
+                })
             }
             for pci, data in GLOBAL_DATA["topology"].items():
                 resp["topology"][pci] = {

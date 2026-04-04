@@ -1,5 +1,19 @@
 # Storage Dashboard - Change Log
 
+## Version 26.0:
+* **Named Dashboard Alert Triggers (No Severity Levels)**
+    * Added three binary alert triggers for attention-only monitoring: `Pool Health Alert`, `Disk Fault/Error Alert`, and `High Temperature Alert`.
+    * Pool alert now activates whenever any pool state is not `ONLINE`.
+    * Disk alert now activates on fault/offline-style disk states or non-zero ZFS read/write/checksum error counters.
+    * Temperature alert now activates whenever any detected drive temperature exceeds `40C`.
+* **2-Second Repeating Alarm Beep (Host + Dashboard)**
+    * Added backend alert monitor loop that evaluates active alerts and triggers a host-side beep every 2 seconds while any alert is active.
+    * Added frontend dashboard beep loop using browser audio at the same 2-second cadence while alerts remain active.
+    * Included terminal bell fallback when host `beep` utility is unavailable.
+* **Alert State Surfaced in `/data` and On-Screen Banner**
+    * Added alert payload to `/data` response with active trigger names and count.
+    * Added dashboard alert strip showing active alert names to provide immediate visual attention alongside audible alarms.
+
 ## Version 25.3:
 * **Repository Sync Menu UI Refinement**
     * Simplified the Repository Sync toggle layout by removing the redundant "Enable GitHub sync" label and consolidating the checkbox with descriptive text.
