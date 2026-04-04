@@ -1,6 +1,6 @@
 # File Overview
 
-This page describes the current front-end and back-end file responsibilities as of **v25.0**.
+This page describes the current front-end and back-end file responsibilities as of **v27.3**.
 
 > For a detailed per-file code map with inter-file connection diagrams see [How_it_works.md](../How_it_works.md).
 
@@ -42,7 +42,7 @@ This page describes the current front-end and back-end file responsibilities as 
 ## Front-end runtime
 
 - `index.html`
-  - Static shell that loads CSS files and scripts. `MenuSystem.js` is loaded as `type="module"`. Script order: `livereload.js`, `ActivityMonitor.js`, `DecorationTexture.js`, `geometry.js`, `DiskInfo.js`, `MenuSystem.js` (module), `app.js`.
+  - Static shell that loads CSS files and scripts. `MenuSystem.js` is loaded as `type="module"`. Current script order: `livereload.js`, `ActivityMonitor.js`, `DecorationTexture.js`, `MenuSystem.js` (module), `app.js`.
 
 - `app.js`
   - Main orchestrator and polling loop. Imports from `js/data.js`, `js/renderer.js`, and `js/styleVars.js`. Calls `fetchDataWithRetry`, applies UI CSS variables, delegates chassis+bay rendering, and manages Activity Monitor lifecycle events.

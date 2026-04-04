@@ -66,7 +66,7 @@ After manual edits:
     "0000:00:10.0": {
       "bay": {
         "layout": "horizontal",
-        "fill_order": "row_major_ltr",
+        "fill_order": "left_to_right",
         "height": "44"
       }
     }
@@ -87,7 +87,7 @@ After manual edits:
       },
       "bay": {
         "grill_shape": "hexagonal",
-        "grill_size": 62
+        "grill_size_scale": 62
       }
     }
   }

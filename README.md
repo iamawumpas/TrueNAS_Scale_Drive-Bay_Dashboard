@@ -1,5 +1,5 @@
 # TrueNAS Scale Drive-Bay Dashboard
-**version v25.0**
+**version v27.3**
 
 
 ## Documentation / Wiki
@@ -76,15 +76,14 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
 
 ---
 
-## What's New in v21.0?
+## What's New in v27.x?
 
-* **🔌 Native TrueNAS Scale API Integration:** Direct access to ZFS metadata via `midclt` for faster, more accurate disk state detection
-* **🚨 Intelligent Error Detection:** Automatically detects and displays READ, WRITE, and CHECKSUM errors on all disks
-* **⚠️ API Change Monitoring:** Red warning banner and menu bar alert if TrueNAS API changes or becomes unavailable
-* **📊 Pool State Visualization:** FAULTED pools show red box, DEGRADED pools show orange overlay on activity charts
-* **💡 Blinking LED Animations:** Unallocated disks with errors or faults now properly blink purple/orange or purple/red
-* **🔄 Automatic Fallback:** Seamlessly falls back to `zpool status` parsing if API is unavailable
-* **🎯 Complete State Coverage:** Detects ONLINE, DEGRADED, FAULTED, UNAVAIL, REMOVED, OFFLINE, RESILVERING states
+* **Services Monitoring:** Added a dedicated `Services` menu (left of `Legend`) that tracks auto-start services via TrueNAS API and highlights stopped services.
+* **Unified Alerts and Mute:** Added menu-driven alert mute (`MUTE` for 5 minutes) covering both host and dashboard beep loops.
+* **Repository Sync Workflow:** Added in-menu check/update/restore actions for tracked files with version checks against GitHub releases.
+* **Kiosk-Safe Confirmation Modals:** Replaced browser-native confirmation popups with in-dashboard modal confirmations.
+* **Drive Bay Controls Restored:** Reinstated per-enclosure Drive Bay typography controls (`Serial`, `Size`, `Drive Temp`, `Pool Name`, `ID`) including font/color/style controls.
+* **Menu UX Refinements:** Improved cross-menu close behavior and legend overlay behavior for cleaner interaction.
 
 ---
 
@@ -94,6 +93,8 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
 * **Per-Device Overrides:** Device-specific settings stored in `config.json` under each PCI address.
 * **Flexible Layout:** Configure rows and bays-per-row, with empty bay placeholders when the grid exceeds detected drives.
 * **Activity Monitor:** Optional per-pool read/write charts with smooth updates and compact card layout.
+* **Services Status Panel:** Auto-refreshing services table for auto-start services with stopped-service visual alerting.
+* **Repository Sync Tools:** Menu controls for update checks, update install, and missing-file restoration.
 * **Resilient Config:** Auto-generates `config.json` if missing and falls back to hardened defaults if malformed.
 
 ---
@@ -129,7 +130,7 @@ This dashboard **only works with ZFS**. It does NOT support ext4, btrfs, LVM, or
 5.  **Set Permissions:**
     ```bash
     chmod +x /mnt/[Pool_Name]/scripts/dashboard/service.py
-    chmod +X /mnt[Pool_Name]/scripts/dashboard/start_up.sh
+    chmod +x /mnt/[Pool_Name]/scripts/dashboard/start_up.sh
     ```
 6.  **Run the Service Manually (for testing):**
     ```bash
@@ -308,7 +309,7 @@ The dashboard is controlled by a central `config.json` file. This file dictates 
 - **Live Updates**: You do not need to restart the service to change settings. When you save changes to `config.json`, the dashboard detects the file-change timestamp and updates the UI for all connected users within 5 seconds.
 - **Resilience**: The service is designed to be "always-up." If the config file is accidentally deleted or becomes corrupted (e.g., a typo in the JSON syntax), the service will immediately switch to internal "Hardened Defaults" to ensure you don't lose sight of your storage health.
 
-> For information on what can be configured, read [CONFIG_GUIDE.md](https://github.com/iamawumpas/TrueNAS-Scale-Drive-Bay-Assignment/blob/main/CONFIG_GUIDE.md)
+> For information on what can be configured, read [CONFIG_GUIDE.md](CONFIG_GUIDE.md)
 ---
 
 ## Future Plans

@@ -1,5 +1,15 @@
 # Storage Dashboard - Change Log
 
+## Version 27.4:
+* **Documentation and Version Synchronization**
+    * Updated `README.md` to reflect current v27.x capabilities, including Services monitoring, Repository Sync, kiosk-safe modal confirmations, and restored Drive Bay controls.
+    * Updated stale version markers and outdated references across documentation and wiki files.
+* **Configuration Example Refresh**
+    * Updated customization examples to use current normalized values (`fill_order: left_to_right`) and active bay grill setting key (`grill_size_scale`).
+    * Corrected config reference guidance to align with current default generation source (`py/config.py`).
+* **UI Metadata Alignment**
+    * Updated dashboard HTML page title to current release naming (`Storage Dashboard v27.4`).
+
 ## Version 27.3:
 * **Drive Bay Menu Controls Restored**
     * Reinstalled missing per-enclosure Drive Bay control groups that were no longer visible in the Disk Arrays menu.

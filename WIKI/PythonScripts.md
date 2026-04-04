@@ -1,6 +1,6 @@
 # Python scripts overview
 
-As of **v25.0** the backend is split into a `py/` package. `service.py` is the only startup entry point.
+As of **v27.3** the backend is split into a `py/` package. `service.py` is the only startup entry point.
 
 ---
 

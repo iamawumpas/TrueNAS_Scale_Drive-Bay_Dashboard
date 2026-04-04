@@ -1,6 +1,6 @@
-# Developer Notes - TrueNAS Scale Drive Bay Assignment
+# Developer Notes - TrueNAS Scale Drive-Bay Dashboard
 
-## Core Architecture (v25.0)
+## Core Architecture (v27.3)
 
 The system is split into two independent layers that communicate over HTTP JSON.
 
