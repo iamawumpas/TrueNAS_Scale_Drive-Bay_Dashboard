@@ -320,11 +320,52 @@ export function buildDiskArraysPanel(topology, hostname) {
                     </div>
                     <div class="panel-section">
                         <div class="panel-section-title">Drive Bay</div>
-                        ${buildBayOrientationRow('Bay Orientation', ['devices', key, 'bay', 'layout'])}
-                        ${buildBayOrderRow('Bay Order', ['devices', key, 'bay', 'fill_order'])}
-                        ${buildColorRow('Door Colour', ['devices', key, 'bay', 'door_color'])}
-                        ${buildGrillShapeRow('Shape', ['devices', key, 'bay', 'grill_shape'])}
-                        ${buildSliderRow('Grill Size', ['devices', key, 'bay', 'grill_size_scale'])}
+                        <div class="panel-subsection">
+                            <div class="panel-subsection-title">Chassis Configuration</div>
+                            ${buildBayOrientationRow('Bay Orientation', ['devices', key, 'bay', 'layout'])}
+                            ${buildBayOrderRow('Bay Order', ['devices', key, 'bay', 'fill_order'])}
+                            ${buildColorRow('Door Colour', ['devices', key, 'bay', 'door_color'])}
+                        </div>
+                        <div class="panel-subsection">
+                            <div class="panel-subsection-title">Grill</div>
+                            ${buildGrillShapeRow('Shape', ['devices', key, 'bay', 'grill_shape'])}
+                            ${buildSliderRow('Grill Size', ['devices', key, 'bay', 'grill_size_scale'])}
+                        </div>
+                        <div class="panel-subsection">
+                            <div class="panel-subsection-title">Serial</div>
+                            ${buildFontRow('Font Name', ['devices', key, 'bay', 'disk_serial', 'font'])}
+                            ${buildPxSliderRow('Font Size', ['devices', key, 'bay', 'disk_serial', 'size'])}
+                            ${buildStyleCheckboxRow('Font Style', ['devices', key, 'bay', 'disk_serial', 'style'])}
+                            ${buildColorRow('Colour', ['devices', key, 'bay', 'disk_serial', 'color'])}
+                        </div>
+                        <div class="panel-subsection">
+                            <div class="panel-subsection-title">Size</div>
+                            ${buildFontRow('Font Name', ['devices', key, 'bay', 'disk_size', 'font'])}
+                            ${buildPxSliderRow('Font Size', ['devices', key, 'bay', 'disk_size', 'size'])}
+                            ${buildStyleCheckboxRow('Font Style', ['devices', key, 'bay', 'disk_size', 'style'])}
+                            ${buildColorRow('Colour', ['devices', key, 'bay', 'disk_size', 'color'])}
+                        </div>
+                        <div class="panel-subsection">
+                            <div class="panel-subsection-title">Drive Temp</div>
+                            ${buildFontRow('Font Name', ['devices', key, 'bay', 'drive_temperature', 'font'])}
+                            ${buildPxSliderRow('Font Size', ['devices', key, 'bay', 'drive_temperature', 'size'])}
+                            ${buildStyleCheckboxRow('Font Style', ['devices', key, 'bay', 'drive_temperature', 'style'])}
+                            ${buildColorRow('Colour', ['devices', key, 'bay', 'drive_temperature', 'color'])}
+                        </div>
+                        <div class="panel-subsection">
+                            <div class="panel-subsection-title">Pool Name</div>
+                            ${buildFontRow('Font Name', ['devices', key, 'bay', 'disk_pool', 'font'])}
+                            ${buildPxSliderRow('Font Size', ['devices', key, 'bay', 'disk_pool', 'size'])}
+                            ${buildStyleCheckboxRow('Font Style', ['devices', key, 'bay', 'disk_pool', 'style'])}
+                            ${buildColorRow('Colour', ['devices', key, 'bay', 'disk_pool', 'color'])}
+                        </div>
+                        <div class="panel-subsection panel-subsection-last">
+                            <div class="panel-subsection-title">ID</div>
+                            ${buildFontRow('Font Name', ['devices', key, 'bay', 'disk_index', 'font'])}
+                            ${buildPxSliderRow('Font Size', ['devices', key, 'bay', 'disk_index', 'size'])}
+                            ${buildStyleCheckboxRow('Font Style', ['devices', key, 'bay', 'disk_index', 'style'])}
+                            ${buildColorRow('Colour', ['devices', key, 'bay', 'disk_index', 'color'])}
+                        </div>
                     </div>
                 </div>
             </div>`;

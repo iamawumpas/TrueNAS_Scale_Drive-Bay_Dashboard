@@ -1,5 +1,13 @@
 # Storage Dashboard - Change Log
 
+## Version 27.3:
+* **Drive Bay Menu Controls Restored**
+    * Reinstalled missing per-enclosure Drive Bay control groups that were no longer visible in the Disk Arrays menu.
+    * Restored `Chassis Configuration` and `Grill` subsections for each enclosure.
+* **Per-Bay Typography Controls Reinstated**
+    * Restored per-enclosure text controls for `Serial`, `Size`, `Drive Temp`, `Pool Name`, and `ID`.
+    * Restored per-field `Font Name`, `Font Size`, `Font Style`, and `Colour` controls mapped to `devices.<enclosure>.bay.*` paths.
+
 ## Version 27.2:
 * **Kiosk-Safe Modal Confirmations**
     * Replaced browser-native confirmation popups with dashboard modal confirmations for actions that require approval.
