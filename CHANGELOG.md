@@ -1,5 +1,14 @@
 # Storage Dashboard - Change Log
 
+## Version 28.2:
+* **Repository Update/Restart Reliability Fixes**
+    * Removed stale `DiskInfo.js` from repo-sync tracked download list to prevent update failures against current releases.
+    * Fixed `/repo-sync-repair` restored-file count handling and hardened startup trigger conditions.
+    * Moved post-update/post-repair restart launch to run after HTTP response write so successful installs are not interrupted by immediate process restart.
+    * Centralized startup launch path in backend for consistent restart behavior across update and manual restart endpoints.
+* **Chassis Rendering Recovery**
+    * Restored `style.css` dashboard layout/chassis blocks to a valid known-good baseline after a malformed CSS state caused broken chassis rendering.
+
 ## Version 28.1:
 * **Legend Menu Behavior Normalization**
     * Reworked the Legend menu to use the same dropdown interaction model as other menu items.

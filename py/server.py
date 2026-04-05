@@ -44,7 +44,7 @@ REPO_SYNC_ENABLED_OVERRIDE = None
 # Critical runtime and startup files that can be restored if accidentally deleted.
 REPO_SYNC_TRACKED_FILES = [
     'index.html', 'app.js', 'MenuSystem.js', 'ActivityMonitor.js', 'DecorationTexture.js',
-    'geometry.js', 'DiskInfo.js', 'livereload.js', 'style.css', 'Base.css', 'Menu.css', 'ActivityMonitor.css',
+    'geometry.js', 'livereload.js', 'style.css', 'Base.css', 'Menu.css', 'ActivityMonitor.css',
     'service.py', 'start_up.sh', 'zfs_logic.py',
     'js/utils.js', 'js/data.js', 'js/topology.js', 'js/styleVars.js', 'js/renderer.js',
     'js/configStore.js', 'js/stylePreview.js', 'js/menuBuilder.js',
@@ -206,6 +206,18 @@ def _download_and_install_tracked_files(ref):
             failed[rel] = str(ex)
 
     return installed, failed
+
+
+def _startup_script_path():
+    return os.path.join(BASE_DIR, 'start_up.sh')
+
+
+def _launch_startup_script():
+    startup_script = _startup_script_path()
+    if not os.path.exists(startup_script):
+        return False, 'start_up.sh not found'
+    subprocess.Popen(['bash', startup_script], start_new_session=True)
+    return True, None
 
 
 def _repo_sync_status_payload(config):
@@ -733,29 +745,35 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
                 payload.update({
                     "status": "success" if not failed else "partial",
                     "restored": restored,
-                    "failed": failed
+                    "failed": failed,
+                    "startup_initiated": False
                 })
 
-                # After successful restoration, run start_up.sh to apply changes
-                if restored > 0:
-                    try:
-                        startup_script = os.path.join(BASE_DIR, 'start_up.sh')
-                        if os.path.exists(startup_script):
-                            subprocess.Popen(['bash', startup_script])
-                            print(f"Startup script initiated after restoring {restored} file(s)")
-                            payload["startup_initiated"] = True
-                        else:
-                            print("Warning: start_up.sh not found for post-restore restart")
-                            payload["startup_initiated"] = False
-                    except Exception as startup_err:
-                        print(f"Error triggering startup after restore: {startup_err}")
-                        payload["startup_initiated"] = False
+                restored_count = len(restored)
+                should_restart = restored_count > 0 and not failed
+                startup_script_exists = os.path.exists(_startup_script_path())
+                if should_restart:
+                    payload["startup_initiated"] = startup_script_exists
+                    if not startup_script_exists:
+                        payload["failed"]["start_up.sh"] = "start_up.sh not found"
+                        payload["status"] = "partial"
 
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.send_header('Cache-Control', 'no-store')
                 self.end_headers()
                 self.wfile.write(json.dumps(payload).encode())
+
+                # Trigger restart after sending response so the request is not cut off.
+                if should_restart and startup_script_exists:
+                    try:
+                        launched, startup_err = _launch_startup_script()
+                        if launched:
+                            print(f"Startup script initiated after restoring {restored_count} file(s)")
+                        else:
+                            print(f"Warning: {startup_err} for post-restore restart")
+                    except Exception as startup_err:
+                        print(f"Error triggering startup after restore: {startup_err}")
             except Exception as e:
                 self.send_response(500)
                 self.send_header('Content-type', 'application/json')
@@ -800,25 +818,30 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
                     'startup_initiated': False
                 })
 
-                # Trigger restart only after complete successful download + verification.
-                if not failed and installed:
-                    try:
-                        startup_script = os.path.join(BASE_DIR, 'start_up.sh')
-                        if os.path.exists(startup_script):
-                            subprocess.Popen(['bash', startup_script])
-                            print(f"Startup script initiated after update install from {target_ref}")
-                            post_payload['startup_initiated'] = True
-                        else:
-                            print('Warning: start_up.sh not found for post-update restart')
-                    except Exception as startup_err:
+                should_restart = not failed and bool(installed)
+                startup_script_exists = os.path.exists(_startup_script_path())
+                if should_restart:
+                    post_payload['startup_initiated'] = startup_script_exists
+                    if not startup_script_exists:
                         post_payload['status'] = 'partial'
-                        post_payload['failed']['start_up.sh'] = str(startup_err)
+                        post_payload['failed']['start_up.sh'] = 'start_up.sh not found'
 
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.send_header('Cache-Control', 'no-store')
                 self.end_headers()
                 self.wfile.write(json.dumps(post_payload).encode())
+
+                # Trigger restart after response to avoid killing the current request mid-flight.
+                if should_restart and startup_script_exists:
+                    try:
+                        launched, startup_err = _launch_startup_script()
+                        if launched:
+                            print(f"Startup script initiated after update install from {target_ref}")
+                        else:
+                            print(f"Warning: {startup_err} for post-update restart")
+                    except Exception as startup_err:
+                        print(f"Error triggering startup after update install: {startup_err}")
             except Exception as ex:
                 self.send_response(500)
                 self.send_header('Content-type', 'application/json')
@@ -1030,12 +1053,11 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({'status': 'restart initiated', 'port': new_port}).encode())
             # Call start_up.sh to restart the service
             try:
-                startup_script = os.path.join(BASE_DIR, 'start_up.sh')
-                if os.path.exists(startup_script):
-                    subprocess.Popen(['bash', startup_script])
+                launched, startup_err = _launch_startup_script()
+                if launched:
                     print("Restart initiated via start_up.sh")
                 else:
-                    print("Warning: start_up.sh not found")
+                    print(f"Warning: {startup_err}")
             except Exception as e:
                 print(f"Error triggering restart: {e}")
             return
