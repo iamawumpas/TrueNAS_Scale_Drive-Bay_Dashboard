@@ -387,6 +387,11 @@ function scheduleResponsiveSliderRefresh() {
 function syncPanelValues(panel) {
     applyAdaptivePxSliderRanges(panel);
 
+    const parseNumericControlValue = (raw, fallback) => {
+        const parsed = Number.parseFloat(String(raw ?? '').trim());
+        return Number.isFinite(parsed) ? parsed : fallback;
+    };
+
     panel.querySelectorAll('[data-path]').forEach(el => {
         const path = el.dataset.path.split('|');
         const rawVal = getNestedValue(workingConfig, path);
@@ -414,8 +419,7 @@ function syncPanelValues(panel) {
             } else {
                 if (val !== undefined) {
                     if (isPx) {
-                        const parsed = Number(String(val).replace('px', '').replace('pt', ''));
-                        num = Number.isFinite(parsed) ? parsed : 10;
+                        num = parseNumericControlValue(val, 10);
                     } else {
                         const parsed = Number(val);
                         num = Number.isFinite(parsed) ? parsed : 50;
@@ -424,6 +428,15 @@ function syncPanelValues(panel) {
                     num = isPx ? 10 : 50;
                 }
                 displayText = isPx ? `${num}px` : String(num);
+            }
+
+            if (isPx) {
+                const min = Number(el.min);
+                const max = Number(el.max);
+                if (Number.isFinite(min) && Number.isFinite(max)) {
+                    num = Math.min(max, Math.max(min, num));
+                    displayText = `${Math.round(num)}px`;
+                }
             }
 
             el.value = num;

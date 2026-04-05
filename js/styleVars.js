@@ -320,8 +320,34 @@ export function applyDeviceVariables(config) {
 
     const buildRandomDecorationTexture = getDecorationTextureFn();
 
+    const normalizeDeviceLookupKey = (rawKey) => {
+        const value = String(rawKey || '').trim().toLowerCase();
+        const dashed = value.match(/^([0-9a-f]{4})-([0-9a-f]{2})-([0-9a-f]{2})-([0-9a-f])(?:-(.+))?$/i);
+        if (dashed) {
+            const suffix = dashed[5] ? `-${dashed[5]}` : '';
+            return `${dashed[1]}:${dashed[2]}:${dashed[3]}.${dashed[4]}${suffix}`;
+        }
+        return value;
+    };
+
+    const cards = Array.from(document.querySelectorAll('.chassis-card[data-key]'));
+    const cardByExactKey = new Map();
+    const cardByNormalizedKey = new Map();
+    cards.forEach((card) => {
+        const key = String(card.dataset.key || '');
+        if (!key) return;
+        cardByExactKey.set(key, card);
+        cardByNormalizedKey.set(normalizeDeviceLookupKey(key), card);
+    });
+
+    const resolveDeviceCard = (deviceKey) => {
+        const exact = cardByExactKey.get(String(deviceKey));
+        if (exact) return exact;
+        return cardByNormalizedKey.get(normalizeDeviceLookupKey(deviceKey)) || null;
+    };
+
     Object.entries(devices).forEach(([key, devCfg]) => {
-        const el = document.querySelector(`.chassis-card[data-key="${key}"]`);
+        const el = resolveDeviceCard(key);
         if (!el) return;
 
         const bayDev = devCfg?.bay || {};

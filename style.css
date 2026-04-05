@@ -333,7 +333,7 @@ body {
 }
 
 .bay-vertical .info-line .info-idx {
-    font-size: min(calc(var(--disk-index-size, 0.52rem) * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), var(--bay-text-cap-small-px, 10px));
+    font-size: min(calc(var(--disk-index-size, 0.52rem) * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), var(--bay-text-cap-px, 12px));
 }
 
 .bay-vertical .info-line .info-temp {
@@ -371,7 +371,7 @@ body {
 .info-line .info-idx {
     color: var(--disk-index-color, #6ad9ff);
     font-family: var(--disk-index-font, var(--font-default));
-    font-size: min(calc(var(--disk-index-size, 0.56rem) * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), var(--bay-text-cap-small-px, 10px));
+    font-size: min(calc(var(--disk-index-size, 0.56rem) * var(--bay-scale, 1) * var(--dashboard-scene-scale, 1)), var(--bay-text-cap-px, 12px));
     font-weight: var(--disk-index-weight, 700);
     font-style: var(--disk-index-style, normal);
     text-transform: var(--disk-index-transform, none);

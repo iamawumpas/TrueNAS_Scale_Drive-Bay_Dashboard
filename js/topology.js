@@ -49,7 +49,7 @@ export function statusClassForDisk(disk) {
 
 export function formatDiskInfo(disk, unit = 'C') {
     if (!disk || disk.status === 'EMPTY') {
-        return { serial: '-', size: '-', pool: '\u00A0', index: '\u00A0', temperature: '\u00A0' };
+        return { serial: '', size: '', pool: '', index: '', temperature: '' };
     }
     const serialRaw = String(disk.sn || disk.serial || disk.serial_short || disk.dev_name || 'present');
     const serial = serialRaw.length > 3 ? serialRaw.slice(-3) : serialRaw;
@@ -61,7 +61,7 @@ export function formatDiskInfo(disk, unit = 'C') {
     const rawTemp = disk.temperature_c;
     const hasTemp = rawTemp !== null && rawTemp !== undefined && String(rawTemp).trim() !== '';
     const tempC = hasTemp ? Number(rawTemp) : NaN;
-    let temperature = '\u00A0';
+    let temperature = '';
     if (Number.isFinite(tempC)) {
         temperature = String(unit).toUpperCase() === 'F'
             ? `${Math.round((tempC * 9) / 5 + 32)}\u00B0F`
@@ -70,8 +70,8 @@ export function formatDiskInfo(disk, unit = 'C') {
     return {
         serial,
         size,
-        pool: poolName || '\u00A0',
-        index: normalizedIndex ? `#${normalizedIndex}` : '\u00A0',
+        pool: poolName || '',
+        index: normalizedIndex ? `#${normalizedIndex}` : '',
         temperature
     };
 }

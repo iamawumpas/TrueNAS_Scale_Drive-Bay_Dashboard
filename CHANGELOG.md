@@ -1,5 +1,20 @@
 # Storage Dashboard - Change Log
 
+## Version 28.9:
+* **Per-Device Live Preview Reliability**
+    * Hardened per-device chassis card resolution for preview updates so style checkbox changes apply live on both left/right enclosures.
+    * Added normalized key lookup handling for device/card key format differences.
+* **Font Slider Consistency Normalization**
+    * Standardized pixel slider value parsing and min/max clamping in menu panel sync logic.
+    * Ensures all font-size sliders (including Disk ID) update with consistent behavior from saved config values.
+* **Disk ID Font Scale Alignment**
+    * Updated Disk ID font-size cap behavior to align with the same text cap path used by other bay text fields.
+* **Bay Text Placeholder Artifact Removal**
+    * Removed non-breaking-space placeholders for missing bay text fields and replaced them with empty strings.
+    * Prevents font-size-dependent visual artifacts when Serial/Size/Pool/Index/Temperature are absent.
+* **Release Metadata Synchronization**
+    * Updated `VERSION` and `README.md` markers to v28.9.
+
 ## Version 28.8:
 * **Vertical Bay Short-Side Width Calibration**
     * Added a vertical-layout short-side width compensation factor so vertical bays visually match horizontal short-side proportions more closely.
