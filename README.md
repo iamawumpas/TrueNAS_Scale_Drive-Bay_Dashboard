@@ -1,5 +1,5 @@
 # TrueNAS Scale Drive-Bay Dashboard
-**version v28.9**
+**version v28.10**
 
 
 ## Documentation / Wiki
@@ -97,13 +97,12 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
 
 ---
 
-## What's New in v28.9?
+## What's New in v28.10?
 
-* **Right-Chassis Font-Style Live Preview Fix:** Improved per-device preview card resolution so font-style checkbox changes apply live on both enclosures consistently.
-* **Font Slider Consistency Pass:** Normalized pixel-slider parsing/clamping so all font size sliders behave the same, including mixed-unit saved values.
-* **Disk ID Font Scaling Alignment:** Updated Disk ID font-size capping to match the same cap path used by other bay text fields.
-* **Empty-Field Artifact Removal:** Replaced `&nbsp;` placeholders with empty strings for missing bay info fields to prevent font-size-dependent artifact glyphs.
-* **Release Metadata Synchronization:** Updated VERSION and changelog metadata to v28.9.
+* **Smartctl-First Temperature Source:** Drive temperature assignment now uses smartctl as the primary source for physically connected HBA drives.
+* **ZFS Temperature Fallback:** ZFS topology temperature values are now only used when smartctl temperature is unavailable for a given device.
+* **Unallocated Drive Temperature Coverage:** Unallocated/purple drives now receive temperature values when smartctl can resolve their device path.
+* **Release Metadata Synchronization:** Updated VERSION and changelog metadata to v28.10.
 
 ---
 

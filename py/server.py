@@ -1,7 +1,7 @@
 import http.server, socketserver, json, time, subprocess, socket, os, re, threading, shutil
 import urllib.request, urllib.error
 from collections import deque
-from zfs_logic import get_zfs_topology, get_api_status
+from zfs_logic import get_zfs_topology, get_api_status, _fetch_disk_temperatures_via_api
 from .config import load_config, load_style_config, CONFIG_FILE, DEFAULT_CONFIG_JSON, BASE_DIR
 from .topology import get_controller_capacity, is_virtual_storage_controller, get_ircu_slot_topology, lookup_zfs_disk_entry, _find_ircu_adapter, normalize_pci_address, _parse_ircu_display, build_serial_to_dev_map
 
@@ -696,6 +696,7 @@ def topology_scanner_thread():
             
             # Get ZFS topology and pool states from API or fallback
             zfs_map, pool_states = get_zfs_topology(uuid_map)
+            temp_map = _fetch_disk_temperatures_via_api()
             GLOBAL_DATA["pool_states"] = pool_states  # Store pool states for frontend
             GLOBAL_DATA["api_status"] = get_api_status()  # Store API status
             GLOBAL_DATA["_last_zfs_map"] = zfs_map  # Retained for /ircu-debug diagnostic endpoint
@@ -739,7 +740,7 @@ def topology_scanner_thread():
                             # Try ircu path first ÔÇö gives authoritative per-slot data from the SCSI adapter.
                             # Returns a dict of per-enclosure chassis entries (one per backplane + one for
                             # direct-attach); each is stored as its own key in new_topology.
-                            ircu_topos = get_ircu_slot_topology(pci_raw, zfs_map, GLOBAL_DATA["config"])
+                            ircu_topos = get_ircu_slot_topology(pci_raw, zfs_map, GLOBAL_DATA["config"], temp_map=temp_map)
                             if ircu_topos:
                                 for sub_key, topo in ircu_topos.items():
                                     new_topology[sub_key] = topo
@@ -777,7 +778,7 @@ def topology_scanner_thread():
                             sn, size = (out[0], int(out[1])) if len(out) >= 2 else ("", 0)
                         except: sn, size = "", 0
                         
-                        z = lookup_zfs_disk_entry(zfs_map, dev_name)
+                        z = lookup_zfs_disk_entry(zfs_map, dev_name, temp_map=temp_map)
                         new_topology[pci_key]["disks"][bay_num] = {
                             "status": "PRESENT", "sn": sn, "size_bytes": size, "dev_name": dev_name,
                             "pool_name": z["pool"], "pool_idx": z["idx"], "state": z["state"],

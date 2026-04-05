@@ -1,4 +1,5 @@
 import json, os, re, shutil, subprocess
+from zfs_logic import _fetch_disk_temperatures_via_api, _lookup_temperature_for_disk
 
 DEFAULT_TARGETS_PER_PORT = 4
 
@@ -449,7 +450,7 @@ def build_serial_to_dev_map():
     return mapping
 
 
-def get_ircu_slot_topology(pci_address, zfs_map, config):
+def get_ircu_slot_topology(pci_address, zfs_map, config, temp_map=None):
     """
     Build one chassis topology entry per physical enclosure on this HBA using sas3ircu/sas2ircu:
 
@@ -484,6 +485,7 @@ def get_ircu_slot_topology(pci_address, zfs_map, config):
         return {}
 
     serial_to_dev  = build_serial_to_dev_map()
+    temp_map       = temp_map if isinstance(temp_map, dict) else _fetch_disk_temperatures_via_api()
     pci_key        = pci_address.replace(':', '-').replace('.', '-')
     device_config  = config.get("devices", {}).get(pci_address, {}) if isinstance(config, dict) else {}
     chassis_cfg    = device_config.get("chassis", {})
@@ -512,11 +514,21 @@ def get_ircu_slot_topology(pci_address, zfs_map, config):
 
         return {"pool": "", "idx": "", "state": "UNALLOCATED", "temperature_c": None}
 
+    def _lookup_smart_temp(dev_name):
+        if not dev_name:
+            return None
+        try:
+            disk_path = dev_name if str(dev_name).startswith('/dev/') else f'/dev/{dev_name}'
+            return _lookup_temperature_for_disk(disk_path, dev_name, temp_map)
+        except Exception:
+            return None
+
     def _make_disk(drive):
         """Enrich an ircu drive record with ZFS state from zfs_map."""
         serial    = drive["serial"]
         dev_name  = serial_to_dev.get(serial, "")
         z         = _lookup_zfs_disk(dev_name)
+        smart_temp = _lookup_smart_temp(dev_name)
         zfs_state = z.get("state", "UNALLOCATED")
         if zfs_state == "UNALLOCATED":
             if any(x in drive["raw_state"] for x in ("Failed", "Missing", "Critical", "Degraded")):
@@ -529,7 +541,7 @@ def get_ircu_slot_topology(pci_address, zfs_map, config):
             "pool_name":  z.get("pool", ""),
             "pool_idx":   z.get("idx", ""),
             "state":      zfs_state,
-            "temperature_c": z.get("temperature_c"),
+            "temperature_c": smart_temp if smart_temp is not None else z.get("temperature_c"),
             "model":      drive["model"]
         }
 
@@ -626,25 +638,45 @@ def get_ircu_slot_topology(pci_address, zfs_map, config):
     return result
 
 
-def lookup_zfs_disk_entry(zfs_map, dev_name):
+def lookup_zfs_disk_entry(zfs_map, dev_name, temp_map=None):
+    def _lookup_smart_temp(name):
+        if not name or not temp_map:
+            return None
+        try:
+            disk_path = name if str(name).startswith('/dev/') else f'/dev/{name}'
+            return _lookup_temperature_for_disk(disk_path, name, temp_map)
+        except Exception:
+            return None
+
+    def _with_temp_fallback(info, name):
+        out = dict(info or {})
+        out.setdefault("pool", "")
+        out.setdefault("idx", "")
+        out.setdefault("state", "UNALLOCATED")
+        out.setdefault("temperature_c", None)
+        smart_temp = _lookup_smart_temp(name)
+        if out.get("temperature_c") is None and smart_temp is not None:
+            out["temperature_c"] = smart_temp
+        return out
+
     if not isinstance(zfs_map, dict):
-        return {"pool": "", "idx": "", "state": "UNALLOCATED", "temperature_c": None}
+        return _with_temp_fallback({"pool": "", "idx": "", "state": "UNALLOCATED", "temperature_c": None}, dev_name)
 
     direct = zfs_map.get(dev_name)
     if direct:
-        return direct
+        return _with_temp_fallback(direct, dev_name)
 
     base_name = re.sub(r'p?\d+$', '', str(dev_name or ''))
     if base_name:
         base_match = zfs_map.get(base_name)
         if base_match:
-            return base_match
+            return _with_temp_fallback(base_match, base_name)
 
         for candidate, info in zfs_map.items():
             if candidate == base_name or str(candidate).startswith(base_name):
-                return info
+                return _with_temp_fallback(info, base_name)
 
-    return {"pool": "", "idx": "", "state": "UNALLOCATED", "temperature_c": None}
+    return _with_temp_fallback({"pool": "", "idx": "", "state": "UNALLOCATED", "temperature_c": None}, dev_name)
 
 
 def get_controller_capacity(pci_address, config=None):

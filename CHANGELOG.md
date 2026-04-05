@@ -1,5 +1,17 @@
 # Storage Dashboard - Change Log
 
+## Version 28.10:
+* **Smartctl-First Drive Temperatures**
+    * Updated topology assembly to source drive temperatures from smartctl first for physically connected HBA drives.
+    * Applied smartctl temperature lookup in both ircu-enriched topology and by-path fallback enrichment paths.
+* **ZFS Temperature Fallback Path**
+    * Retained ZFS-derived temperature values as fallback-only when smartctl has no temperature for a matched device.
+    * Preserves pool/state mapping behavior while improving temperature coverage for unallocated disks.
+* **Unallocated Drive Temperature Coverage**
+    * Unallocated (purple) drives can now display temperature when smartctl data is available via device-path/base-device lookup.
+* **Release Metadata Synchronization**
+    * Updated `VERSION` and `README.md` markers to v28.10.
+
 ## Version 28.9:
 * **Per-Device Live Preview Reliability**
     * Hardened per-device chassis card resolution for preview updates so style checkbox changes apply live on both left/right enclosures.
