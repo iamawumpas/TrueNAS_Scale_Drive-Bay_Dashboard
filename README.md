@@ -1,5 +1,5 @@
 # TrueNAS Scale Drive-Bay Dashboard
-**version v28.7**
+**version v28.8**
 
 
 ## Documentation / Wiki
@@ -97,11 +97,12 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
 
 ---
 
-## What's New in v28.7?
+## What's New in v28.8?
 
-* **Section/Subsection Font Size Link:** Subsection headings now always follow Section Name font size across menu and submenu panels.
-* **Menu Typography Consistency:** Removed independent subsection size mapping so all subsection headers stay in sync with section title size.
-* **Release Metadata Synchronization:** Updated VERSION and changelog metadata to v28.7.
+* **Vertical Bay Width Matching:** Added short-side width compensation for vertical bays so their physical short-side appearance better matches horizontal bays.
+* **Vertical Info-Panel Fit Tuning:** Tuned vertical info-panel span and center offset behavior for improved LED/info spacing and readability.
+* **Configuration Sync Updates:** Included current config updates captured during styling/runtime tuning in this release.
+* **Release Metadata Synchronization:** Updated VERSION and changelog metadata to v28.8.
 
 ---
 

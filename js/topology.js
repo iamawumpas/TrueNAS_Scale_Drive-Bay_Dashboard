@@ -137,6 +137,7 @@ export function resolveGrid(chassisData, bayConfig) {
 }
 
 export function buildEnclosureModel(topologyKey, chassisData, data, layoutContext = {}) {
+    const VERTICAL_SHORT_SIDE_ASPECT_COMP = 1.14;
     const settings = chassisData?.settings || {};
     const pciRaw = settings.pci_raw || topologyKey;
     const key = normalizeTopologyKey(topologyKey, pciRaw);
@@ -189,14 +190,26 @@ export function buildEnclosureModel(topologyKey, chassisData, data, layoutContex
     let bayWidthPx  = grid.layout === 'horizontal' ? bayLongSidePx  : bayShortSidePx;
     let bayHeightPx = grid.layout === 'horizontal' ? bayShortSidePx : bayLongSidePx;
 
+    if (grid.layout === 'vertical') {
+        // Compensate short-side appearance in vertical orientation without altering long-side length.
+        bayWidthPx = Math.max(20, bayWidthPx * VERTICAL_SHORT_SIDE_ASPECT_COMP);
+    }
+
     const gridWidthPx  = (grid.cols * bayWidthPx)  + ((grid.cols - 1) * bayGap);
     const gridHeightPx = (grid.rows * bayHeightPx) + ((grid.rows - 1) * bayGap);
     const widthFitScale  = bodyWidthPx  / Math.max(1, gridWidthPx);
     const heightFitScale = innerHeightPx / Math.max(1, gridHeightPx);
-    const finalFitScale  = Math.max(0.1, Math.min(1, widthFitScale, heightFitScale));
-    if (finalFitScale < 1) {
-        bayWidthPx  = Math.max(20, bayWidthPx  * finalFitScale);
-        bayHeightPx = Math.max(24, bayHeightPx * finalFitScale);
+    if (grid.layout === 'horizontal') {
+        const finalFitScale = Math.max(0.1, Math.min(1, widthFitScale, heightFitScale));
+        if (finalFitScale < 1) {
+            bayWidthPx  = Math.max(20, bayWidthPx  * finalFitScale);
+            bayHeightPx = Math.max(24, bayHeightPx * finalFitScale);
+        }
+    } else {
+        // For vertical bays, only width should be fit so long-side height remains unchanged.
+        if (widthFitScale < 1) {
+            bayWidthPx = Math.max(20, bayWidthPx * Math.max(0.1, widthFitScale));
+        }
     }
 
     const contentReference = grid.layout === 'horizontal' ? { width: 100, height: 26 } : { width: 40, height: 100 };

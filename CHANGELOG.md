@@ -1,5 +1,17 @@
 # Storage Dashboard - Change Log
 
+## Version 28.8:
+* **Vertical Bay Short-Side Width Calibration**
+    * Added a vertical-layout short-side width compensation factor so vertical bays visually match horizontal short-side proportions more closely.
+    * Updated vertical fit behavior to width-fit only, preserving vertical long-side bay length.
+* **Vertical Info-Panel Positioning and Span Tuning**
+    * Adjusted vertical info-panel center offset and panel span constraints to improve spacing between LEDs, info text, and latch area.
+    * Expanded vertical info-panel short-side span for better readability within the widened vertical bay footprint.
+* **Configuration Synchronization**
+    * Included current `config.json` style/runtime updates captured from live tuning.
+* **Release Metadata Synchronization**
+    * Updated `VERSION` and `README.md` markers to v28.8.
+
 ## Version 28.7:
 * **Section/Subsection Typography Linkage**
     * Linked subsection title font sizing to the Section Name font size variable across all menu and submenu panels.
