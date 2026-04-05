@@ -1,6 +1,6 @@
 # Python scripts overview
 
-As of **v27.3** the backend is split into a `py/` package. `service.py` is the only startup entry point.
+As of **v28.10** the backend is split into a `py/` package. `service.py` is the only startup entry point.
 
 ---
 
@@ -21,7 +21,7 @@ service.py
 Contains the full HTTP request handler class and three runtime threads:
 
 - **`io_monitor_thread`** — Reads `/proc/diskstats` at 100 ms intervals. Compares sector counts frame-to-frame to set a boolean activity flag per device. Feeds the blue Activity LED on the front-end.
-- **`topology_scanner_thread`** — Periodically calls hardware discovery from `py/topology.py` and ZFS mapping from `zfs_logic.py`. Writes results into `GLOBAL_DATA["topology"]`.
+- **`topology_scanner_thread`** — Periodically calls hardware discovery from `py/topology.py`, ZFS mapping from `zfs_logic.py`, and smartctl temperature collection. Writes results into `GLOBAL_DATA["topology"]`.
 - **`pool_activity_monitor_thread`** — Samples per-pool I/O counters and appends readings to the rolling `pool_activity_history` deques consumed by the Activity Monitor charts.
 
 **Endpoints served:**
@@ -50,6 +50,7 @@ All physical controller and bay detection logic:
 - **`is_virtual_storage_controller`** — Filters out virtual/emulated controllers so they are not presented as drive chassis.
 - **`get_ircu_slot_topology`** — Maps adapter slot numbers to logical drives using sas2ircu/sas3ircu `DISPLAY` output.
 - **`build_serial_to_dev_map`** — Builds a serial-number-to-block-device map from `/dev/disk/by-id`.
+- **Temperature assignment behavior** — for physically connected drives, temperature is assigned from smartctl first; ZFS temperature is used only as fallback when smartctl has no value.
 
 ---
 
@@ -70,6 +71,7 @@ Not part of the `py/` package (retained at the repo root for compatibility).
   - **Primary:** `midclt call pool.query` for full TrueNAS API pool and disk data.
   - **Fallback:** Parses `zpool status -v -p` output when API is unavailable.
   - Returns `(zfs_map, pool_states)` covering all ZFS disk states and per-disk READ/WRITE/CHECKSUM error counts.
+- **`_fetch_disk_temperatures_via_api()`** — Collects smartctl temperatures and returns a device-keyed temperature map used by `py/topology.py` for smartctl-first temperature assignment.
 - **`get_api_status()`** — Reports API availability; used to trigger the front-end warning banner.
 
 ---

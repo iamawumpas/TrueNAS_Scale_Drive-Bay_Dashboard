@@ -15,7 +15,7 @@ This page collects pointers for manual edits and references to the canonical gui
 3. To force a restart after changing the listening port or other network settings, the front-end triggers `GET /trigger-restart`. The server will run `start_up.sh` to perform the restart — you can also run `start_up.sh` manually.
 
 4. If you break `config.json`:
-   - Delete the file and restart `service.py`; it will generate a default config from the hardcoded defaults in `service.py`.
+   - Delete the file and restart `service.py`; it will generate a default config from the hardcoded defaults in `py/config.py`.
    - Check `service.py` console output for JSON parse errors to find the offending line.
 
 5. Where to look for up-to-date guidance:

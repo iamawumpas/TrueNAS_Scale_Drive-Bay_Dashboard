@@ -219,7 +219,7 @@ Hardware discovery logic: PCI controller scanning, SAS phy and enclosure slot de
 Config file loading, default config generation, and style config serving. Owns `DEFAULT_CONFIG_JSON` and `DEFAULT_CONFIG` dictionaries.
 
 #### `zfs_logic.py`
-ZFS layer — uses TrueNAS `midclt` API as primary source and falls back to `zpool status` parsing. Returns pool states and per-disk ZFS state/error info.
+ZFS and temperature support layer — uses TrueNAS `midclt` API as primary source and falls back to `zpool status` parsing for pool/disk state. Also provides smartctl temperature collection used by topology enrichment.
 
 ---
 
@@ -305,6 +305,7 @@ Dev-only helper: polls `/livereload-status` and refreshes the browser when file 
 ## Logic
 The logic now builds the layout dynamically from what TrueNAS reports:
 * **Controller discovery:** Scans `/dev/disk/by-path` for PCI-based storage controllers and skips virtual/emulated controllers.
+* **Temperature source precedence:** Uses smartctl temperature as the primary source for physically connected drives, with ZFS temperature only as fallback when smartctl has no value.
 * **Capacity detection:**
   * If an enclosure/backplane is detected under `/sys/class/enclosure`, the slot count is used as the bay capacity.
   * If no backplane is found, it falls back to SAS phy counts or vendor tools (sas2ircu/sas3ircu/storcli) to estimate direct-attach capacity.
@@ -331,5 +332,5 @@ The dashboard is controlled by a central `config.json` file. This file dictates 
 ## Future Plans
 * **Responsive Chassis Width:** Allow dynamic chassis width adjustment to better fit different screen sizes and preferences.
 * **Visual Reordering:** Drag-and-drop bay rearrangement to customize logical order independent of physical HBA port mapping.
-* **Extended Metrics:** Detailed per-drive latency tracking, temperature monitoring via SMART data, and predictive health metrics.
+* **Extended Metrics:** Detailed per-drive latency tracking and predictive health metrics.
 * **Mobile Responsive Design:** Optimize dashboard layout for smaller screens and mobile devices.

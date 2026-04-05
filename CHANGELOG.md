@@ -11,6 +11,9 @@
     * Unallocated (purple) drives can now display temperature when smartctl data is available via device-path/base-device lookup.
 * **Release Metadata Synchronization**
     * Updated `VERSION` and `README.md` markers to v28.10.
+* **Documentation Synchronization**
+    * Updated `How_it_works.md` and wiki backend docs to document smartctl-first drive temperatures with ZFS fallback behavior.
+    * Corrected stale backend references to config default generation paths (`py/config.py`) and aligned version references in wiki pages.
 
 ## Version 28.9:
 * **Per-Device Live Preview Reliability**

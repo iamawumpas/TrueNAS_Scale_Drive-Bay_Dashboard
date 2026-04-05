@@ -1,6 +1,6 @@
 # File Overview
 
-This page describes the current front-end and back-end file responsibilities as of **v27.3**.
+This page describes the current front-end and back-end file responsibilities as of **v28.10**.
 
 > For a detailed per-file code map with inter-file connection diagrams see [How_it_works.md](../How_it_works.md).
 
@@ -21,12 +21,12 @@ This page describes the current front-end and back-end file responsibilities as 
 - `py/server.py`
   - HTTP request handler class (`FastHandler`) and three background threads:
     - `io_monitor_thread` — high-frequency `/proc/diskstats` sampler that sets the per-device activity flag.
-    - `topology_scanner_thread` — periodic hardware scan that updates `GLOBAL_DATA["topology"]`.
+    - `topology_scanner_thread` — periodic hardware scan that updates `GLOBAL_DATA["topology"]`, including smartctl-first drive temperatures with ZFS fallback.
     - `pool_activity_monitor_thread` — samples pool I/O counters and appends to the rolling history used by the activity charts.
   - Hosts all JSON endpoints: `GET /data`, `GET /pool-activity`, `GET /style-config`, `GET /livereload-status`, `GET /trigger-restart`, `GET /ircu-debug`, `POST /save-config`, `POST /reset-config`.
 
 - `py/topology.py`
-  - Hardware discovery: PCI controller scanning, enclosure slot detection via `/sys/class/enclosure`, SAS phy counting, sas2ircu/sas3ircu/storcli adapter query, `/dev/disk/by-path` parsing, and disk-to-bay-slot index resolution.
+  - Hardware discovery: PCI controller scanning, enclosure slot detection via `/sys/class/enclosure`, SAS phy counting, sas2ircu/sas3ircu/storcli adapter query, `/dev/disk/by-path` parsing, disk-to-bay-slot index resolution, and smartctl-first temperature assignment during disk enrichment.
 
 - `py/config.py`
   - Config persistence: reads and writes `config.json`, generates `DEFAULT_CONFIG` and `DEFAULT_CONFIG_JSON` defaults, and serves the style-config payload.
@@ -35,7 +35,7 @@ This page describes the current front-end and back-end file responsibilities as 
   - Empty package marker that allows `service.py` to import from `py.*` as a package.
 
 - `zfs_logic.py`
-  - ZFS mapping and state layer. Uses TrueNAS `midclt call pool.query` as the primary source and falls back to `zpool status -v -p` parsing. Returns `(zfs_map, pool_states)` covering all disk states (ONLINE, DEGRADED, FAULTED, UNAVAIL, REMOVED, OFFLINE, RESILVERING) and per-disk error counts (READ/WRITE/CHECKSUM).
+  - ZFS mapping and state layer plus smartctl temperature helper functions. Uses TrueNAS `midclt call pool.query` as the primary source and falls back to `zpool status -v -p` parsing. Returns `(zfs_map, pool_states)` covering all disk states (ONLINE, DEGRADED, FAULTED, UNAVAIL, REMOVED, OFFLINE, RESILVERING) and per-disk error counts (READ/WRITE/CHECKSUM).
 
 ---
 

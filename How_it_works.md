@@ -16,7 +16,7 @@ Browser
   ▼
 service.py ──► py/server.py ──► py/topology.py   (hardware scan)
                              ├─► py/config.py     (config load/save)
-                             └─► zfs_logic.py     (ZFS state/pool map)
+                             └─► zfs_logic.py     (ZFS state/pool map + smartctl temperature map)
 
 Browser renders via:
   index.html
@@ -109,7 +109,10 @@ Physical hardware discovery — nothing in here makes network or ZFS calls.
 
 **Disk identity:**
 - `build_serial_to_dev_map()` — reads `/dev/disk/by-id` symlinks to build a serial-number → block-device dict.
-- `lookup_zfs_disk_entry(dev_name, zfs_map)` — looks up a block device in the ZFS topology map, trying both base device and partition variants.
+- `lookup_zfs_disk_entry(zfs_map, dev_name, temp_map=None)` — looks up a block device in the ZFS topology map, trying both base device and partition variants, then applies smartctl temperature fallback when ZFS has no temperature.
+
+**Temperature precedence:**
+- `get_ircu_slot_topology(..., temp_map=None)` assigns `temperature_c` from smartctl first for physically connected disks and only falls back to ZFS temperature when smartctl has no value.
 
 **Connects to**: `py/server.py` (imports all the above); also uses `subprocess`, `os`, `re`, `shutil`.
 
@@ -134,7 +137,7 @@ GLOBAL_DATA = {
 | Thread | Interval | What it does |
 |---|---|---|
 | `io_monitor_thread` | 100 ms | Reads `/proc/diskstats`, diffs sector totals frame-to-frame, sets `io_activity[dev] = True` for 2 cycles after any delta is detected |
-| `topology_scanner_thread` | ~5 s | Calls PCI scanner, `get_controller_capacity`, `/dev/disk/by-path` parser, `build_serial_to_dev_map`, `get_zfs_topology`, assembles the full `topology` dict, writes into `GLOBAL_DATA` |
+| `topology_scanner_thread` | ~5 s | Calls PCI scanner, `get_controller_capacity`, `/dev/disk/by-path` parser, `build_serial_to_dev_map`, `get_zfs_topology`, and smartctl temperature sampling; assembles the full `topology` dict, writes into `GLOBAL_DATA` |
 | `pool_activity_monitor_thread` | 1 s | Reads `/proc/diskstats` for pool-member devices, appends per-pool read/write delta to rolling `deque` (max 60 entries = 1 min history) |
 
 **HTTP endpoints:**
@@ -158,16 +161,20 @@ GLOBAL_DATA = {
 ### `zfs_logic.py`
 ZFS state and pool membership layer.
 
+**`_fetch_disk_temperatures_via_api()`**
+- Collects smartctl temperatures from `/dev/disk/by-id/ata-*` and builds a resilient alias map (`/dev/sdX`, by-id names, and base-device forms) used during topology enrichment.
+- Errors are intentionally swallowed so temperature lookup never blocks core topology updates.
+
 **`get_zfs_topology(uuid_to_dev_map)`**
 1. **Primary path** — runs `midclt call pool.query` (TrueNAS only). Parses the JSON response to extract pool name, per-vdev disk state, and READ/WRITE/CHECKSUM error counts.
 2. **Fallback path** — runs `zpool status -v -p`, parses text output for pool name, disk GUIDs/paths, and state tokens.
 3. Returns `(zfs_map, pool_states)`:
-   - `zfs_map`: dict keyed by block device name → `{pool_name, pool_state, disk_state, errors}`.
+   - `zfs_map`: dict keyed by block device name → `{pool_name, pool_state, disk_state, errors, temperature_c}`.
    - `pool_states`: dict keyed by pool name → state string (ONLINE, DEGRADED, FAULTED, SUSPENDED).
 
 **`get_api_status()`** — Returns a dict indicating whether the TrueNAS `midclt` API is reachable. Used by `py/server.py` to include an API warning in the `/data` response when it falls back to `zpool`.
 
-**Connects to**: `py/server.py` (imported via `from zfs_logic import get_zfs_topology, get_api_status`).
+**Connects to**: `py/server.py` (imported via `from zfs_logic import get_zfs_topology, get_api_status, _fetch_disk_temperatures_via_api`).
 
 ---
 
