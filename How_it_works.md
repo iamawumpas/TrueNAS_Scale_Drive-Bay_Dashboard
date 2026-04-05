@@ -180,10 +180,8 @@ Static shell. No logic of its own.
 1. `livereload.js` — dev helper (first so it can catch errors in everything else).
 2. `ActivityMonitor.js` — defines `window.activityMonitor` which `app.js` references.
 3. `DecorationTexture.js` — defines `window.DashboardDecorationTexture` shared by renderer and preview.
-4. `geometry.js` — defines `window.GEOMETRY_DEFAULTS` and `window.CHASSIS_BAY_PRESETS`.
-5. `DiskInfo.js` — legacy helper (no-op at runtime, retained for compatibility).
-6. `MenuSystem.js` — loaded as `type="module"`. Imports `js/configStore.js`, `js/stylePreview.js`, `js/menuBuilder.js`.
-7. `app.js` — loaded after all globals are defined. Imports `js/data.js`, `js/renderer.js`, `js/styleVars.js`.
+4. `MenuSystem.js` — loaded as `type="module"`. Imports `js/configStore.js`, `js/stylePreview.js`, `js/menuBuilder.js`.
+5. `app.js` — loaded as `type="module"`. Imports `js/data.js` and `js/renderer.js`.
 
 **Connects to**: all JS files listed above.
 
@@ -201,11 +199,10 @@ app.js
            applyUiVariables, applyDeviceVariables                      ← js/styleVars.js
 ```
 
-**Poll loop (every 100 ms):**
+**Poll loop (default every 200 ms, runtime configurable):**
 1. `fetchDataWithRetry()` — fetch `/data` with timeout and retry.
-2. `applyUiVariables(config, hostname)` — inject CSS variables from `config.ui`.
-3. `renderDashboard(topology, config)` — build/update chassis and bay DOM.
-4. Dispatch `dashboardUpdate` custom event consumed by `ActivityMonitor.js`.
+2. `render(renderable)` — build/update chassis and bay DOM, then apply UI/per-device CSS variables.
+3. Dispatch `dashboard-data-updated` event consumed by `ActivityMonitor.js` and `MenuSystem.js`.
 5. On fetch failure: retain last-good render; show stale-data indicator after TTL expires.
 
 **Connects to**: `js/data.js`, `js/renderer.js`, `js/styleVars.js`, `ActivityMonitor.js` (via custom events and `window.activityMonitor`).
@@ -389,9 +386,6 @@ Standalone module. Sets `window.activityMonitor` on load.
 **Connects to**: `app.js` (via `dashboardUpdate` events and `window.activityMonitor`), `js/stylePreview.js` (calls `recreateCharts`), backend `/pool-activity` and `/data` endpoints.
 
 ---
-
-### `DiskInfo.js`
-Legacy module. Defined `DiskInfoFormatter` in earlier versions. Retained to avoid breaking any external references. Active disk formatting is now in `js/topology.js`.
 
 ### `livereload.js`
 Development helper only. Polls `GET /livereload-status` every 1.5 seconds and calls `location.reload()` if any watched file's `mtime` has changed since the last check. Has no effect in production (the endpoint remains available but is never called if this file is removed from the script list).

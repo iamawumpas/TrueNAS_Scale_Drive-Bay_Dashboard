@@ -1,5 +1,18 @@
 # Storage Dashboard - Change Log
 
+## Version 28.0:
+* **Rewrite Cleanup and Obsolete Code Removal**
+    * Removed obsolete legacy `DiskInfo.js` runtime helper and aligned documentation references to active disk formatting in `js/topology.js`.
+    * Removed the deactivated legacy Disk Arrays CSS block from `Menu.css` to keep one maintained style path.
+* **Hardcoded Style Reduction**
+    * Converted key hardcoded UI colors (alert strip, temperature severity text/shadows, modal shell, action buttons, and services status pills) to CSS-variable-backed theming.
+    * Extended `py/config.py` defaults and `js/styleVars.js` mapping to support new optional theme variables under `ui.alerts`, `ui.menu.actions`, `ui.menu.modal`, and `ui.menu.services`.
+* **Overlay and Runtime Consistency**
+    * Fixed legend overlay backdrop state handling and added Escape key close behavior for consistent overlay UX.
+    * Added optional runtime interval controls (`ui.runtime.data_fetch_interval_ms`, `ui.runtime.alert_beep_interval_ms`) and removed duplicated timing/color magic values in frontend JS.
+* **Metadata Synchronization**
+    * Updated `VERSION`, README release marker, and dashboard HTML title to v28.0.
+
 ## Version 27.4:
 * **Documentation and Version Synchronization**
     * Updated `README.md` to reflect current v27.x capabilities, including Services monitoring, Repository Sync, kiosk-safe modal confirmations, and restored Drive Bay controls.

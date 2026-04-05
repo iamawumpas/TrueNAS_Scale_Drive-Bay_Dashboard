@@ -91,9 +91,6 @@ This page describes the current front-end and back-end file responsibilities as 
 - `DecorationTexture.js`
   - Deterministic seeded decoration texture generator (`DashboardDecorationTexture`). Shared between chassis rendering and menu live preview so identical slider settings always produce the same texture.
 
-- `DiskInfo.js`
-  - Legacy helper retained for compatibility. Active disk formatting is handled by `js/topology.js`.
-
 - `livereload.js`
   - Dev-only. Polls `/livereload-status` and calls `location.reload()` when file timestamps change.
 

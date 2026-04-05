@@ -1,5 +1,26 @@
 // ActivityMonitor.js - ZFS Pool Read/Write Activity Monitor with Chart.js
 
+const ACTIVITY_POLL_INTERVAL_MS = 50;
+
+const CHART_CSS_DEFAULTS = {
+    readColor: '#2a00d6',
+    writeColor: '#ff9f00',
+    readGradientTop: 'rgba(42, 0, 214, 0.5)',
+    readGradientBottom: 'rgba(42, 0, 214, 0)',
+    writeGradientTop: 'rgba(255, 159, 0, 0.5)',
+    writeGradientBottom: 'rgba(255, 159, 0, 0)',
+    lineTension: 0.7,
+    lineWidth: 2,
+    yAxisLabelColor: '#888888',
+    yAxisGridColor: 'rgba(255, 255, 255, 0.3)',
+    yAxisLabelFontSize: 9
+};
+
+function readCssVar(style, key, fallback) {
+    const value = style.getPropertyValue(key).trim();
+    return value || fallback;
+}
+
 class ActivityMonitor {
     constructor() {
         this.charts = {};
@@ -208,8 +229,8 @@ class ActivityMonitor {
         // Initial update
         this.updateLoop();
 
-        // Update every 50ms
-        this.updateInterval = setInterval(() => this.updateLoop(), 50);
+        // Update at a fixed short cadence for responsive chart animation.
+        this.updateInterval = setInterval(() => this.updateLoop(), ACTIVITY_POLL_INTERVAL_MS);
     }
 
     getChartConfig() {
@@ -217,19 +238,20 @@ class ActivityMonitor {
         const root = document.documentElement;
         const style = getComputedStyle(root);
 
-        const readColor = style.getPropertyValue('--chart-read-color').trim() || '#2a00d6';
-        const writeColor = style.getPropertyValue('--chart-write-color').trim() || '#ff9f00';
-        const readGradientTop = style.getPropertyValue('--chart-read-gradient-top').trim() || 'rgba(42, 0, 214, 0.5)';
-        const readGradientBottom = style.getPropertyValue('--chart-read-gradient-bottom').trim() || 'rgba(42, 0, 214, 0)';
-        const writeGradientTop = style.getPropertyValue('--chart-write-gradient-top').trim() || 'rgba(255, 159, 0, 0.5)';
-        const writeGradientBottom = style.getPropertyValue('--chart-write-gradient-bottom').trim() || 'rgba(255, 159, 0, 0)';
-        const lineTension = parseFloat(style.getPropertyValue('--chart-line-tension').trim() || '0.7');
-        const lineWidth = parseInt(style.getPropertyValue('--chart-line-width').trim() || '2');
-        const yAxisLabelColor = style.getPropertyValue('--chart-y-axis-label-color').trim() || '#888888';
-        const yAxisGridColor = style.getPropertyValue('--chart-y-axis-grid-color').trim() || 'rgba(255, 255, 255, 0.3)';
+        const readColor = readCssVar(style, '--chart-read-color', CHART_CSS_DEFAULTS.readColor);
+        const writeColor = readCssVar(style, '--chart-write-color', CHART_CSS_DEFAULTS.writeColor);
+        const readGradientTop = readCssVar(style, '--chart-read-gradient-top', CHART_CSS_DEFAULTS.readGradientTop);
+        const readGradientBottom = readCssVar(style, '--chart-read-gradient-bottom', CHART_CSS_DEFAULTS.readGradientBottom);
+        const writeGradientTop = readCssVar(style, '--chart-write-gradient-top', CHART_CSS_DEFAULTS.writeGradientTop);
+        const writeGradientBottom = readCssVar(style, '--chart-write-gradient-bottom', CHART_CSS_DEFAULTS.writeGradientBottom);
+        const lineTension = parseFloat(readCssVar(style, '--chart-line-tension', String(CHART_CSS_DEFAULTS.lineTension)));
+        const lineWidth = parseInt(readCssVar(style, '--chart-line-width', String(CHART_CSS_DEFAULTS.lineWidth)), 10);
+        const yAxisLabelColor = readCssVar(style, '--chart-y-axis-label-color', CHART_CSS_DEFAULTS.yAxisLabelColor);
+        const yAxisGridColor = readCssVar(style, '--chart-y-axis-grid-color', CHART_CSS_DEFAULTS.yAxisGridColor);
         const yAxisFontSizeStr = style.getPropertyValue('--chart-y-axis-label-font-size').trim();
         const sceneScale = Math.max(0.25, parseFloat(style.getPropertyValue('--dashboard-scene-scale').trim() || '1') || 1);
-        const yAxisLabelFontSize = yAxisFontSizeStr ? Math.round((parseInt(yAxisFontSizeStr, 10) || 9) * sceneScale) : Math.round(9 * sceneScale);
+        const yAxisBase = yAxisFontSizeStr ? (parseInt(yAxisFontSizeStr, 10) || CHART_CSS_DEFAULTS.yAxisLabelFontSize) : CHART_CSS_DEFAULTS.yAxisLabelFontSize;
+        const yAxisLabelFontSize = Math.round(yAxisBase * sceneScale);
 
         return {
             readColor,

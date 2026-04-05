@@ -1,5 +1,5 @@
 # TrueNAS Scale Drive-Bay Dashboard
-**version v27.4**
+**version v28.0**
 
 
 ## Documentation / Wiki
@@ -16,8 +16,7 @@ Also see: [CONFIG_GUIDE.md](CONFIG_GUIDE.md), [CUSTOMIZATION_GUIDE.md](CUSTOMIZA
 
 
 A self-hosted dashboard that visualizes TrueNAS Scale drive layout, status, and activity in a chassis-style view.
-![Dashboard](<image.png>
-)
+![Dashboard](image.png)
 
 ---
 
@@ -92,20 +91,19 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
    * **Degraded Pool**
    * **TrueNAS Services** STOPPED
  
-* **Github Updates
+* **Github Updates**
    * ability to update the dashboard from the GUI instead of uploading the repo manually to the scripts folder
    * ability to repair/replace missing files from the scripts folder
 
 ---
 
-## What's New in v27.x?
+## What's New in v28.0?
 
-* **Services Monitoring:** Added a dedicated `Services` menu (left of `Legend`) that tracks auto-start services via TrueNAS API and highlights stopped services.
-* **Unified Alerts and Mute:** Added menu-driven alert mute (`MUTE` for 5 minutes) covering both host and dashboard beep loops.
-* **Repository Sync Workflow:** Added in-menu check/update/restore actions for tracked files with version checks against GitHub releases.
-* **Kiosk-Safe Confirmation Modals:** Replaced browser-native confirmation popups with in-dashboard modal confirmations.
-* **Drive Bay Controls Restored:** Reinstated per-enclosure Drive Bay typography controls (`Serial`, `Size`, `Drive Temp`, `Pool Name`, `ID`) including font/color/style controls.
-* **Menu UX Refinements:** Improved cross-menu close behavior and legend overlay behavior for cleaner interaction.
+* **Runtime Cleanup:** Removed obsolete `DiskInfo.js` legacy runtime artifact and aligned docs to the active `js/topology.js` path.
+* **Menu/CSS Refactor:** Removed deactivated legacy Disk Arrays CSS block and kept one maintained style path for menu panels.
+* **Hardcoded Color Reduction:** Moved key alert/modal/services/temperature color paths to CSS-variable-driven theming with config-backed defaults.
+* **Overlay Reliability:** Fixed legend overlay backdrop state handling and added Escape-key close behavior.
+* **Runtime Interval Controls:** Added optional `ui.runtime` config controls for data fetch and alert-beep loop timing.
 
 ---
 
@@ -274,9 +272,6 @@ Chassis bay geometry presets and reference dimension constants consumed by `js/t
 
 #### `DecorationTexture.js`
 Deterministic, seeded decoration (texture/grill) generator shared between chassis rendering and menu preview.
-
-#### `DiskInfo.js`
-Legacy helper retained for compatibility. Active disk info formatting is handled by `js/topology.js`.
 
 #### `livereload.js`
 Dev-only helper: polls `/livereload-status` and refreshes the browser when file modification timestamps change.

@@ -141,9 +141,25 @@ DEFAULT_CONFIG = {
         "drive_temperature": {
             "unit": "C",
             "color": "#ffffff",
+            "warn_color": "#ffb347",
+            "hot_color": "#ff3b30",
+            "warn_shadow": "rgba(255, 179, 71, 0.6)",
+            "hot_shadow": "rgba(255, 59, 48, 0.72)",
             "font": "Arial, Helvetica, sans-serif",
             "size": "10px",
             "style": ["normal"]
+        },
+        "__REMARK_ALERTS": "Dashboard alert-strip color theme.",
+        "alerts": {
+            "border": "rgba(255, 91, 91, 0.75)",
+            "bg_start": "rgba(102, 17, 17, 0.92)",
+            "bg_end": "rgba(65, 9, 9, 0.92)",
+            "text": "#ffe7e7"
+        },
+        "__REMARK_RUNTIME": "Frontend runtime timing controls (milliseconds).",
+        "runtime": {
+            "data_fetch_interval_ms": 200,
+            "alert_beep_interval_ms": 2000
         },
         "__REMARK_CHASSIS": "Chassis/legend/activity shell styling.",
         "chassis": {
@@ -272,6 +288,31 @@ DEFAULT_CONFIG = {
                 "text": "#ffffff",
                 "focus_border": "#64c8ff",
                 "focus_glow": "rgba(100, 200, 255, 0.4)"
+            },
+            "actions": {
+                "border": "#8a2b2b",
+                "bg_start": "#6a1c1c",
+                "bg_end": "#4a1212",
+                "hover_glow": "rgba(255, 80, 80, 0.35)"
+            },
+            "modal": {
+                "backdrop": "rgba(0, 0, 0, 0.58)",
+                "bg_start": "#1f1f1f",
+                "bg_end": "#171717",
+                "shadow": "rgba(0, 0, 0, 0.6)",
+                "primary_border": "#2b73ad",
+                "primary_bg_start": "#2d7dbf",
+                "primary_bg_end": "#245f90",
+                "secondary_border": "#666666",
+                "secondary_bg_start": "#3b3b3b",
+                "secondary_bg_end": "#2e2e2e"
+            },
+            "services": {
+                "alert_color": "#ff3f3f",
+                "running_color": "#8df28d",
+                "running_border": "#49c949",
+                "stopped_color": "#ff9b9b",
+                "stopped_border": "#d05a5a"
             },
             "buttons": {
                 "save_bg": "#00cc00",

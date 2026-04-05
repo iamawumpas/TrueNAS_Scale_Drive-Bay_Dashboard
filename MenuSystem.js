@@ -48,6 +48,7 @@ let isResetInProgress = false;
 let menuModalBackdrop = null;
 let menuModalResolve = null;
 let menuModalPreviousFocus = null;
+const DEFAULT_SWATCH_COLOR = '#000000';
 
 function ensureMenuModalShell() {
     if (menuModalBackdrop) return;
@@ -162,6 +163,13 @@ function closeAllDropdowns() {
         const trigger = panel.dataset.trigger ? document.getElementById(panel.dataset.trigger) : null;
         trigger?.classList.remove('active');
     });
+}
+
+function setLegendOverlayState(active) {
+    const legend = document.getElementById('legend-chassis');
+    if (!legend) return;
+    legend.classList.toggle('legend-overlay-active', Boolean(active));
+    if (legendBackdrop) legendBackdrop.classList.toggle('active', Boolean(active));
 }
 
 function openDropdown(panel, trigger) {
@@ -282,9 +290,9 @@ function syncPanelValues(panel) {
         const val = normalizeMenuControlValue(path, rawVal);
 
         if (el.classList.contains('color-swatch')) {
-            el.style.background = val || '#000000';
+            el.style.background = val || DEFAULT_SWATCH_COLOR;
         } else if (el.type === 'color') {
-            const hex = val ? (val.match(/#[0-9a-fA-F]{3,8}/) || [])[0] || '#000000' : '#000000';
+            const hex = val ? (val.match(/#[0-9a-fA-F]{3,8}/) || [])[0] || DEFAULT_SWATCH_COLOR : DEFAULT_SWATCH_COLOR;
             el.value = hex;
         } else if (el.type === 'range') {
             const isPx = String(el.dataset.valueFormat || '').toLowerCase() === 'px';
@@ -805,15 +813,12 @@ function ensureLegendOverlayShell() {
 }
 
 function openLegendOverlay() {
-    const legend = document.getElementById('legend-chassis');
-    if (!legend) return;
     ensureLegendOverlayShell();
-    legend.classList.add('legend-overlay-active');
+    setLegendOverlayState(true);
 }
 
 function closeLegendOverlay() {
-    const legend = document.getElementById('legend-chassis');
-    if (legend) legend.classList.remove('legend-overlay-active');
+    setLegendOverlayState(false);
 }
 
 function toggleLegendOverlay() {
@@ -970,6 +975,9 @@ async function init() {
     ensureLegendOverlayShell();
 
     window.addEventListener('dashboard-data-updated', handleDashboardDataUpdate);
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeLegendOverlay();
+    });
     window.addEventListener('resize', scheduleResponsiveSliderRefresh);
     window.addEventListener('orientationchange', scheduleResponsiveSliderRefresh);
     window.addEventListener('menu-config-changed', (event) => onConfigMutated(event.detail || {}));

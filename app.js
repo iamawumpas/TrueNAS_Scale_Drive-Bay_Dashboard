@@ -3,14 +3,38 @@
 import { fetchDataWithRetry, getRenderablePayload, hasUsableTopology, hasFreshLastGoodTopology, getLastGoodPayload } from './js/data.js';
 import { render } from './js/renderer.js';
 
-const DATA_FETCH_INTERVAL_MS = 200;
-const ALERT_BEEP_INTERVAL_MS = 2000;
+const DEFAULT_DATA_FETCH_INTERVAL_MS = 200;
+const DEFAULT_ALERT_BEEP_INTERVAL_MS = 2000;
 
 let activityMonitor = null;
 let updateInFlight = false;
 let alertBeepTimerId = null;
 let alertAudioContext = null;
 let alertBannerEl = null;
+let updateLoopTimerId = null;
+let dataFetchIntervalMs = DEFAULT_DATA_FETCH_INTERVAL_MS;
+let alertBeepIntervalMs = DEFAULT_ALERT_BEEP_INTERVAL_MS;
+
+function clampMs(value, fallback, min = 50, max = 60000) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, Math.round(n)));
+}
+
+function applyRuntimeIntervals(config) {
+    const runtime = config?.ui?.runtime || {};
+    const nextDataFetchInterval = clampMs(runtime.data_fetch_interval_ms, DEFAULT_DATA_FETCH_INTERVAL_MS, 75, 10000);
+    const nextAlertBeepInterval = clampMs(runtime.alert_beep_interval_ms, DEFAULT_ALERT_BEEP_INTERVAL_MS, 250, 10000);
+
+    dataFetchIntervalMs = nextDataFetchInterval;
+    if (nextAlertBeepInterval !== alertBeepIntervalMs) {
+        alertBeepIntervalMs = nextAlertBeepInterval;
+        if (alertBeepTimerId) {
+            stopAlertBeepLoop();
+            startAlertBeepLoop();
+        }
+    }
+}
 
 function ensureAlertBanner() {
     if (alertBannerEl && alertBannerEl.isConnected) return alertBannerEl;
@@ -52,7 +76,7 @@ function startAlertBeepLoop() {
     playDashboardBeepOnce();
     alertBeepTimerId = window.setInterval(() => {
         playDashboardBeepOnce();
-    }, ALERT_BEEP_INTERVAL_MS);
+    }, alertBeepIntervalMs);
 }
 
 function stopAlertBeepLoop() {
@@ -109,6 +133,7 @@ async function update() {
     try {
         const data = await fetchDataWithRetry();
         const renderable = getRenderablePayload(data);
+        applyRuntimeIntervals(renderable?.config);
         updateAlertUi(renderable?.alerts);
 
         if (hasUsableTopology(renderable)) {
@@ -138,5 +163,14 @@ async function update() {
     }
 }
 
-update();
-setInterval(update, DATA_FETCH_INTERVAL_MS);
+function startUpdateLoop() {
+    const tick = async () => {
+        await update();
+        updateLoopTimerId = window.setTimeout(tick, dataFetchIntervalMs);
+    };
+
+    if (updateLoopTimerId) window.clearTimeout(updateLoopTimerId);
+    tick();
+}
+
+startUpdateLoop();

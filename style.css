@@ -21,9 +21,13 @@ body {
 }
 
 #dashboard-alert-strip {
-    border: 1px solid rgba(255, 91, 91, 0.75);
-    background: linear-gradient(180deg, rgba(102, 17, 17, 0.92) 0%, rgba(65, 9, 9, 0.92) 100%);
-    color: #ffe7e7;
+    border: 1px solid var(--dashboard-alert-border, rgba(255, 91, 91, 0.75));
+    background: linear-gradient(
+        180deg,
+        var(--dashboard-alert-bg-start, rgba(102, 17, 17, 0.92)) 0%,
+        var(--dashboard-alert-bg-end, rgba(65, 9, 9, 0.92)) 100%
+    );
+    color: var(--dashboard-alert-text, #ffe7e7);
     border-radius: calc(8px * var(--dashboard-scene-scale, 1));
     padding: calc(8px * var(--dashboard-scene-scale, 1)) calc(12px * var(--dashboard-scene-scale, 1));
     margin: 0 auto calc(10px * var(--dashboard-scene-scale, 1));
@@ -389,15 +393,15 @@ body {
 }
 
 .info-temp.temp-warn {
-    color: #ffb347;
+    color: var(--disk-temp-warn-color, #ffb347);
     animation: temp-blink-amber 1s infinite;
-    text-shadow: 0 0 calc(4px * var(--dashboard-scene-scale, 1)) rgba(255, 179, 71, 0.6);
+    text-shadow: 0 0 calc(4px * var(--dashboard-scene-scale, 1)) var(--disk-temp-warn-shadow, rgba(255, 179, 71, 0.6));
 }
 
 .info-temp.temp-hot {
-    color: #ff3b30;
+    color: var(--disk-temp-hot-color, #ff3b30);
     animation: temp-blink-red 0.8s infinite;
-    text-shadow: 0 0 calc(5px * var(--dashboard-scene-scale, 1)) rgba(255, 59, 48, 0.72);
+    text-shadow: 0 0 calc(5px * var(--dashboard-scene-scale, 1)) var(--disk-temp-hot-shadow, rgba(255, 59, 48, 0.72));
 }
 
 .latch {
