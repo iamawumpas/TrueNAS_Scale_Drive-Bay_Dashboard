@@ -1,5 +1,5 @@
 # TrueNAS Scale Drive-Bay Dashboard
-**version v28.0**
+**version v28.4**
 
 
 ## Documentation / Wiki
@@ -97,13 +97,11 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
 
 ---
 
-## What's New in v28.0?
+## What's New in v28.4?
 
-* **Runtime Cleanup:** Removed obsolete `DiskInfo.js` legacy runtime artifact and aligned docs to the active `js/topology.js` path.
-* **Menu/CSS Refactor:** Removed deactivated legacy Disk Arrays CSS block and kept one maintained style path for menu panels.
-* **Hardcoded Color Reduction:** Moved key alert/modal/services/temperature color paths to CSS-variable-driven theming with config-backed defaults.
-* **Overlay Reliability:** Fixed legend overlay backdrop state handling and added Escape-key close behavior.
-* **Runtime Interval Controls:** Added optional `ui.runtime` config controls for data fetch and alert-beep loop timing.
+* **Legend Dropdown Visibility Fix:** Removed conflicting hard-hide and legacy overlay CSS rules that prevented the Legend panel from appearing when clicked.
+* **Legend CSS Cleanup:** Consolidated Legend behavior to the standard dropdown-panel open/close model used by other menu items.
+* **Version/Release Sync:** Updated VERSION and changelog metadata to keep release markers aligned for this release.
 
 ---
 

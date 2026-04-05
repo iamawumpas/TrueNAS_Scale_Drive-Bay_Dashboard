@@ -1,5 +1,14 @@
 # Storage Dashboard - Change Log
 
+## Version 28.4:
+* **Legend Dropdown Visibility Fix**
+    * Removed the hardcoded hidden state on `#legend-chassis` so Legend visibility is controlled by the standard dropdown open class.
+    * Eliminated stale Legend overlay selectors (`.legend-overlay-active` and overlay backdrop rules) that were no longer used in the dropdown workflow.
+* **Legend Interaction Consistency**
+    * Kept Legend on the same open/close behavior path as other menu dropdown panels to reduce regression risk.
+* **Release Metadata Synchronization**
+    * Updated `VERSION` and `README.md` to v28.4.
+
 ## Version 28.3:
 * **Repository Update Progress Overlay**
     * Added a centered dashboard overlay during repository updates with a live progress bar and phase text.

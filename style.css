@@ -551,35 +551,10 @@ body {
     padding: calc(14px * var(--dashboard-scene-scale, 1));
     border-radius: calc(12px * var(--dashboard-scene-scale, 1));
     box-shadow: 0 calc(8px * var(--dashboard-scene-scale, 1)) calc(16px * var(--dashboard-scene-scale, 1)) var(--menu-dropdown-shadow, rgba(0, 0, 0, 0.8));
-    display: none;
     flex-direction: column;
     justify-content: center;
     width: max-content;
     min-width: 0;
-}
-
-#legend-chassis.legend-overlay-active {
-    display: flex;
-    position: fixed;
-    top: calc(68px * var(--dashboard-scene-scale, 1));
-    right: calc(16px * var(--dashboard-scene-scale, 1));
-    width: max-content;
-    max-width: min(360px, calc(100cqw - 32px));
-    max-height: calc(100cqh - 84px);
-    overflow: auto;
-    z-index: 3100;
-}
-
-#legend-overlay-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    z-index: 3000;
-    display: none;
-}
-
-#legend-overlay-backdrop.active {
-    display: block;
 }
 
 #legend-chassis .legend-title {
