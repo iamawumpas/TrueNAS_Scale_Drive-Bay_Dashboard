@@ -49,6 +49,11 @@ let menuModalResolve = null;
 let menuModalPreviousFocus = null;
 const DEFAULT_SWATCH_COLOR = '#000000';
 let repoUpdateOverlayBackdrop = null;
+const REPO_UPDATE_COMPLETE_HOLD_MS = 900;
+
+function delay(ms) {
+    return new Promise(resolve => window.setTimeout(resolve, Math.max(0, Number(ms) || 0)));
+}
 
 function ensureRepoUpdateOverlayShell() {
     if (repoUpdateOverlayBackdrop) return;
@@ -727,6 +732,14 @@ async function downloadAndInstallRepositoryUpdate() {
         }
 
         const progressPayload = await waitForRepositoryUpdateProgress();
+        updateRepoUpdateOverlay({
+            ...(progressPayload || {}),
+            phase: 'complete',
+            phaseLabel: 'Complete',
+            progressPct: 100,
+            message: (progressPayload && progressPayload.message) || 'Repository update finished.'
+        });
+        await delay(REPO_UPDATE_COMPLETE_HOLD_MS);
         const result = progressPayload?.result || {};
 
         lastRepoSyncStatusPayload = result;

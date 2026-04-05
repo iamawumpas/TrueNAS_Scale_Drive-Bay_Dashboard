@@ -1,5 +1,5 @@
 # TrueNAS Scale Drive-Bay Dashboard
-**version v28.4**
+**version v28.5**
 
 
 ## Documentation / Wiki
@@ -97,11 +97,11 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
 
 ---
 
-## What's New in v28.4?
+## What's New in v28.5?
 
-* **Legend Dropdown Visibility Fix:** Removed conflicting hard-hide and legacy overlay CSS rules that prevented the Legend panel from appearing when clicked.
-* **Legend CSS Cleanup:** Consolidated Legend behavior to the standard dropdown-panel open/close model used by other menu items.
-* **Version/Release Sync:** Updated VERSION and changelog metadata to keep release markers aligned for this release.
+* **Update Overlay Completion Hold:** Added a short completion hold so the progress bar visibly reaches and stays at 100% before closing.
+* **Progress Bar Highlight Color Sync:** Wired the update progress bar fill to the configured menu highlight color token.
+* **Release Metadata Synchronization:** Updated VERSION and changelog metadata to v28.5.
 
 ---
 

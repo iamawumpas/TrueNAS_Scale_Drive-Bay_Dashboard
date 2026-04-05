@@ -314,7 +314,7 @@
 .repo-update-progress-bar {
     width: 0%;
     height: 100%;
-    background: linear-gradient(90deg, var(--menu-modal-primary-bg-start, #2d7dbf) 0%, var(--menu-modal-primary-bg-end, #245f90) 100%);
+    background: var(--menu-control-focus-border, #64c8ff);
     transition: width 0.25s ease;
 }
 

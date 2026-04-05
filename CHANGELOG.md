@@ -1,5 +1,15 @@
 # Storage Dashboard - Change Log
 
+## Version 28.5:
+* **Update Progress Completion Visibility**
+    * Added a short post-completion hold so the progress overlay clearly shows 100% before closing.
+    * Ensures users can see the terminal completion state instead of an abrupt close at high-90s progression.
+* **Progress Bar Highlight Color Alignment**
+    * Updated the repository update progress bar fill to use configured menu highlight color variables.
+    * Keeps update-progress styling consistent with the configured slider/control highlight path.
+* **Release Metadata Synchronization**
+    * Updated `VERSION` and `README.md` markers to v28.5.
+
 ## Version 28.4:
 * **Legend Dropdown Visibility Fix**
     * Removed the hardcoded hidden state on `#legend-chassis` so Legend visibility is controlled by the standard dropdown open class.
