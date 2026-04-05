@@ -1,5 +1,5 @@
 # TrueNAS Scale Drive-Bay Dashboard
-**version v28.5**
+**version v28.6**
 
 
 ## Documentation / Wiki
@@ -97,11 +97,11 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
 
 ---
 
-## What's New in v28.5?
+## What's New in v28.6?
 
-* **Update Overlay Completion Hold:** Added a short completion hold so the progress bar visibly reaches and stays at 100% before closing.
-* **Progress Bar Highlight Color Sync:** Wired the update progress bar fill to the configured menu highlight color token.
-* **Release Metadata Synchronization:** Updated VERSION and changelog metadata to v28.5.
+* **Legend Label Update:** Renamed the Legend dropdown heading from "ZFS Status" to "Status LED Legend" for clearer meaning.
+* **UI Text Consistency:** Updated the user-facing legend title text to better match the LED status indicators shown in the panel.
+* **Release Metadata Synchronization:** Updated VERSION and changelog metadata to v28.6.
 
 ---
 

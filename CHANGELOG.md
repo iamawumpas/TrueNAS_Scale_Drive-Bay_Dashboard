@@ -1,5 +1,12 @@
 # Storage Dashboard - Change Log
 
+## Version 28.6:
+* **Legend Title Clarification**
+    * Renamed Legend dropdown header from `ZFS Status` to `Status LED Legend`.
+    * Improves label clarity by matching the panel's LED status indicator purpose.
+* **Release Metadata Synchronization**
+    * Updated `VERSION` and `README.md` markers to v28.6.
+
 ## Version 28.5:
 * **Update Progress Completion Visibility**
     * Added a short post-completion hold so the progress overlay clearly shows 100% before closing.
