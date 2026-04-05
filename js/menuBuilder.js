@@ -410,7 +410,9 @@ export function buildMenuBarMarkup() {
                         </div>
                     </div>
                 </div>
-                <button class="menu-button legend-menu-btn" id="legend-menu-btn" type="button">Legend</button>
+                <div class="menu-dropdown-wrapper legend-dropdown-wrapper">
+                    <button class="menu-button legend-menu-btn" id="legend-menu-btn" type="button">Legend</button>
+                </div>
                 <div class="menu-buttons">
                     <button class="save-btn" id="menu-save-btn" disabled>SAVE</button>
                     <button class="revert-btn" id="menu-revert-btn" disabled>REVERT</button>

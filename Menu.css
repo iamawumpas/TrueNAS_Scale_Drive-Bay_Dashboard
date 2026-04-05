@@ -2,11 +2,18 @@
 
 :root {
     --menu-scene-scale: var(--dashboard-scene-scale, 1);
+    --menu-const-border-width: 1px;
+    --menu-const-shell-corner-radius: calc(8px * var(--menu-scene-scale, 1));
+    --menu-const-panel-corner-radius: calc(8px * var(--menu-scene-scale, 1));
+    --menu-const-control-corner-radius: 3px;
+    --menu-const-action-corner-radius: 4px;
+    --menu-const-modal-corner-radius: 10px;
+    --menu-const-pill-corner-radius: 12px;
 }
 
 #menu-bar {
     background: var(--menu-bg-color, linear-gradient(180deg, #222222 0%, #1a1a1a 100%));
-    border-bottom: calc(2px * var(--menu-scene-scale, 1)) solid var(--menu-border-color, #444444);
+    border-bottom: calc(var(--menu-const-border-width) * 2 * var(--menu-scene-scale, 1)) solid var(--menu-border-color, #444444);
     padding: calc(8px * var(--menu-scene-scale, 1)) calc(16px * var(--menu-scene-scale, 1));
     width: min(100%, var(--dashboard-max-width, 98cqw));
     box-sizing: border-box;
@@ -25,6 +32,7 @@
     font-variant: var(--menu-font-variant, normal);
     opacity: var(--menu-opacity, 1);
     min-height: calc(48px * var(--menu-scene-scale, 1));
+    border-radius: 0 0 var(--menu-const-shell-corner-radius) var(--menu-const-shell-corner-radius);
     container-type: inline-size;
 }
 
@@ -63,9 +71,9 @@
     overflow-y: auto;
     overflow-x: hidden;
     background: var(--menu-dropdown-bg, #1a1a1a);
-    border: 1px solid var(--menu-dropdown-border, #555555);
+    border: var(--menu-const-border-width) solid var(--menu-dropdown-border, #555555);
     box-shadow: 0 calc(8px * var(--menu-scene-scale, 1)) calc(24px * var(--menu-scene-scale, 1)) var(--menu-dropdown-shadow, rgba(0,0,0,0.8));
-    border-radius: calc(4px * var(--menu-scene-scale, 1));
+    border-radius: var(--menu-const-panel-corner-radius);
     padding: calc(12px * var(--menu-scene-scale, 1)) calc(14px * var(--menu-scene-scale, 1));
     z-index: 2000;
     color: var(--menu-text-color, #ffffff);
@@ -76,6 +84,11 @@
     text-transform: var(--menu-font-transform, none);
     font-variant: var(--menu-font-variant, normal);
     opacity: var(--menu-dropdown-opacity, 1);
+}
+
+.legend-dropdown-wrapper .dropdown-panel {
+    right: 0;
+    left: auto;
 }
 
 .dropdown-panel.open {
@@ -92,7 +105,7 @@
 .dropdown-panel .panel-section {
     margin-bottom: 12px;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--menu-dropdown-border, #555555);
+    border-bottom: var(--menu-const-border-width) solid var(--menu-dropdown-border, #555555);
 }
 
 .dropdown-panel .panel-section:last-child {
@@ -143,8 +156,8 @@
 
 .menu-action-btn {
     padding: 6px 10px;
-    border: 1px solid var(--menu-action-btn-border, #8a2b2b);
-    border-radius: 4px;
+    border: var(--menu-const-border-width) solid var(--menu-action-btn-border, #8a2b2b);
+    border-radius: var(--menu-const-action-corner-radius);
     background: linear-gradient(180deg, var(--menu-action-btn-bg-start, #6a1c1c) 0%, var(--menu-action-btn-bg-end, #4a1212) 100%);
     color: #ffffff;
     font-family: var(--menu-font-family, Calibri, Candara, Segoe UI, Optima, Arial, sans-serif);
@@ -194,9 +207,9 @@
 .menu-modal {
     width: min(480px, calc(100cqw - 32px));
     background: linear-gradient(180deg, var(--menu-modal-bg-start, #1f1f1f) 0%, var(--menu-modal-bg-end, #171717) 100%);
-    border: 1px solid var(--menu-dropdown-border, #555555);
+    border: var(--menu-const-border-width) solid var(--menu-dropdown-border, #555555);
     box-shadow: 0 14px 34px var(--menu-modal-shadow, rgba(0, 0, 0, 0.6));
-    border-radius: 10px;
+    border-radius: var(--menu-const-modal-corner-radius);
     padding: 14px;
     color: var(--menu-text-color, #ffffff);
     font-family: var(--menu-font-family, Calibri, Candara, Segoe UI, Optima, Arial, sans-serif);
@@ -225,8 +238,8 @@
 .menu-modal-btn {
     min-width: 88px;
     padding: 6px 12px;
-    border-radius: 6px;
-    border: 1px solid var(--menu-control-border, #555555);
+    border-radius: var(--menu-const-action-corner-radius);
+    border: var(--menu-const-border-width) solid var(--menu-control-border, #555555);
     background: #2a2a2a;
     color: var(--menu-control-text, #ffffff);
     font-family: inherit;
@@ -253,8 +266,8 @@
     display: inline-block;
     width: 20px;
     height: 20px;
-    border-radius: 3px;
-    border: 1px solid var(--menu-control-border, #555555);
+    border-radius: var(--menu-const-control-corner-radius);
+    border: var(--menu-const-border-width) solid var(--menu-control-border, #555555);
     cursor: pointer;
     flex-shrink: 0;
 }
@@ -275,9 +288,9 @@
 .menu-font-select {
     padding: 4px 6px;
     background: var(--menu-control-bg, #2a2a2a);
-    border: 1px solid var(--menu-control-border, #555555);
+    border: var(--menu-const-border-width) solid var(--menu-control-border, #555555);
     color: var(--menu-control-text, #ffffff);
-    border-radius: 3px;
+    border-radius: var(--menu-const-control-corner-radius);
     font-family: var(--menu-font-family);
     font-size: 10pt;
     cursor: pointer;
@@ -304,7 +317,7 @@
     height: 4px;
     border-radius: 2px;
     background: var(--menu-control-bg, #2a2a2a);
-    border: 1px solid var(--menu-control-border, #555555);
+    border: var(--menu-const-border-width) solid var(--menu-control-border, #555555);
     outline: none;
     cursor: pointer;
 }
@@ -376,7 +389,7 @@
     margin-top: 8px;
     padding-top: 6px;
     padding-left: 8px;
-    border-top: 1px solid rgba(255,255,255,0.06);
+    border-top: var(--menu-const-border-width) solid rgba(255,255,255,0.06);
 }
 
 .panel-subsection-last {
@@ -527,26 +540,26 @@
 .services-table th,
 .services-table td {
     padding: 6px 4px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: var(--menu-const-border-width) solid rgba(255, 255, 255, 0.08);
     text-align: left;
 }
 
 .services-status-pill {
     display: inline-block;
     padding: 2px 8px;
-    border-radius: 12px;
+    border-radius: var(--menu-const-pill-corner-radius);
     font-weight: 700;
     font-size: 8.5pt;
 }
 
 .services-status-pill.running {
     color: var(--services-running-color, #8df28d);
-    border: 1px solid var(--services-running-border, #49c949);
+    border: var(--menu-const-border-width) solid var(--services-running-border, #49c949);
 }
 
 .services-status-pill.stopped {
     color: var(--services-stopped-color, #ff9b9b);
-    border: 1px solid var(--services-stopped-border, #d05a5a);
+    border: var(--menu-const-border-width) solid var(--services-stopped-border, #d05a5a);
 }
 
 .menu-status {
@@ -573,7 +586,7 @@
 .revert-btn {
     padding: calc(8px * var(--menu-scene-scale, 1)) calc(16px * var(--menu-scene-scale, 1));
     border: none;
-    border-radius: calc(4px * var(--menu-scene-scale, 1));
+    border-radius: var(--menu-const-action-corner-radius);
     cursor: pointer;
     font-family: var(--menu-font-family, Calibri, Candara, Segoe UI, Optima, Arial, sans-serif);
     font-size: calc(11pt * var(--menu-scene-scale, 1));
@@ -612,7 +625,7 @@
 .panel-section {
     margin-bottom: 16px;
     padding-bottom: 12px;
-    border-bottom: 1px solid var(--menu-dropdown-border, #555555);
+    border-bottom: var(--menu-const-border-width) solid var(--menu-dropdown-border, #555555);
 }
 
 .panel-section h3 {
@@ -651,9 +664,9 @@
     padding: 6px;
     margin-bottom: 8px;
     background: var(--menu-control-bg, #2a2a2a);
-    border: 1px solid var(--menu-control-border, #555555);
+    border: var(--menu-const-border-width) solid var(--menu-control-border, #555555);
     color: var(--menu-control-text, #ffffff);
-    border-radius: 3px;
+    border-radius: var(--menu-const-control-corner-radius);
     font-family: var(--menu-font-family);
     font-size: 11pt;
     box-sizing: border-box;
@@ -694,8 +707,8 @@
     gap: 8px;
     width: 100%;
     background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--menu-dropdown-border, #555555);
-    border-radius: 4px;
+    border: var(--menu-const-border-width) solid var(--menu-dropdown-border, #555555);
+    border-radius: var(--menu-const-action-corner-radius);
     padding: 7px 10px;
     cursor: pointer;
     color: var(--menu-text-color, #ffffff);
@@ -747,7 +760,7 @@
 
 .da-enclosure-body {
     padding: 8px 4px 2px 12px;
-    border-left: 2px solid var(--menu-dropdown-border, #555555);
+    border-left: calc(var(--menu-const-border-width) * 2) solid var(--menu-dropdown-border, #555555);
     margin-left: 4px;
 }
 
@@ -814,7 +827,7 @@
     color: var(--menu-label-color);
     cursor: pointer;
     padding: 4px 8px;
-    border-radius: 3px;
+    border-radius: var(--menu-const-control-corner-radius);
 }
 
 .checkbox-group input[type="checkbox"],

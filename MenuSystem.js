@@ -31,7 +31,6 @@ let legendButton = null;
 let servicesButton = null;
 let servicesStatusNote = null;
 let servicesTableBody = null;
-let legendBackdrop = null;
 let statusEl = null;
 let alertsStatusEl = null;
 let alertsMuteButton = null;
@@ -165,15 +164,7 @@ function closeAllDropdowns() {
     });
 }
 
-function setLegendOverlayState(active) {
-    const legend = document.getElementById('legend-chassis');
-    if (!legend) return;
-    legend.classList.toggle('legend-overlay-active', Boolean(active));
-    if (legendBackdrop) legendBackdrop.classList.toggle('active', Boolean(active));
-}
-
 function openDropdown(panel, trigger) {
-    closeLegendOverlay();
     syncPanelValues(panel);
     panel.classList.add('open');
     trigger.classList.add('active');
@@ -748,7 +739,23 @@ function buildMenuBar() {
 
     saveButton?.addEventListener('click', saveConfig);
     revertButton?.addEventListener('click', revertConfig);
-    legendButton?.addEventListener('click', toggleLegendOverlay);
+
+    const legendPanel = document.getElementById('legend-chassis');
+    const legendWrapper = host.querySelector('.legend-dropdown-wrapper');
+    if (legendButton && legendPanel && legendWrapper) {
+        legendPanel.classList.add('dropdown-panel', 'legend-panel');
+        legendPanel.dataset.trigger = 'legend-menu-btn';
+        legendWrapper.appendChild(legendPanel);
+        legendButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = legendPanel.classList.contains('open');
+            closeAllDropdowns();
+            if (!isOpen) {
+                legendPanel.classList.add('open');
+                legendButton.classList.add('active');
+            }
+        });
+    }
 
     const servicesPanel = document.getElementById('services-panel');
     if (servicesButton && servicesPanel) {
@@ -802,34 +809,6 @@ function buildMenuBar() {
     document.addEventListener('click', (e) => {
         if (!host.contains(e.target)) closeAllDropdowns();
     }, { capture: false });
-}
-
-function ensureLegendOverlayShell() {
-    if (legendBackdrop) return;
-    legendBackdrop = document.createElement('div');
-    legendBackdrop.id = 'legend-overlay-backdrop';
-    legendBackdrop.addEventListener('click', closeLegendOverlay);
-    document.body.appendChild(legendBackdrop);
-}
-
-function openLegendOverlay() {
-    ensureLegendOverlayShell();
-    setLegendOverlayState(true);
-}
-
-function closeLegendOverlay() {
-    setLegendOverlayState(false);
-}
-
-function toggleLegendOverlay() {
-    const legend = document.getElementById('legend-chassis');
-    if (!legend) return;
-    if (legend.classList.contains('legend-overlay-active')) {
-        closeLegendOverlay();
-        return;
-    }
-    closeAllDropdowns();
-    openLegendOverlay();
 }
 
 function onConfigMutated(detail) {
@@ -972,12 +951,8 @@ function updateServicesMenu(servicesPayload) {
 
 async function init() {
     buildMenuBar();
-    ensureLegendOverlayShell();
 
     window.addEventListener('dashboard-data-updated', handleDashboardDataUpdate);
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') closeLegendOverlay();
-    });
     window.addEventListener('resize', scheduleResponsiveSliderRefresh);
     window.addEventListener('orientationchange', scheduleResponsiveSliderRefresh);
     window.addEventListener('menu-config-changed', (event) => onConfigMutated(event.detail || {}));

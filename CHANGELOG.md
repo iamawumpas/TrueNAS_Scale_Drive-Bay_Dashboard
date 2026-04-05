@@ -1,5 +1,15 @@
 # Storage Dashboard - Change Log
 
+## Version 28.1:
+* **Legend Menu Behavior Normalization**
+    * Reworked the Legend menu to use the same dropdown interaction model as other menu items.
+    * Removed legend-specific tinted overlay/backdrop behavior so interactions remain consistent across menu items.
+* **Centralized Menu Border/Corner Constants**
+    * Added a unified menu constants block in `Menu.css` for shared border-width and corner-radius values.
+    * Updated menu panels, submenu sections, controls, modal shell, and status pills to consume shared constants for uniform boundaries.
+* **Menu Surface Alignment**
+    * Updated menu wrapper/panel wiring for Legend to align with standard dropdown containers and consistent panel anchoring.
+
 ## Version 28.0:
 * **Rewrite Cleanup and Obsolete Code Removal**
     * Removed obsolete legacy `DiskInfo.js` runtime helper and aligned documentation references to active disk formatting in `js/topology.js`.
