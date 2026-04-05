@@ -48,6 +48,113 @@ let menuModalBackdrop = null;
 let menuModalResolve = null;
 let menuModalPreviousFocus = null;
 const DEFAULT_SWATCH_COLOR = '#000000';
+let repoUpdateOverlayBackdrop = null;
+
+function ensureRepoUpdateOverlayShell() {
+    if (repoUpdateOverlayBackdrop) return;
+
+    repoUpdateOverlayBackdrop = document.createElement('div');
+    repoUpdateOverlayBackdrop.id = 'repo-update-progress-backdrop';
+    repoUpdateOverlayBackdrop.innerHTML = `
+        <div class="repo-update-progress-modal" role="dialog" aria-modal="true" aria-labelledby="repo-update-progress-title">
+            <div id="repo-update-progress-title" class="repo-update-progress-title">Repository Update</div>
+            <div id="repo-update-progress-phase" class="repo-update-progress-phase">Preparing update...</div>
+            <div class="repo-update-progress-bar-shell">
+                <div id="repo-update-progress-bar" class="repo-update-progress-bar"></div>
+            </div>
+            <div id="repo-update-progress-meta" class="repo-update-progress-meta">0%</div>
+            <div id="repo-update-progress-detail" class="repo-update-progress-detail"></div>
+        </div>
+    `;
+    document.body.appendChild(repoUpdateOverlayBackdrop);
+}
+
+function setRepoUpdateOverlayVisible(visible) {
+    ensureRepoUpdateOverlayShell();
+    if (!repoUpdateOverlayBackdrop) return;
+    repoUpdateOverlayBackdrop.classList.toggle('active', Boolean(visible));
+}
+
+function updateRepoUpdateOverlay(payload = {}) {
+    ensureRepoUpdateOverlayShell();
+    if (!repoUpdateOverlayBackdrop) return;
+
+    const phaseEl = document.getElementById('repo-update-progress-phase');
+    const barEl = document.getElementById('repo-update-progress-bar');
+    const metaEl = document.getElementById('repo-update-progress-meta');
+    const detailEl = document.getElementById('repo-update-progress-detail');
+
+    const pctRaw = Number(payload.progressPct);
+    const pct = Number.isFinite(pctRaw) ? Math.max(0, Math.min(100, Math.round(pctRaw))) : 0;
+    const phaseLabel = payload.phaseLabel || 'Working...';
+
+    if (phaseEl) phaseEl.textContent = phaseLabel;
+    if (barEl) barEl.style.width = `${pct}%`;
+
+    const dlDone = Number(payload.downloadCompleted || 0);
+    const dlTotal = Number(payload.downloadTotal || 0);
+    const inDone = Number(payload.installCompleted || 0);
+    const inTotal = Number(payload.installTotal || 0);
+    const currentFile = payload.currentFile ? String(payload.currentFile) : '';
+
+    let meta = `${pct}%`;
+    if (payload.phase === 'download' && dlTotal > 0) meta += ` • Download ${dlDone}/${dlTotal}`;
+    if (payload.phase === 'install' && inTotal > 0) meta += ` • Install ${inDone}/${inTotal}`;
+    if (payload.phase === 'restart') meta += ' • Restarting service';
+    if (metaEl) metaEl.textContent = meta;
+
+    const detailParts = [];
+    if (currentFile) detailParts.push(currentFile);
+    if (payload.message) detailParts.push(String(payload.message));
+    if (detailEl) detailEl.textContent = detailParts.join(' • ');
+}
+
+async function waitForRepositoryUpdateProgress() {
+    let sawRestartPhase = false;
+    let networkErrorsAfterRestart = 0;
+
+    while (true) {
+        try {
+            const response = await fetch('/repo-sync-update-progress', { cache: 'no-store' });
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload?.message || `Progress HTTP ${response.status}`);
+
+            updateRepoUpdateOverlay(payload);
+            if (payload.phase === 'restart') sawRestartPhase = true;
+
+            const status = String(payload.status || '').toLowerCase();
+            if (!payload.active && (status === 'success' || status === 'partial' || status === 'error')) {
+                return payload;
+            }
+        } catch (error) {
+            if (sawRestartPhase) {
+                networkErrorsAfterRestart += 1;
+                updateRepoUpdateOverlay({
+                    phase: 'restart',
+                    phaseLabel: 'Restarting Service',
+                    progressPct: 100,
+                    message: 'Connection interrupted while restarting...'
+                });
+                if (networkErrorsAfterRestart >= 3) {
+                    return {
+                        status: 'success',
+                        active: false,
+                        phase: 'restart',
+                        startupInitiated: true,
+                        result: {
+                            status: 'success',
+                            startup_initiated: true,
+                            failed: {},
+                            installed: []
+                        }
+                    };
+                }
+            }
+        }
+
+        await new Promise(resolve => window.setTimeout(resolve, 450));
+    }
+}
 
 function ensureMenuModalShell() {
     if (menuModalBackdrop) return;
@@ -604,27 +711,40 @@ async function downloadAndInstallRepositoryUpdate() {
     if (!confirmed) return;
 
     try {
-        setRepoSyncStatusText('Downloading and verifying update from repository...');
+        setRepoSyncStatusText('Starting repository update...');
+        setRepoUpdateOverlayVisible(true);
+        updateRepoUpdateOverlay({
+            phase: 'download',
+            phaseLabel: 'Downloading Files',
+            progressPct: 1,
+            message: 'Initializing update job...'
+        });
+
         const response = await fetch('/repo-sync-update', { method: 'POST' });
         const payload = await response.json();
         if (!response.ok) {
             throw new Error(payload?.message || (`Update failed with HTTP ${response.status}`));
         }
 
-        lastRepoSyncStatusPayload = payload;
-        const installedCount = Array.isArray(payload.installed) ? payload.installed.length : 0;
-        const failedCount = payload.failed ? Object.keys(payload.failed).length : 0;
+        const progressPayload = await waitForRepositoryUpdateProgress();
+        const result = progressPayload?.result || {};
+
+        lastRepoSyncStatusPayload = result;
+        const installedCount = Array.isArray(result.installed) ? result.installed.length : 0;
+        const failedCount = result.failed ? Object.keys(result.failed).length : 0;
         let status = `Update install complete. Installed ${installedCount} file(s).`;
         if (failedCount > 0) status += ` Failed ${failedCount} file(s).`;
-        if (payload.startup_initiated) {
+        if (result.startup_initiated || progressPayload?.startupInitiated) {
             status += ' Restart triggered.';
         }
-        status += ` ${formatRepoStatus(payload)}`;
+        status += ` ${formatRepoStatus(result)}`;
         setRepoSyncStatusText(status);
         updateRepoSyncControls();
+        setRepoUpdateOverlayVisible(false);
     } catch (error) {
         console.error('[menu] repo update install failed', error);
         setRepoSyncStatusText('Repository update install failed.');
+        setRepoUpdateOverlayVisible(false);
     }
 }
 

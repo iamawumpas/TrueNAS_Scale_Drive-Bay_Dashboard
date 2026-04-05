@@ -261,6 +261,78 @@
     background: linear-gradient(180deg, var(--menu-modal-secondary-bg-start, #3b3b3b) 0%, var(--menu-modal-secondary-bg-end, #2e2e2e) 100%);
 }
 
+/* ── Repo Update Progress Overlay ─────────────────────────── */
+#repo-update-progress-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 4300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.58);
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+#repo-update-progress-backdrop.active {
+    display: flex;
+}
+
+.repo-update-progress-modal {
+    width: min(520px, calc(100cqw - 32px));
+    border: var(--menu-const-border-width) solid var(--menu-dropdown-border, #555555);
+    border-radius: var(--menu-const-modal-corner-radius);
+    box-shadow: 0 14px 34px var(--menu-modal-shadow, rgba(0, 0, 0, 0.6));
+    background: linear-gradient(180deg, var(--menu-modal-bg-start, #1f1f1f) 0%, var(--menu-modal-bg-end, #171717) 100%);
+    color: var(--menu-text-color, #ffffff);
+    font-family: var(--menu-font-family, Calibri, Candara, Segoe UI, Optima, Arial, sans-serif);
+    padding: 14px;
+}
+
+.repo-update-progress-title {
+    font-size: 12pt;
+    font-weight: 700;
+    color: var(--menu-section-title-color, #64c8ff);
+    margin-bottom: 10px;
+}
+
+.repo-update-progress-phase {
+    font-size: 10.5pt;
+    color: var(--menu-label-color, #cccccc);
+    margin-bottom: 10px;
+}
+
+.repo-update-progress-bar-shell {
+    width: 100%;
+    height: 12px;
+    border: var(--menu-const-border-width) solid var(--menu-control-border, #555555);
+    border-radius: 999px;
+    background: var(--menu-control-bg, #2a2a2a);
+    overflow: hidden;
+}
+
+.repo-update-progress-bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--menu-modal-primary-bg-start, #2d7dbf) 0%, var(--menu-modal-primary-bg-end, #245f90) 100%);
+    transition: width 0.25s ease;
+}
+
+.repo-update-progress-meta {
+    margin-top: 8px;
+    color: var(--menu-text-color, #ffffff);
+    font-size: 9.5pt;
+}
+
+.repo-update-progress-detail {
+    margin-top: 6px;
+    color: var(--menu-label-color, #cccccc);
+    font-size: 8.75pt;
+    line-height: 1.3;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
 /* ── Color swatch ─────────────────────────────────────────── */
 .color-swatch {
     display: inline-block;

@@ -1,5 +1,16 @@
 # Storage Dashboard - Change Log
 
+## Version 28.3:
+* **Repository Update Progress Overlay**
+    * Added a centered dashboard overlay during repository updates with a live progress bar and phase text.
+    * Overlay now shows file download progress, install progress, and restart phase messaging.
+* **Live Update Progress API**
+    * Added backend progress state tracking for repo update jobs and exposed it via `GET /repo-sync-update-progress`.
+    * Updated `POST /repo-sync-update` to launch an asynchronous background update job so frontend can poll real-time progress.
+* **Frontend Progress Polling Integration**
+    * Integrated progress polling into repository update workflow in `MenuSystem.js`.
+    * Added resilient handling for restart-phase connection interruption so the user still sees completion feedback.
+
 ## Version 28.2:
 * **Repository Update/Restart Reliability Fixes**
     * Removed stale `DiskInfo.js` from repo-sync tracked download list to prevent update failures against current releases.

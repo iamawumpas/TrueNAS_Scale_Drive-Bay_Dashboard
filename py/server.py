@@ -52,6 +52,26 @@ REPO_SYNC_TRACKED_FILES = [
     'CHANGELOG.md', 'VERSION'
 ]
 
+REPO_SYNC_PROGRESS_LOCK = threading.Lock()
+REPO_SYNC_UPDATE_PROGRESS = {
+    'active': False,
+    'status': 'idle',
+    'phase': 'idle',
+    'phaseLabel': 'Idle',
+    'progressPct': 0,
+    'downloadCompleted': 0,
+    'downloadTotal': 0,
+    'installCompleted': 0,
+    'installTotal': 0,
+    'currentFile': None,
+    'message': '',
+    'targetRef': None,
+    'startupInitiated': False,
+    'failed': {},
+    'result': None,
+    'updatedAt': 0.0
+}
+
 
 def _nested_get(obj, path, fallback=None):
     cur = obj
@@ -171,23 +191,41 @@ def _restore_missing_tracked_files(ref=GITHUB_BRANCH):
     return restored, failed
 
 
-def _download_and_install_tracked_files(ref):
+def _set_repo_sync_progress(**changes):
+    with REPO_SYNC_PROGRESS_LOCK:
+        REPO_SYNC_UPDATE_PROGRESS.update(changes)
+        REPO_SYNC_UPDATE_PROGRESS['updatedAt'] = time.time()
+
+
+def _get_repo_sync_progress_snapshot():
+    with REPO_SYNC_PROGRESS_LOCK:
+        snapshot = dict(REPO_SYNC_UPDATE_PROGRESS)
+        snapshot['failed'] = dict(REPO_SYNC_UPDATE_PROGRESS.get('failed') or {})
+        return snapshot
+
+
+def _download_and_install_tracked_files(ref, progress_callback=None):
     fetched = {}
     failed = {}
 
     # Download everything first so we only restart after complete + verified installation.
-    for rel in REPO_SYNC_TRACKED_FILES:
+    total_files = len(REPO_SYNC_TRACKED_FILES)
+    for idx, rel in enumerate(REPO_SYNC_TRACKED_FILES, start=1):
         try:
             raw_url = f'https://raw.githubusercontent.com/{GITHUB_OWNER}/{GITHUB_REPO}/{ref}/{rel}'
             fetched[rel] = _github_text(raw_url)
         except Exception as ex:
             failed[rel] = str(ex)
+        finally:
+            if progress_callback:
+                progress_callback('download', idx, total_files, rel)
 
     if failed:
         return [], failed
 
     installed = []
-    for rel, content in fetched.items():
+    total_install = len(fetched)
+    for idx, (rel, content) in enumerate(fetched.items(), start=1):
         try:
             out_path = os.path.join(BASE_DIR, rel)
             out_dir = os.path.dirname(out_path)
@@ -204,6 +242,9 @@ def _download_and_install_tracked_files(ref):
             installed.append(rel)
         except Exception as ex:
             failed[rel] = str(ex)
+        finally:
+            if progress_callback:
+                progress_callback('install', idx, total_install, rel)
 
     return installed, failed
 
@@ -218,6 +259,109 @@ def _launch_startup_script():
         return False, 'start_up.sh not found'
     subprocess.Popen(['bash', startup_script], start_new_session=True)
     return True, None
+
+
+def _run_repo_sync_update_job(target_ref):
+    total_files = len(REPO_SYNC_TRACKED_FILES)
+    _set_repo_sync_progress(
+        active=True,
+        status='running',
+        phase='download',
+        phaseLabel='Downloading Files',
+        progressPct=1,
+        downloadCompleted=0,
+        downloadTotal=total_files,
+        installCompleted=0,
+        installTotal=total_files,
+        currentFile=None,
+        message='Starting repository download...',
+        targetRef=target_ref,
+        startupInitiated=False,
+        failed={},
+        result=None
+    )
+
+    def progress_callback(stage, completed, total, current_file):
+        safe_total = max(1, int(total or 1))
+        safe_completed = max(0, min(int(completed or 0), safe_total))
+        if stage == 'download':
+            pct = int((safe_completed / safe_total) * 60)
+            _set_repo_sync_progress(
+                phase='download',
+                phaseLabel='Downloading Files',
+                progressPct=max(1, pct),
+                downloadCompleted=safe_completed,
+                downloadTotal=safe_total,
+                currentFile=current_file,
+                message=f'Downloading {safe_completed}/{safe_total}: {current_file}'
+            )
+            return
+
+        pct = 60 + int((safe_completed / safe_total) * 35)
+        _set_repo_sync_progress(
+            phase='install',
+            phaseLabel='Installing Files',
+            progressPct=max(60, min(95, pct)),
+            installCompleted=safe_completed,
+            installTotal=safe_total,
+            currentFile=current_file,
+            message=f'Installing {safe_completed}/{safe_total}: {current_file}'
+        )
+
+    try:
+        installed, failed = _download_and_install_tracked_files(target_ref, progress_callback)
+        config = load_config()
+        post_payload = _repo_sync_status_payload(config)
+        post_payload.update({
+            'status': 'success' if not failed else 'partial',
+            'installed': installed,
+            'failed': failed,
+            'targetRef': target_ref,
+            'startup_initiated': False
+        })
+
+        should_restart = not failed and bool(installed)
+        startup_script_exists = os.path.exists(_startup_script_path())
+        if should_restart:
+            _set_repo_sync_progress(
+                phase='restart',
+                phaseLabel='Restarting Service',
+                progressPct=96,
+                message='Update installed. Restarting dashboard service...'
+            )
+            if startup_script_exists:
+                launched, startup_err = _launch_startup_script()
+                post_payload['startup_initiated'] = bool(launched)
+                if not launched:
+                    post_payload['status'] = 'partial'
+                    post_payload['failed']['start_up.sh'] = startup_err or 'start_up.sh launch failed'
+            else:
+                post_payload['status'] = 'partial'
+                post_payload['failed']['start_up.sh'] = 'start_up.sh not found'
+
+        terminal_status = 'success' if not post_payload.get('failed') else 'partial'
+        _set_repo_sync_progress(
+            active=False,
+            status=terminal_status,
+            phase='complete',
+            phaseLabel='Complete',
+            progressPct=100,
+            message='Repository update finished.',
+            startupInitiated=bool(post_payload.get('startup_initiated')),
+            failed=dict(post_payload.get('failed') or {}),
+            result=post_payload
+        )
+    except Exception as ex:
+        _set_repo_sync_progress(
+            active=False,
+            status='error',
+            phase='error',
+            phaseLabel='Update Failed',
+            progressPct=100,
+            message=str(ex),
+            failed={'update': str(ex)},
+            result={'status': 'error', 'message': str(ex), 'failed': {'update': str(ex)}}
+        )
 
 
 def _repo_sync_status_payload(config):
@@ -808,40 +952,30 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
                     return
 
                 target_ref = status_payload.get('remoteVersion') or GITHUB_BRANCH
-                installed, failed = _download_and_install_tracked_files(target_ref)
-                post_payload = _repo_sync_status_payload(config)
-                post_payload.update({
-                    'status': 'success' if not failed else 'partial',
-                    'installed': installed,
-                    'failed': failed,
-                    'targetRef': target_ref,
-                    'startup_initiated': False
-                })
+                existing = _get_repo_sync_progress_snapshot()
+                if existing.get('active'):
+                    self.send_response(409)
+                    self.send_header('Content-type', 'application/json')
+                    self.send_header('Cache-Control', 'no-store')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        'status': 'error',
+                        'message': 'Repository update already in progress.'
+                    }).encode())
+                    return
 
-                should_restart = not failed and bool(installed)
-                startup_script_exists = os.path.exists(_startup_script_path())
-                if should_restart:
-                    post_payload['startup_initiated'] = startup_script_exists
-                    if not startup_script_exists:
-                        post_payload['status'] = 'partial'
-                        post_payload['failed']['start_up.sh'] = 'start_up.sh not found'
+                worker = threading.Thread(target=_run_repo_sync_update_job, args=(target_ref,), daemon=True)
+                worker.start()
 
-                self.send_response(200)
+                self.send_response(202)
                 self.send_header('Content-type', 'application/json')
                 self.send_header('Cache-Control', 'no-store')
                 self.end_headers()
-                self.wfile.write(json.dumps(post_payload).encode())
-
-                # Trigger restart after response to avoid killing the current request mid-flight.
-                if should_restart and startup_script_exists:
-                    try:
-                        launched, startup_err = _launch_startup_script()
-                        if launched:
-                            print(f"Startup script initiated after update install from {target_ref}")
-                        else:
-                            print(f"Warning: {startup_err} for post-update restart")
-                    except Exception as startup_err:
-                        print(f"Error triggering startup after update install: {startup_err}")
+                self.wfile.write(json.dumps({
+                    'status': 'accepted',
+                    'targetRef': target_ref,
+                    'message': 'Repository update started.'
+                }).encode())
             except Exception as ex:
                 self.send_response(500)
                 self.send_header('Content-type', 'application/json')
@@ -1007,6 +1141,20 @@ class FastHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps({"status": "error", "message": str(ex)}).encode())
+            return
+        elif path == '/repo-sync-update-progress':
+            try:
+                payload = _get_repo_sync_progress_snapshot()
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                self.wfile.write(json.dumps(payload).encode())
+            except Exception as ex:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(ex)}).encode())
             return
         elif path == '/pool-activity':
             # Serve pool activity history for Chart.js visualization
