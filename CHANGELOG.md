@@ -1,5 +1,12 @@
 # Storage Dashboard - Change Log
 
+## Version 28.7:
+* **Section/Subsection Typography Linkage**
+    * Linked subsection title font sizing to the Section Name font size variable across all menu and submenu panels.
+    * Removed independent subsection size variable mapping to prevent visual drift between section and subsection headings.
+* **Release Metadata Synchronization**
+    * Updated `VERSION` and `README.md` markers to v28.7.
+
 ## Version 28.6:
 * **Legend Title Clarification**
     * Renamed Legend dropdown header from `ZFS Status` to `Status LED Legend`.

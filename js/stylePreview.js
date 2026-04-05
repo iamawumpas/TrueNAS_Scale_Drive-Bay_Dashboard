@@ -146,7 +146,6 @@ export function applyMenuVariables(config) {
         '--menu-section-title-style': hasSectionNameStyle ? (sectionNameStyles.includes('italic') ? 'italic' : 'normal') : undefined,
         '--menu-section-title-transform': hasSectionNameStyle ? (sectionNameStyles.includes('allcaps') ? 'uppercase' : 'none') : undefined,
         '--menu-section-title-variant': hasSectionNameStyle ? (sectionNameStyles.includes('smallcaps') ? 'small-caps' : 'normal') : undefined,
-        '--menu-subsection-title-size': subsectionName.size,
         '--menu-subsection-title-weight': hasSubsectionNameStyle ? (subsectionNameStyles.includes('bold') ? '700' : '400') : undefined,
         '--menu-subsection-title-style': hasSubsectionNameStyle ? (subsectionNameStyles.includes('italic') ? 'italic' : 'normal') : undefined,
         '--menu-subsection-title-transform': hasSubsectionNameStyle ? (subsectionNameStyles.includes('allcaps') ? 'uppercase' : 'none') : undefined,

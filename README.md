@@ -1,5 +1,5 @@
 # TrueNAS Scale Drive-Bay Dashboard
-**version v28.6**
+**version v28.7**
 
 
 ## Documentation / Wiki
@@ -97,11 +97,11 @@ This script generates a virtual Drive Storage Chassis dashboard. It displays:
 
 ---
 
-## What's New in v28.6?
+## What's New in v28.7?
 
-* **Legend Label Update:** Renamed the Legend dropdown heading from "ZFS Status" to "Status LED Legend" for clearer meaning.
-* **UI Text Consistency:** Updated the user-facing legend title text to better match the LED status indicators shown in the panel.
-* **Release Metadata Synchronization:** Updated VERSION and changelog metadata to v28.6.
+* **Section/Subsection Font Size Link:** Subsection headings now always follow Section Name font size across menu and submenu panels.
+* **Menu Typography Consistency:** Removed independent subsection size mapping so all subsection headers stay in sync with section title size.
+* **Release Metadata Synchronization:** Updated VERSION and changelog metadata to v28.7.
 
 ---
 

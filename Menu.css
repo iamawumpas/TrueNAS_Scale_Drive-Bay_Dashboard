@@ -469,7 +469,7 @@
 }
 
 .panel-subsection-title {
-    font-size: var(--menu-subsection-title-size, var(--menu-section-title-size, 10pt));
+    font-size: calc(var(--menu-section-title-size, 10pt) * var(--menu-scene-scale, 1));
     font-weight: var(--menu-subsection-title-weight, var(--menu-section-title-weight, 700));
     font-style: var(--menu-subsection-title-style, var(--menu-section-title-style, normal));
     color: var(--menu-section-title-color, #64c8ff);
